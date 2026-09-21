@@ -1,0 +1,39 @@
+#med-app .medical-charts-grid > div,
+#med-app .med-series-card {
+    min-width: 0;
+    border: 1px solid #293548;
+    border-radius: 18px;
+    background: linear-gradient(145deg, #111e2f, #0b1220 65%);
+    box-shadow: 0 8px 24px #02061728;
+}
+#med-app .med-series-card { padding: 22px; scroll-margin-top: 90px; }
+#med-app .med-series-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 20px; }
+#med-app .med-series-heading h3 { color: #f1f5f9; font-size: 16px; font-weight: 700; }
+#med-app .med-chart-eyebrow { color: #67e8f9; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 5px; }
+#med-app .med-chart-caption { color: #94a3b8; font-size: 12px; line-height: 1.7; margin-top: 5px; }
+#med-app .med-chart-actions { display: flex; gap: 4px; flex-wrap: wrap; padding: 4px; background: #02061780; border: 1px solid #293548; border-radius: 10px; }
+#med-app .med-chart-actions button { padding: 6px 10px; border-radius: 7px; font-size: 11px; color: #cbd5e1; }
+#med-app .med-chart-actions button[aria-pressed="true"] { color: #a5f3fc; background: #164e6380; }
+#med-app .med-chart-actions button:hover, #med-app .med-series-shortcuts button:hover { background: #334155; color: #fff; }
+#med-app .med-series-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+#med-app .med-series-settings fieldset { min-width: 0; padding: 12px; border: 1px solid #293548; border-radius: 12px; background: #02061730; }
+#med-app .med-series-settings legend { padding: 0 6px; font-weight: 600; font-size: 12px; color: #e2e8f0; }
+#med-app .med-series-settings .med-series-summary { border-color: #155e7580; }
+#med-app .med-series-summary legend { color: #67e8f9; }
+#med-app .med-series-summary legend label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+#med-app .med-series-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+#med-app .med-series-chip { display: flex; align-items: center; gap: 6px; padding: 5px 8px; font-size: 12px; color: #94a3b8; border: 1px solid #334155; border-radius: 7px; cursor: pointer; user-select: none; }
+#med-app .med-series-chip:has(input:checked) { color: var(--series-color); background: #1e293b80; border-color: var(--series-color); }
+#med-app .med-series-chip input { accent-color: var(--series-color); width: 13px; height: 13px; }
+#med-app .med-series-summary legend input { accent-color: #22d3ee; }
+#med-app .med-series-shortcuts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+#med-app .med-series-shortcuts button { font-size: 10px; color: #94a3b8; padding: 3px 6px; border-radius: 5px; text-decoration: underline; text-underline-offset: 3px; }
+#med-app .med-chart-note { margin: 12px 0; }
+#med-app .med-series-canvas { height: 340px; width: 100%; }
+#med-app .med-chart-empty { min-height: 200px; display: grid; place-items: center; padding: 24px; text-align: center; color: #94a3b8; font-size: 13px; border: 1px dashed #334155; border-radius: 12px; }
+#med-app .med-series-card button:focus-visible, #med-app .med-series-card input:focus-visible { outline: 2px solid #22d3ee; outline-offset: 3px; }
+@media (max-width: 850px) {
+    #med-app .med-series-settings { grid-template-columns: 1fr; }
+    #med-app .med-series-card { padding: 14px; }
+    #med-app .med-series-canvas { height: 320px; }
+}

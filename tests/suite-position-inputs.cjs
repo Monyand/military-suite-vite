@@ -1,0 +1,60 @@
+const assert = require('node:assert/strict');
+const { D } = require('./suite-document-journal.cjs');
+
+(async () => {
+    const P = await import('../src/modules/documents/position-register.js');
+    const row = (id, status, date, extra = {}) => ({ ...D.cleanRow('positions', { name: 'Архів А', status, date, category: 'Вогневі', docNumber: 'ТЕСТ/' + id, ...extra }), id, createdAt: date + 'T09:00:00Z' });
+    const creation = row('a', 'виставлена', '2026-01-01', { positionId: 'a' });
+    const other = row('b', 'виставлена', '2026-01-01', { positionId: 'b', name: 'Зайнята назва' });
+    for (const status of P.POSITION_ACTIONS) {
+        const isRoot = status === 'виставлена';
+        const record = row('change', status, '2026-01-02', { positionId: isRoot ? 'change' : 'a', newName: 'Архів Б' });
+        const base = isRoot ? [] : [creation];
+        const before = JSON.stringify(base);
+        const registry = P.buildPositionRegister([...base, record]);
+        assert.equal(registry.issues.size, 0, status);
+        assert.equal(registry.entries[0].name, 'Архів Б', status);
+        assert.equal(registry.entries[0].status, status);
+        assert.deepEqual(registry.entries[0].aliases, ['Архів А', 'Архів Б']);
+        assert.equal(JSON.stringify(base), before, 'Old documents untouched');
+        assert.equal(record.name, 'Архів А');
+        assert.equal(P.positionChangeError(base, [...base, record], record.id), '');
+        const collision = { ...record, newName: other.name };
+        const rejected = P.buildPositionRegister([...base, other, collision]);
+        assert.match(rejected.issues.get('change'), /належить іншому/);
+        if (!isRoot) assert.equal(rejected.entries.find(e => e.id === 'a').status, 'виставлена', 'No partial status change on invalid rename');
+        else assert.ok(!rejected.entries.some(e => e.id === 'change'), 'No ghost creation on invalid rename');
+        assert.ok(P.positionChangeError(base, [...base, { ...record, newName: ' архів А ' }], record.id), 'Same-name rename rejected');
+        const blank = { ...record, newName: '' };
+        assert.equal(P.buildPositionRegister([...base, blank]).issues.size, status === 'перейменована' ? 1 : 0, 'Rename is optional except explicit rename');
+    }
+    const prep = row('prep', 'облаштовується', '2026-01-01', { positionId: 'prep', opensRegister: true, newName: 'Архів Б' });
+    const established = row('dep', 'виставлена', '2026-01-02', { positionId: 'prep', name: 'Архів Б', newName: 'Архів В' });
+    const updated = row('update', 'облаштовується', '2026-01-03', { positionId: 'prep', name: 'Архів В', newName: 'Архів Г' });
+    const chain = [prep, established, updated];
+    const registry = P.buildPositionRegister(chain);
+    assert.equal(registry.issues.size, 0);
+    assert.deepEqual(registry.entries[0].aliases, ['Архів А', 'Архів Б', 'Архів В', 'Архів Г']);
+    assert.deepEqual(P.documentaryNameCatalog(chain).names, ['Архів Г']);
+    assert.equal(P.buildPositionRegister(chain, '2026-01-01').entries[0].name, 'Архів Б');
+    assert.equal(P.withPositionAudit({ ...D.empty(), positions: chain.slice(0, 2) }, { ...D.empty(), positions: chain }).positionAudit[0].after.newName, 'Архів Г');
+    const imported = D.merge(D.empty(), { positions: chain }).next;
+    assert.equal(P.buildPositionRegister(imported.positions).issues.size, 0);
+    assert.equal(P.buildPositionRegister(imported.positions).entries[0].name, 'Архів Г');
+    const earlier = row('earlier', 'облаштовується', '2025-12-31', { positionId: 'a', name: 'Попередня назва', newName: 'Архів А' });
+    assert.equal(P.buildPositionRegister([creation, earlier]).issues.size, 0, 'Backfilled rename agrees with later deployment name');
+    assert.ok(P.positionChangeError([creation], [creation, { ...earlier, newName: 'Не збігається' }], earlier.id), 'Backfill cannot break a later deployment');
+    const futurePrep = row('future-prep', 'облаштовується', '2026-01-02', { positionId: 'future-prep', opensRegister: true, newName: 'Архів Б' });
+    assert.equal(P.buildPositionRegister([{ ...earlier, name: 'Архів А', newName: '', positionId: 'future-prep' }, futurePrep]).entries[0].name, 'Архів Б');
+
+    const categoryRows = ['Мін. Батр.', 'Вогневі', 'ОВгП', 'Піхотні', ''].map((category, i) => row('cat' + i, 'виставлена', '2026-01-01', { category }));
+    const original = JSON.stringify(categoryRows);
+    const options = { ...D.filters(), category: 'ОВгП' };
+    assert.deepEqual(D.positionCategoryCards, ['Піхотні', 'ОВгП', 'БпЛА', 'Інші', 'Запасні позиції']);
+    assert.equal(D.filtered('positions', categoryRows, options).length, 3);
+    assert.equal(D.filtered('positions', categoryRows, { ...options, category: 'Вогневі' }).length, 1, 'Individual historical category filter remains');
+    assert.equal(D.filtered('positions', categoryRows, { ...options, category: '__uncategorized' }).length, 1);
+    assert.equal(D.filtered('ovt', categoryRows, options).length, 1, 'Grouping is exclusive to documentary position cards');
+    assert.equal(JSON.stringify(categoryRows), original);
+    console.log('PASS: optional rename for every document action/root, collision atomicity, historic aliases, construction continuation/backfill, import, audit, current labels and non-destructive OVgP group filtering');
+})().catch(error => { console.error(error); process.exitCode = 1; });

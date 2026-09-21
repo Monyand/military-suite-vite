@@ -1,0 +1,56 @@
+{
+  "createdAt": "2026-09-19T19:44:11.086Z",
+  "source": "../Втрати противника/міл/MilitarySuite.html",
+  "sha256": "81cf0d33b7180b6024aeb3c2f82bb9bae01651b7b206a89a7bdb7da7fd565c33",
+  "sourceBytes": 1220992,
+  "sourceLines": 15439,
+  "payloadHashes": {
+    "core/runtime.js": "55eca5789376a349369bebd5b285605691aa721a4e7554a2cdc00f3d811c087f",
+    "core/medical-totals.js": "fa2e0ada13c4ab85382f0bc21beb2c420b71f8fe8a973ba68ce12c6d4a55ddcb",
+    "core/personnel-directory.js": "277aff0a06e7be52130ae300b5eca89ccd4d7627219df74ca4229d7b09b71578",
+    "modules/events/EventsApp.jsx": "753b6a9ce7d4e3319de3425ea9c3ae45fe8be24b16cd8137628346f6d556a3e8",
+    "modules/medical/MedicalApp.jsx": "c6cc18140283499feeb2714099210234ec5baaee44da4fb2d1effc003993d17d",
+    "core/documents.js": "96519b2204973c4802ba9320529f268fbc7e0aa8c9e0a06b7de9067aa990cb3f",
+    "modules/documents/DocumentsApp.jsx": "56ec7a727e553bf7f90086dace295417b799c957ae695bd357816bf6c9abdcc4",
+    "core/backup.js": "96e7a920d636411fd6998b87656f56a653de11934de07830ddbd7fa3d433602f",
+    "app/App.jsx": "2a6d279a43947f0ef897affcbc718df4690d9765b56d690598db516ddb60ccb7",
+    "modules/personnel/personnel.js": "debb3c9606395cfecfe92584767e277697fc47ec34fb7fb702d32729693e0137"
+  },
+  "amendments": {
+    "core/documents.js": {
+      "date": "2026-09-21",
+      "reason": "Document links, categories, audit and OVgP filters; optional OVT report fields and additive location/identifier switches. Generic pickup/SUV transport model defaults removed in favor of the learned shared catalog. Original eleven Excel columns and legacy rows remain compatible.",
+      "sha256": "8736014f5a5ff35055fcb2b42151c681e30b7669bc8af619a6bc6d7f32c0071d"
+    },
+    "modules/documents/DocumentsApp.jsx": {
+      "date": "2026-09-21",
+      "reason": "Documentary registry/history, shared suggestions, atomic batches, recovery/audit and OVgP cards. Unified OVT form, live preview, identifiers/location, two transport statuses and post-save learning. Transport model editing centralized in shared dictionaries, removing the duplicate local control; existing records and other category settings preserved.",
+      "sha256": "ad53c5555730fd28de10d77625150af0f4699403cf8154b2465f2210f5930e03"
+    },
+    "modules/medical/MedicalApp.jsx": {
+      "date": "2026-09-20",
+      "reason": "Independent daily/hourly chart combinations and visuals; shared unit/rank/cause form options, separate documentary and actual place suggestions. Open drafts, record migrations, historical snapshots and existing filters preserved.",
+      "sha256": "e6e8d8f0e3ea58da6bfdcafcb534ecec9b248bfebef71011d30d7b39f8c19795"
+    },
+    "modules/events/EventsApp.jsx": {
+      "date": "2026-09-21",
+      "reason": "Shared documentary/actual place and weapon spelling suggestions in record forms; preserved raw values and filters. Completed assault cards now open an editable retrospective report draft using one saved event and the user-provided template, without modifying records, PBD or settings; unknowns and template outcome clauses are flagged for review.",
+      "sha256": "4924e9e131ed7c5e34cb6e2414718add5c86e04c7abc110b1f9f0887b45faa6c"
+    },
+    "app/App.jsx": {
+      "date": "2026-09-20",
+      "reason": "Global dictionary editor entry point and module suspension for encrypted, previewed bulk text corrections; native container hidden during modal and restore.",
+      "sha256": "dd32fd8a20e41f7fe25e7bfc481635e38ae641a5d5f514f6b33026bd5b6067fc"
+    },
+    "modules/personnel/personnel.js": {
+      "date": "2026-09-20",
+      "reason": "Shared unit/rank spelling suggestions in personnel forms with HTML escaping and current-value preservation. Positions, rotations, state and assignments unchanged.",
+      "sha256": "c880e606b27215cd4284a5304ab53ccf63d995a866cb213e84eb11c8ff979176"
+    }
+  },
+  "adaptations": [
+    "Explicit imports/exports and four module entry points",
+    "Native startup after static markup mount; original runMigrations retained",
+    "Build-time JSX/Tailwind and local vendor packages; no later ../src features"
+  ]
+}

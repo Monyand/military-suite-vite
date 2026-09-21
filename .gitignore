@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-single/
+test-results/
+.backups/
+.vite/
+*.log
+*.enc
+*.xlsx
