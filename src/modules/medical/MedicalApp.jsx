@@ -19,12 +19,12 @@ const MedicalApp = (function() {
 
         const LOSS_TYPES = [
             "Поранення (300)", "Небойове травмування (300)", 
-            "Загибель (200)", "Небойова смерть (200)", "Зниклий безвісти (ЗБВ)", "СЗЧ", "Дезертирство"
+            "Загибель (200)", "Небойова смерть (200)", "200 (від ран)", "Зниклий безвісти (ЗБВ)", "СЗЧ", "Дезертирство"
         ];
         
         const isAny300 = (type) => type && type.includes("(300)");
         const isAwol = (type) => type === "СЗЧ" || type === "Дезертирство";
-        const isAny200 = (type) => type && type.includes("(200)");
+        const isAny200 = (type) => type && (type.includes("(200)") || type.includes("200 (від ран)"));
 
         const BODY_REGIONS = [
             { id: 'head', name: 'Голова', x: 100, y: 35, r: 22 }, { id: 'neck', name: 'Шия', x: 100, y: 65, r: 10 },
@@ -329,6 +329,7 @@ const MedicalApp = (function() {
         const getBadgeColors = (lossType, severity) => {
             if (lossType === "Загибель (200)") return "bg-zinc-900 text-zinc-300 border-zinc-700";
             if (lossType === "Небойова смерть (200)") return "bg-stone-900 text-stone-300 border-stone-700";
+            if (lossType === "200 (від ран)") return "bg-slate-900 text-slate-300 border-slate-700";
             if (lossType === "Зниклий безвісти (ЗБВ)") return "bg-blue-950 text-blue-300 border-blue-800";
             if (lossType === "СЗЧ") return "bg-fuchsia-950 text-fuchsia-300 border-fuchsia-800";
             if (lossType === "Дезертирство") return "bg-pink-950 text-pink-300 border-pink-800";
@@ -969,7 +970,7 @@ const MedicalApp = (function() {
             );
         });
 
-        const TriageCard = React.memo(({ ep, soldier: baseSoldier, soldierEpisodes = [], onQuickEvac, onEdit, onAlertMIA, onNotify }) => {
+        const TriageCard = React.memo(({ ep, soldier: baseSoldier, soldierEpisodes = [], onQuickEvac, onEdit, onAlertMIA, onNotify, onCreate200FromWounds }) => {
             const soldier = MedicalPersonnelDirectory.forEpisode(ep, baseSoldier);
             const [isCopied, setIsCopied] = React.useState(false);
             const waitStr = calculateWaitTimeUI(ep.date);
@@ -1129,14 +1130,28 @@ const MedicalApp = (function() {
                                 <span>Статус ЗБВ</span>
                             </button>
                         ) : (
-                            <button 
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); onQuickEvac(ep); }} 
-                                className="flex-1 py-1.5 px-2.5 bg-slate-950 hover:bg-emerald-600 hover:border-emerald-500 text-slate-300 hover:text-white text-xs font-semibold rounded-xl border border-slate-800 transition-all flex justify-center items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 group/btn"
-                            >
-                                <Icon name="check-circle" className="w-3.5 h-3.5 text-emerald-400 group-hover/btn:text-white transition-colors" /> 
-                                <span>Евакуйовано</span>
-                            </button>
+                            <>
+                                <button 
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); onQuickEvac(ep); }} 
+                                    className="flex-1 py-1.5 px-2.5 bg-slate-950 hover:bg-emerald-600 hover:border-emerald-500 text-slate-300 hover:text-white text-[11px] font-semibold rounded-xl border border-slate-800 transition-all flex justify-center items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 group/btn"
+                                    title="Позначити евакуйованим"
+                                >
+                                    <Icon name="check-circle" className="w-3 h-3 text-emerald-400 group-hover/btn:text-white transition-colors" /> 
+                                    <span>Евакуйовано</span>
+                                </button>
+                                {isAny300(ep.lossType) && (
+                                    <button 
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); onCreate200FromWounds && onCreate200FromWounds(ep); }} 
+                                        className="flex-[0.8] py-1.5 px-2 bg-slate-950 hover:bg-zinc-800 hover:border-zinc-500 text-slate-400 hover:text-white text-[11px] font-semibold rounded-xl border border-slate-800 transition-all flex justify-center items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                                        title="Створити запис про смерть від ран (200)"
+                                    >
+                                        <Icon name="skull" className="w-3 h-3 text-zinc-400" /> 
+                                        <span>200(пвр)</span>
+                                    </button>
+                                )}
+                            </>
                         )}
                         
                         <button 
@@ -1456,7 +1471,7 @@ const MedicalApp = (function() {
             const [filterReport, setFilterReport] = useState("all");
 
             const [dynFilters, setDynFilters] = useState({ 
-                show200: true, showWound: true, showCombatTr: true, 
+                show200: true, show200pvr: true, showWound: true, showCombatTr: true, 
                 showNonCombatTr: true, showMIA: true, showAWOL: true, showNonCombatDead: true 
             });
             const [showChartLabels, setShowChartLabels] = useState(false);
@@ -1840,10 +1855,10 @@ const MedicalApp = (function() {
                 const timeMap = {};
                 for (let i = 0; i < 24; i++) {
                     const hr = i.toString().padStart(2, '0') + ":00";
-                    timeMap[hr] = { '200': 0, 'Неб. смерть': 0, 'Поранення': 0, 'Бойове': 0, 'Небойове': 0, 'ЗБВ': 0, 'СЗЧ': 0, 'Дезертирство': 0 };
+                    timeMap[hr] = { '200': 0, '200 ПВР': 0, 'Неб. смерть': 0, 'Поранення': 0, 'Бойове': 0, 'Небойове': 0, 'ЗБВ': 0, 'СЗЧ': 0, 'Дезертирство': 0 };
                 }
                 
-                let c200 = 0, c200nc = 0, cWound = 0, cCombat = 0, cNonCombat = 0, cMia = 0, cAwol = 0, cDesert = 0;
+                let c200 = 0, c200nc = 0, c200pvr = 0, cWound = 0, cCombat = 0, cNonCombat = 0, cMia = 0, cAwol = 0, cDesert = 0;
                 const dGroups = {};
                 const rCounts = {};
                 const uCounts = {};
@@ -1889,11 +1904,12 @@ const MedicalApp = (function() {
                         }
                     }
                     if (!day) day = new Date().toLocaleDateString('en-CA');
-                    if (!dGroups[day]) dGroups[day] = { '200': 0, 'Неб. смерть': 0, 'Поранення': 0, 'Бойове': 0, 'Небойове': 0, 'ЗБВ': 0, 'СЗЧ': 0, 'Дезертирство': 0 };
+                    if (!dGroups[day]) dGroups[day] = { '200': 0, '200 ПВР': 0, 'Неб. смерть': 0, 'Поранення': 0, 'Бойове': 0, 'Небойове': 0, 'ЗБВ': 0, 'СЗЧ': 0, 'Дезертирство': 0 };
 
                     let typeKey = '';
                     if (effType === 'Загибель (200)') { typeKey = '200'; c200++; }
                     else if (effType === 'Небойова смерть (200)') { typeKey = 'Неб. смерть'; c200nc++; }
+                    else if (effType === '200 (від ран)') { typeKey = '200 ПВР'; c200pvr++; }
                     else if (effType === 'Поранення (300)') { typeKey = 'Поранення'; cWound++; }
                     else if (effType === 'Бойове травмування (300)') { typeKey = 'Бойове'; cCombat++; }
                     else if (effType === 'Небойове травмування (300)') { typeKey = 'Небойове'; cNonCombat++; }
@@ -1911,17 +1927,17 @@ const MedicalApp = (function() {
                     const causeStr = d.cause || 'Не вказано';
                     if (d.cause) activeCausesSet.add(d.cause);
                     
-                    if (!uCounts[unit]) uCounts[unit] = { '200':0, 'Неб. смерть':0, 'Поранення':0, 'Бойове':0, 'Небойове':0, 'ЗБВ':0, 'СЗЧ':0, 'Дезертирство':0 };
+                    if (!uCounts[unit]) uCounts[unit] = { '200':0, '200 ПВР':0, 'Неб. смерть':0, 'Поранення':0, 'Бойове':0, 'Небойове':0, 'ЗБВ':0, 'СЗЧ':0, 'Дезертирство':0 };
                     if (typeKey) uCounts[unit][typeKey]++;
 
-                    if (!rCounts[causeStr]) rCounts[causeStr] = { '200':0, 'Неб. смерть':0, 'Поранення':0, 'Бойове':0, 'Небойове':0, 'ЗБВ':0, 'СЗЧ':0, 'Дезертирство':0 };
+                    if (!rCounts[causeStr]) rCounts[causeStr] = { '200':0, '200 ПВР':0, 'Неб. смерть':0, 'Поранення':0, 'Бойове':0, 'Небойове':0, 'ЗБВ':0, 'СЗЧ':0, 'Дезертирство':0 };
                     if (typeKey) rCounts[causeStr][typeKey]++;
 
                     if (isAny300(d.lossType) && d.severity) sevCounts[d.severity] = (sevCounts[d.severity] || 0) + 1;
                     
                     const loc = d.actualLoc || 'Не вказано';
                     
-                    if (!aLocCounts[loc]) aLocCounts[loc] = { '200':0, 'Неб. смерть':0, 'Поранення':0, 'Бойове':0, 'Небойове':0, 'ЗБВ':0, 'СЗЧ':0, 'Дезертирство':0 };
+                    if (!aLocCounts[loc]) aLocCounts[loc] = { '200':0, '200 ПВР':0, 'Неб. смерть':0, 'Поранення':0, 'Бойове':0, 'Небойове':0, 'ЗБВ':0, 'СЗЧ':0, 'Дезертирство':0 };
                     if (typeKey) aLocCounts[loc][typeKey]++;
 
                     if (isAny300(d.lossType) && d.severity) {
@@ -1980,7 +1996,7 @@ const MedicalApp = (function() {
                         const dateStr = new Date(t).toISOString().split('T')[0];
                         // Якщо дати немає в масиві, створюємо її з нульовими показниками
                         if (!dGroups[dateStr]) {
-                            dGroups[dateStr] = { '200': 0, 'Неб. смерть': 0, 'Поранення': 0, 'Бойове': 0, 'Небойове': 0, 'ЗБВ': 0, 'СЗЧ': 0, 'Дезертирство': 0 };
+                            dGroups[dateStr] = { '200': 0, '200 ПВР': 0, 'Неб. смерть': 0, 'Поранення': 0, 'Бойове': 0, 'Небойове': 0, 'ЗБВ': 0, 'СЗЧ': 0, 'Дезертирство': 0 };
                         }
                     }
                 }
@@ -2033,7 +2049,7 @@ const MedicalApp = (function() {
                 return {
                     totalEpisodes: anFiltered.length,
                     time: { labels: Object.keys(timeMap).sort(), timeMap },
-                    types: { c200, c200nc, cWound, cCombat, cNonCombat, cMia, cAwol, cDesert },
+                    types: { c200, c200nc, c200pvr, cWound, cCombat, cNonCombat, cMia, cAwol, cDesert },
                     dynamics: { dates: Object.keys(dGroups).sort(), dGroups },
                     units: { labels: sortByTotal(uCounts), data: uCounts },
                     reasons: { labels: sortedReasons, data: rCounts },
@@ -2302,7 +2318,7 @@ const MedicalApp = (function() {
                     const sectorStr = anSector === 'all' ? 'Усі сектори / позиції' : anSector;
                     const nowStr = new Date().toLocaleString('uk-UA');
 
-                    let count200 = 0, count300 = 0, countMIA = 0, countAWOL = 0;
+                    let count200 = 0, count200PVR = 0, count300 = 0, countMIA = 0, countAWOL = 0;
                     let evac300 = 0, notEvac300 = 0;
                     let evac200 = 0, notEvac200 = 0;
                     const causeMap = {};
@@ -2315,17 +2331,19 @@ const MedicalApp = (function() {
                         const isMia = ep.lossType === 'Зниклий безвісти (ЗБВ)';
                         const isAw = isAwol(ep.lossType);
                         const isEvac = ep.evacStatus === 'Евакуйований';
+                        const isNotEvac = ep.evacStatus === 'Не евакуйований';
 
                         if (isDead) {
                             count200++;
+                            if (ep.lossType === '200 (від ран)') count200PVR++;
                             if (isEvac) evac200++;
-                            else notEvac200++;
+                            else if (isNotEvac) notEvac200++;
                         } else if (isWounded) {
                             count300++;
                             const s = ep.severity || 'Невідомо';
                             sevMap[s] = (sevMap[s] || 0) + 1;
                             if (isEvac) evac300++;
-                            else notEvac300++;
+                            else if (isNotEvac) notEvac300++;
                         } else if (isMia) {
                             countMIA++;
                         } else if (isAw) {
@@ -2416,7 +2434,7 @@ const MedicalApp = (function() {
                         const unitClean = (s.unit || ep.unit || '—').replace(/"/g, '&quot;');
 
                         return `
-                            <tr ${rowBg} class="reg-row" data-evac="${evacVal}" data-dead="${isDead ? '1':'0'}" data-wound="${isWounded ? '1':'0'}" data-sev="${ep.severity || ''}" data-mia="${isMia ? '1':'0'}" data-cause="${causeClean}" data-unit="${unitClean}">
+                            <tr ${rowBg} class="reg-row" data-evac="${evacVal}" data-dead="${isDead ? '1':'0'}" data-wound="${isWounded ? '1':'0'}" data-sev="${ep.severity || ''}" data-mia="${isMia ? '1':'0'}" data-awol="${isAw ? '1':'0'}" data-cause="${causeClean}" data-unit="${unitClean}">
                                 <td class="row-num" style="text-align:center; font-family:'JetBrains Mono',monospace; font-size:8pt;">${idx + 1}</td>
                                 <td style="font-family:'JetBrains Mono',monospace; font-size:8pt; white-space:nowrap;">${ep.date.replace('T', ' ')}</td>
                                 <td style="font-size:8pt;">${s.rank || '—'}</td>
@@ -2692,6 +2710,7 @@ const MedicalApp = (function() {
                 <label class="check-toggle"><input type="checkbox" id="chk-causes" checked onchange="toggleBlock('block-causes', this.checked)"> Причини та підрозділи</label>
                 <label class="check-toggle"><input type="checkbox" id="chk-register" checked onchange="toggleBlock('block-register', this.checked)"> Реєстр втрат</label>
                 <label class="check-toggle"><input type="checkbox" id="chk-signs" checked onchange="toggleBlock('block-signs', this.checked)"> Підписи</label>
+                <label class="check-toggle" style="margin-left: 10px; color:#f472b6;"><input type="checkbox" id="chk-show-awol" checked onchange="toggleShowAwol(this.checked)"> Показувати СЗЧ/Дезерт.</label>
             </div>
         </div>
     </div>
@@ -2711,7 +2730,10 @@ const MedicalApp = (function() {
                 <div class="summary-card">
                     <div class="label">Загиблі (200)</div>
                     <div class="value" id="card-val-200" style="color: #334155;">${count200}</div>
-                    <div class="sub">Безповоротні втрати</div>
+                    <div class="sub" style="display:flex; justify-content:space-between;">
+                        <span>Безповоротні</span>
+                        <span style="color:#64748b;">(з них ПВР: <b style="color:#475569;">${count200PVR}</b>)</span>
+                    </div>
                 </div>
                 <div class="summary-card" style="border-left: 3px solid #dc2626;">
                     <div class="label" style="color: #dc2626;">Поранені (300)</div>
@@ -2729,11 +2751,11 @@ const MedicalApp = (function() {
                     <div class="sub">Місцезнаходження невідоме</div>
                 </div>
                 <div class="summary-card" style="border-left: 3px solid #16a34a;">
-                    <div class="label" style="color: #16a34a;">Евакуйовано (за період)</div>
-                    <div class="value" style="color: #16a34a;">${evacStats.actualEvacTotal}</div>
+                    <div class="label" style="color: #16a34a;">Евакуйовано (з актуальних)</div>
+                    <div class="value" style="color: #16a34a;">${evac300 + evac200}</div>
                     <div style="display:flex; justify-content:space-between; font-weight:600; font-size:8pt; color:#334155; margin-top:4px; padding-top:3px; border-top:1px solid #e2e8f0;">
-                        <span>300-х: <b>${evacStats.actualEvac300}</b></span>
-                        <span>200-х: <b>${evacStats.actualEvac200}</b></span>
+                        <span>300-х: <b>${evac300}</b></span>
+                        <span>200-х: <b>${evac200}</b></span>
                     </div>
                 </div>
             </div>
@@ -2859,6 +2881,7 @@ const MedicalApp = (function() {
                     // Безпосереднє підключення логіки до вікна у браузері
                     win.curEvac = 'all';
                     win.curType = 'all';
+                    win.showAwol = true;
 
                     win.setEvac = function(val) {
                         win.curEvac = val;
@@ -2897,6 +2920,10 @@ const MedicalApp = (function() {
                         var el = win.document.getElementById(id);
                         if (el) el.style.display = show ? '' : 'none';
                     };
+                    win.toggleShowAwol = function(show) {
+                        win.showAwol = show;
+                        win.applyFilters();
+                    };
 
                     win.applyFilters = function() {
                         var doc = win.document;
@@ -2914,12 +2941,17 @@ const MedicalApp = (function() {
                             var isDead = r.getAttribute('data-dead') === '1';
                             var isWound = r.getAttribute('data-wound') === '1';
                             var isMia = r.getAttribute('data-mia') === '1';
+                            var isAwol = r.getAttribute('data-awol') === '1';
                             var sev = r.getAttribute('data-sev');
                             var cause = r.getAttribute('data-cause') || '—';
                             var unit = r.getAttribute('data-unit') || '—';
 
                             var matchEvac = (win.curEvac === 'all') || (win.curEvac === 'not_evac' && ev === 'not_evac') || (win.curEvac === 'evac' && ev === 'evac');
                             var matchType = (win.curType === 'all') || (win.curType === '200' && isDead) || (win.curType === '300' && isWound) || (win.curType === '300_heavy' && isWound && (sev === 'Критичний' || sev === 'Важкий')) || (win.curType === 'mia' && isMia);
+                            
+                            if (isAwol && !win.showAwol) {
+                                matchType = false;
+                            }
 
                             if (matchEvac && matchType) {
                                 r.style.display = '';
@@ -3251,6 +3283,7 @@ const MedicalApp = (function() {
                 sheet1.columns = [
                     { header: 'Всього епізодів', key: 'total', width: 20 },
                     { header: 'Бойові (200)', key: 'c200', width: 15 },
+                    { header: '200 (ПВР)', key: 'c200pvr', width: 15 },
                     { header: 'Небойові (200)', key: 'c200nc', width: 15 },
                     { header: 'Поранення (300)', key: 'cWound', width: 20 },
                     { header: 'Бойові травми', key: 'cCombat', width: 15 },
@@ -3261,7 +3294,7 @@ const MedicalApp = (function() {
                 ];
                 sheet1.getRow(1).font = { bold: true };
                 sheet1.addRow({
-                    total: chartData.totalEpisodes, c200: chartData.types.c200, c200nc: chartData.types.c200nc,
+                    total: chartData.totalEpisodes, c200: chartData.types.c200, c200pvr: chartData.types.c200pvr, c200nc: chartData.types.c200nc,
                     cWound: chartData.types.cWound, cCombat: chartData.types.cCombat, cNonCombat: chartData.types.cNonCombat,
                     cMia: chartData.types.cMia, cAwol: chartData.types.cAwol, cDesert: chartData.types.cDesert
                 });
@@ -3275,25 +3308,21 @@ const MedicalApp = (function() {
                 ];
                 sheet2.getRow(1).font = { bold: true };
 
-                const tL = ['Бойові (200)', 'Небойові (200)', 'Бойові (300)', 'Небойові (300)', 'Поранення', 'ЗБВ', 'СЗЧ', 'Дезертирство'];
-                const tC = [chartData.types.c200, chartData.types.c200nc, chartData.types.cCombat, chartData.types.cNonCombat, chartData.types.cWound, chartData.types.cMia, chartData.types.cAwol, chartData.types.cDesert];
+                const tL = ['Бойові (200)', '200 (ПВР)', 'Небойові (200)', 'Бойові (300)', 'Небойові (300)', 'Поранення', 'ЗБВ', 'СЗЧ', 'Дезертирство'];
+                const tC = [chartData.types.c200, chartData.types.c200pvr, chartData.types.c200nc, chartData.types.cCombat, chartData.types.cNonCombat, chartData.types.cWound, chartData.types.cMia, chartData.types.cAwol, chartData.types.cDesert];
                 const uL = chartData.units.labels || [];
                 const cL = chartData.reasons.labels || [];
                 const timeL = chartData.time.labels || [];
 
+                const sumStats = obj => obj ? (obj['200']||0) + (obj['200 ПВР']||0) + (obj['Неб. смерть']||0) + (obj['Поранення']||0) + (obj['Бойове']||0) + (obj['Небойове']||0) + (obj['ЗБВ']||0) + (obj['СЗЧ']||0) + (obj['Дезертирство']||0) : '';
                 const maxR = Math.max(tL.length, uL.length, cL.length, timeL.length);
                 for (let i = 0; i < maxR; i++) {
-                    const u = uL[i];
-                    let uVal = '';
-                    if (u && chartData.units.data[u]) {
-                        const d = chartData.units.data[u];
-                        uVal = d['200']+d['Неб. смерть']+d['Поранення']+d['Бойове']+d['Небойове']+d['ЗБВ']+d['СЗЧ']+d['Дезертирство'];
-                    }
+                    const u = uL[i], c = cL[i], t = timeL[i];
                     sheet2.addRow({
                         tL: tL[i] || '', tC: tC[i] !== undefined ? tC[i] : '',
-                        uL: u || '', uC: uVal,
-                        cL: cL[i] || '', cC: cL[i] ? chartData.reasons.data[cL[i]] : '',
-                        timeL: timeL[i] || '', timeC: timeL[i] ? chartData.time.timeMap[timeL[i]] : ''
+                        uL: u || '', uC: u ? sumStats(chartData.units.data[u]) : '',
+                        cL: c || '', cC: c ? sumStats(chartData.reasons.data[c]) : '',
+                        timeL: t || '', timeC: t ? sumStats(chartData.time.timeMap[t]) : ''
                     });
                 }
 
@@ -3692,6 +3721,16 @@ const MedicalApp = (function() {
                 setIsEditOpen(true);
             };
 
+            useEffect(() => {
+                const openReviewed = ({ detail }) => {
+                    if (detail?.module !== 'med' || detail.kind || !detail.recordId) return;
+                    const matches = episodes.filter(row => String(row.id) === detail.recordId);
+                    if (matches.length === 1) handleStartEdit(matches[0]);
+                    else triggerNotification('Неможливо однозначно відкрити епізод за ID. Перевірте журнал.', 'error');
+                };
+                window.addEventListener('suite-review-record', openReviewed);
+                return () => window.removeEventListener('suite-review-record', openReviewed);
+            }, [episodes, soldiers]);
             const handleUpdateWounded = (e) => {
                 e.preventDefault();
                 if (!currentEpisode) return;
@@ -4341,6 +4380,34 @@ const MedicalApp = (function() {
                 triggerNotification("Щоб евакуювати тіло ЗБВ, спершу змініть статус на 'Загибель (200)' через вікно редагування", "error");
             };
 
+            const createDeadFromWoundsRecord = (ep) => {
+                saveHistory();
+                
+                const now = new Date();
+                const pad = (n) => n.toString().padStart(2, '0');
+                const isoStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                
+                const newEpisode = {
+                    ...ep,
+                    id: 'ep_' + Date.now() + Math.floor(Math.random() * 1000),
+                    date: isoStr,
+                    lossType: '200 (від ран)',
+                    severity: null,
+                    injuries: {},
+                    evacStatus: 'Не евакуйований',
+                    evacTime: "",
+                    hasReport: false,
+                    reportDate: "",
+                };
+                
+                setEpisodes(prev => [newEpisode, ...prev]);
+                
+                const soldier = soldiersMap.get(ep.soldierId);
+                const soldierDisplayName = soldier?.callsign ? `«${soldier.callsign}»` : (soldier?.name || 'Невідомий');
+                addLog("Нова подія", `Створено запис 200 (від ран) для ${soldierDisplayName}. Причина: ${ep.cause || 'Не вказано'}.`);
+                triggerNotification("Запис 200 (від ран) додано, бійця переміщено в чорну зону.", "success");
+            };
+
             const renderTriageCard = (ep) => (
                 <TriageCard 
                     key={ep.id} 
@@ -4349,7 +4416,8 @@ const MedicalApp = (function() {
                     soldierEpisodes={episodesBySoldier.get(ep.soldierId) || []}
                     onQuickEvac={quickEvacuate} 
                     onEdit={handleStartEdit} 
-                    onAlertMIA={handleAlertMIA} 
+                    onAlertMIA={handleAlertMIA}
+                    onCreate200FromWounds={createDeadFromWoundsRecord}
                 />
             );
 
@@ -5526,6 +5594,7 @@ const MedicalApp = (function() {
                                     <div className="flex flex-wrap items-center gap-3">
                                         <span className="text-[10px] text-slate-400 font-bold uppercase mr-1 flex items-center gap-1"><Icon name="eye" className="w-3.5 h-3.5 text-slate-400" /> Відображати:</span>
                                         <label className="flex items-center gap-1.5 cursor-pointer select-none text-zinc-300 text-xs font-bold bg-slate-950 px-2 py-1 rounded-lg border border-slate-800/80 hover:text-white"><input type="checkbox" checked={dynFilters.show200} onChange={e => setDynFilters(p => ({...p, show200: e.target.checked}))} className="rounded bg-slate-900 border-slate-700 text-zinc-500 focus:ring-0 w-3.5 h-3.5"/> Бойові 200</label>
+                                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-zinc-400 text-xs font-bold bg-slate-950 px-2 py-1 rounded-lg border border-slate-800/80 hover:text-white"><input type="checkbox" checked={dynFilters.show200pvr} onChange={e => setDynFilters(p => ({...p, show200pvr: e.target.checked}))} className="rounded bg-slate-900 border-slate-700 text-zinc-500 focus:ring-0 w-3.5 h-3.5"/> 200 (ПВР)</label>
                                         <label className="flex items-center gap-1.5 cursor-pointer select-none text-stone-400 text-xs font-bold bg-slate-950 px-2 py-1 rounded-lg border border-slate-800/80 hover:text-white"><input type="checkbox" checked={dynFilters.showNonCombatDead} onChange={e => setDynFilters(p => ({...p, showNonCombatDead: e.target.checked}))} className="rounded bg-slate-900 border-slate-700 text-stone-500 focus:ring-0 w-3.5 h-3.5"/> Небойові 200</label>
                                         <label className="flex items-center gap-1.5 cursor-pointer select-none text-red-400 text-xs font-bold bg-slate-950 px-2 py-1 rounded-lg border border-slate-800/80 hover:text-white"><input type="checkbox" checked={dynFilters.showWound} onChange={e => setDynFilters(p => ({...p, showWound: e.target.checked}))} className="rounded bg-slate-900 border-slate-700 text-red-500 focus:ring-0 w-3.5 h-3.5"/> Поранення</label>
                                         <label className="flex items-center gap-1.5 cursor-pointer select-none text-amber-500 text-xs font-bold bg-slate-950 px-2 py-1 rounded-lg border border-slate-800/80 hover:text-white"><input type="checkbox" checked={dynFilters.showCombatTr} onChange={e => setDynFilters(p => ({...p, showCombatTr: e.target.checked}))} className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0 w-3.5 h-3.5"/> Бойові тр.</label>
@@ -5643,6 +5712,7 @@ const MedicalApp = (function() {
                                                         labels: chartData.actLocs.labels,
                                                         datasets: [
                                                             { label: 'Бойові 200', data: chartData.actLocs.labels.map(l => chartData.actLocs.data[l]['200']), backgroundColor: '#71717a' },
+                                                            { label: '200 (ПВР)', data: chartData.actLocs.labels.map(l => chartData.actLocs.data[l]['200 ПВР']), backgroundColor: '#4b5563' },
                                                             { label: 'Небойові 200', data: chartData.actLocs.labels.map(l => chartData.actLocs.data[l]['Неб. смерть']), backgroundColor: '#57534e' },
                                                             { label: 'Поранення', data: chartData.actLocs.labels.map(l => chartData.actLocs.data[l]['Поранення']), backgroundColor: '#ef4444' },
                                                             { label: 'Бойові', data: chartData.actLocs.labels.map(l => chartData.actLocs.data[l]['Бойове']), backgroundColor: '#f59e0b' },
@@ -5667,20 +5737,20 @@ const MedicalApp = (function() {
                                             className="flex-1 min-h-[250px] w-full relative flex items-center justify-center" type="doughnut"
                                             data={{
                                                 labels: [
-                                                    ...(dynFilters.show200 ? ['Бойові 200'] : []), ...(dynFilters.showNonCombatDead ? ['Небойові 200'] : []),
+                                                    ...(dynFilters.show200 ? ['Бойові 200'] : []), ...(dynFilters.show200pvr ? ['200 (ПВР)'] : []), ...(dynFilters.showNonCombatDead ? ['Небойові 200'] : []),
                                                     ...(dynFilters.showWound ? ['Поранення'] : []), ...(dynFilters.showCombatTr ? ['Бойові тр.'] : []), 
                                                     ...(dynFilters.showNonCombatTr ? ['Небойові тр.'] : []), ...(dynFilters.showMIA ? ['ЗБВ'] : []), 
                                                     ...(dynFilters.showAWOL ? ['СЗЧ', 'Дезертирство'] : [])
                                                 ],
                                                 datasets: [{
                                                     data: [
-                                                        ...(dynFilters.show200 ? [chartData.types.c200] : []), ...(dynFilters.showNonCombatDead ? [chartData.types.c200nc] : []),
+                                                        ...(dynFilters.show200 ? [chartData.types.c200] : []), ...(dynFilters.show200pvr ? [chartData.types.c200pvr] : []), ...(dynFilters.showNonCombatDead ? [chartData.types.c200nc] : []),
                                                         ...(dynFilters.showWound ? [chartData.types.cWound] : []), ...(dynFilters.showCombatTr ? [chartData.types.cCombat] : []), 
                                                         ...(dynFilters.showNonCombatTr ? [chartData.types.cNonCombat] : []), ...(dynFilters.showMIA ? [chartData.types.cMia] : []), 
                                                         ...(dynFilters.showAWOL ? [chartData.types.cAwol, chartData.types.cDesert] : [])
                                                     ],
                                                     backgroundColor: [
-                                                        ...(dynFilters.show200 ? ['#71717a'] : []), ...(dynFilters.showNonCombatDead ? ['#57534e'] : []),
+                                                        ...(dynFilters.show200 ? ['#71717a'] : []), ...(dynFilters.show200pvr ? ['#4b5563'] : []), ...(dynFilters.showNonCombatDead ? ['#57534e'] : []),
                                                         ...(dynFilters.showWound ? ['#ef4444'] : []), ...(dynFilters.showCombatTr ? ['#f59e0b'] : []), 
                                                         ...(dynFilters.showNonCombatTr ? ['#fde047'] : []), ...(dynFilters.showMIA ? ['#3b82f6'] : []), 
                                                         ...(dynFilters.showAWOL ? ['#c026d3', '#db2777'] : [])
@@ -5768,7 +5838,7 @@ const MedicalApp = (function() {
                                                 datasets: [{
                                                     data: chartData.reasons.labels.map(r => {
                                                         const d = chartData.reasons.data[r];
-                                                        return d['200'] + d['Неб. смерть'] + d['Поранення'] + d['Бойове'] + d['Небойове'] + d['ЗБВ'] + d['СЗЧ'] + d['Дезертирство'];
+                                                        return d['200'] + d['200 ПВР'] + d['Неб. смерть'] + d['Поранення'] + d['Бойове'] + d['Небойове'] + d['ЗБВ'] + d['СЗЧ'] + d['Дезертирство'];
                                                     }),
                                                     backgroundColor: chartData.reasons.labels.map(r => chartData.causeColors[r]),
                                                     borderColor: '#151e0f', borderWidth: 3
@@ -5791,6 +5861,7 @@ const MedicalApp = (function() {
                                                 labels: chartData.units.labels,
                                                 datasets: [
                                                     { label: 'Бойові 200', data: chartData.units.labels.map(u => chartData.units.data[u]['200']), backgroundColor: '#71717a' },
+                                                    { label: '200 (ПВР)', data: chartData.units.labels.map(u => chartData.units.data[u]['200 ПВР']), backgroundColor: '#4b5563' },
                                                     { label: 'Небойові 200', data: chartData.units.labels.map(u => chartData.units.data[u]['Неб. смерть']), backgroundColor: '#57534e' },
                                                     { label: 'Поранення', data: chartData.units.labels.map(u => chartData.units.data[u]['Поранення']), backgroundColor: '#ef4444' },
                                                     { label: 'Бойові', data: chartData.units.labels.map(u => chartData.units.data[u]['Бойове']), backgroundColor: '#f59e0b' },
@@ -6044,7 +6115,13 @@ const MedicalApp = (function() {
                                                     setLossType(newType);
                                                 }} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none cursor-pointer">
                                                     <option value="">-- Оберіть тип події --</option>
-                                                    {LOSS_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
+                                                    {LOSS_TYPES.filter(type => {
+                                                        if (type === "200 (від ран)") {
+                                                            const activeUnevac = soldierHistory.find(e => e.evacStatus === 'Не евакуйований' && isAny300(e.lossType));
+                                                            return !!activeUnevac;
+                                                        }
+                                                        return true;
+                                                    }).map(type => <option key={type} value={type}>{type}</option>)}
                                                 </select>
                                             </div>
                                             

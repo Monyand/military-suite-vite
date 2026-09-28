@@ -18,34 +18,51 @@
   },
   "amendments": {
     "core/documents.js": {
-      "date": "2026-09-21",
-      "reason": "Document links, categories, audit and OVgP filters; optional OVT report fields and additive location/identifier switches. Generic pickup/SUV transport model defaults removed in favor of the learned shared catalog. Original eleven Excel columns and legacy rows remain compatible.",
-      "sha256": "8736014f5a5ff35055fcb2b42151c681e30b7669bc8af619a6bc6d7f32c0071d"
+      "date": "2026-09-28",
+      "reason": "Additive journal revision for absent local PBD fields; original IDs and values retained.",
+      "sha256": "801042f9d21a09fa3cafa98d8e88ad45b7415e7715de6595fd79783bbcb5b515",
+      "previousSha256": "8736014f5a5ff35055fcb2b42151c681e30b7669bc8af619a6bc6d7f32c0071d"
     },
     "modules/documents/DocumentsApp.jsx": {
-      "date": "2026-09-21",
-      "reason": "Documentary registry/history, shared suggestions, atomic batches, recovery/audit and OVgP cards. Unified OVT form, live preview, identifiers/location, two transport statuses and post-save learning. Transport model editing centralized in shared dictionaries, removing the duplicate local control; existing records and other category settings preserved.",
-      "sha256": "ad53c5555730fd28de10d77625150af0f4699403cf8154b2465f2210f5930e03"
+      "date": "2026-09-28",
+      "reason": "Fix batch comparison, category learning, pagination and local date; memoized indexed documentary filtering.",
+      "sha256": "868ecd653e3eae9de2955df8192a14e8635b75414e4d1e4b14691584d9f0f140",
+      "previousSha256": "ad53c5555730fd28de10d77625150af0f4699403cf8154b2465f2210f5930e03"
     },
     "modules/medical/MedicalApp.jsx": {
-      "date": "2026-09-20",
-      "reason": "Independent daily/hourly chart combinations and visuals; shared unit/rank/cause form options, separate documentary and actual place suggestions. Open drafts, record migrations, historical snapshots and existing filters preserved.",
-      "sha256": "e6e8d8f0e3ea58da6bfdcafcb534ecec9b248bfebef71011d30d7b39f8c19795"
+      "date": "2026-09-28",
+      "reason": "Preserve user edits and existing death-from-wounds creation; add navigation from integrity findings.",
+      "sha256": "be76eebe39a8eadfe7761503b5eb31f6799e54abc514943d7465bb4dbcadfdfa",
+      "previousSha256": "e6e8d8f0e3ea58da6bfdcafcb534ecec9b248bfebef71011d30d7b39f8c19795"
     },
     "modules/events/EventsApp.jsx": {
-      "date": "2026-09-21",
-      "reason": "Shared documentary/actual place and weapon spelling suggestions in record forms; preserved raw values and filters. Completed assault cards now open an editable retrospective report draft using one saved event and the user-provided template, without modifying records, PBD or settings; unknowns and template outcome clauses are flagged for review.",
-      "sha256": "4924e9e131ed7c5e34cb6e2414718add5c86e04c7abc110b1f9f0887b45faa6c"
+      "date": "2026-09-28",
+      "reason": "Preserve user edits; extract stable personnel view and escape HTML report data; integrity navigation.",
+      "sha256": "5069d16642926e5567da2b372c276630688994514b602e7c9f12ce02a5d3a632",
+      "previousSha256": "4924e9e131ed7c5e34cb6e2414718add5c86e04c7abc110b1f9f0887b45faa6c"
     },
     "app/App.jsx": {
-      "date": "2026-09-20",
-      "reason": "Global dictionary editor entry point and module suspension for encrypted, previewed bulk text corrections; native container hidden during modal and restore.",
-      "sha256": "dd32fd8a20e41f7fe25e7bfc481635e38ae641a5d5f514f6b33026bd5b6067fc"
+      "date": "2026-09-28",
+      "reason": "Restore counts and read-only integrity inspection; preserve recipient PBD marks.",
+      "sha256": "34d3d860d4804338ff8cbbd5be47e031a1ecd383f27be41d09e674397e122905",
+      "previousSha256": "dd32fd8a20e41f7fe25e7bfc481635e38ae641a5d5f514f6b33026bd5b6067fc"
     },
     "modules/personnel/personnel.js": {
       "date": "2026-09-20",
       "reason": "Shared unit/rank spelling suggestions in personnel forms with HTML escaping and current-value preservation. Positions, rotations, state and assignments unchanged.",
       "sha256": "c880e606b27215cd4284a5304ab53ccf63d995a866cb213e84eb11c8ff979176"
+    },
+    "core/medical-totals.js": {
+      "date": "2026-09-28",
+      "reason": "Include documented death-from-wounds episodes; expose classification for read-only checks.",
+      "sha256": "c391cab1a6ee1883aa3a82758085a31d504b2b3a22761b81dd320ad4c25b1dc2",
+      "previousSha256": "fa2e0ada13c4ab85382f0bc21beb2c420b71f8fe8a973ba68ce12c6d4a55ddcb"
+    },
+    "core/backup.js": {
+      "date": "2026-09-28",
+      "reason": "Transfer-local PBD separation, validation and exact local rollback.",
+      "sha256": "b57fdbf79290e06ba0129b550260178a15e60d6f819e3a1413aaa8976963bd5a",
+      "previousSha256": "96e7a920d636411fd6998b87656f56a653de11934de07830ddbd7fa3d433602f"
     }
   },
   "adaptations": [

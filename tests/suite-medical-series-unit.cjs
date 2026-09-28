@@ -2,7 +2,8 @@ const assert = require('node:assert/strict');
 
 (async () => {
     const { MEDICAL_SERIES, normalizeChartView, buildMedicalSeries } = await import('../src/modules/medical/chart-series.js');
-    assert.equal(normalizeChartView().visible.length, 8);
+    assert.equal(normalizeChartView().visible.length, 9);
+    assert.ok(normalizeChartView().visible.includes('200 ПВР'));
     assert.equal(normalizeChartView(null).showCombined, false);
     assert.deepEqual(normalizeChartView({ visible: [], combined: ['200', '200', 'bad'], type: 'bad' }), { visible: [], combined: ['200'], type: 'line', showCombined: false });
     const rows = { a: { '200': 2, 'ЗБВ': 3, 'Поранення': 4, 'Бойове': 1, 'Небойове': 7 }, b: { '200': 1, 'Поранення': 2 } };

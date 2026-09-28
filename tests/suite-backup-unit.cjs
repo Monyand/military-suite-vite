@@ -5,6 +5,8 @@ const path = require('node:path');
 const { webcrypto } = require('node:crypto');
 
 const source = readSource('core/backup.js');
+const D = new Function('crypto', readSource('core/documents.js') + '\nreturn DocumentJournal;')(webcrypto);
+const helpers = new Function('D', readSource('core/backup-data.js').replace(/^export /gm, '') + '\nreturn { withoutLocalPbd, prepareJournalRestore, validateBackupRecords, backupSummary };')(D);
 assert.ok(source.includes('AES-GCM'), 'Backup source must be found');
 
 function createHarness() {
@@ -28,8 +30,8 @@ function createHarness() {
         },
         removeItem: async key => { persistent.delete(key); }
     };
-    const api = new Function('window', 'localforage', 'localStorage', 'crypto', source + '\nreturn SuiteBackup;')(
-        { crypto: webcrypto }, forage, storage, webcrypto);
+    const api = new Function('window', 'localforage', 'localStorage', 'crypto', ...Object.keys(helpers), source + '\nreturn SuiteBackup;')(
+        { crypto: webcrypto }, forage, storage, webcrypto, ...Object.values(helpers));
     return { api, persistent, storage, failNext: key => { failKey = key; } };
 }
 

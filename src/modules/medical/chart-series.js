@@ -1,6 +1,6 @@
-// Presentation only: source episodes and medical/report totals are never regrouped.
 export const MEDICAL_SERIES = [
     { key: '200', label: 'Бойові 200', color: '#cbd5e1' },
+    { key: '200 ПВР', label: '200 (ПВР)', color: '#94a3b8' },
     { key: 'Неб. смерть', label: 'Небойові 200', color: '#a8a29e' },
     { key: 'Поранення', label: 'Поранення', color: '#fb7185' },
     { key: 'Бойове', label: 'Бойові травми', color: '#fb923c' },

@@ -1,4 +1,5 @@
 import { localforage } from './vendor.js';
+import { withoutLocalPbd, prepareJournalRestore, validateBackupRecords, backupSummary } from './backup-data.js';
 
 const SuiteBackup = (() => {
             const RECOVERY_KEY = 'military_suite_recovery_v1';
@@ -44,18 +45,24 @@ const SuiteBackup = (() => {
                         checkJSON(parsed);
                     }
                 }
+                validateBackupRecords(data);
                 return data;
             };
-            const collect = async () => {
+            const collect = async ({ localState = false, unchecked = false } = {}) => {
                 const data = { format: 'military-suite-unified', version: 1, timestamp: new Date().toISOString(), localforage: {}, localstorage: {} };
                 for (const key of await localforage.keys()) {
-                    if (ownsLF(key)) data.localforage[key] = await localforage.getItem(key);
+                    if (ownsLF(key)) {
+                        let val = await localforage.getItem(key);
+                        if (!localState) val = withoutLocalPbd(val);
+                        data.localforage[key] = val;
+                    }
                 }
                 for (let i = 0; i < localStorage.length; i++) {
                     const key = localStorage.key(i);
                     if (ownsLS(key)) data.localstorage[key] = localStorage.getItem(key);
                 }
-                return validate(data);
+                if (localState) data.localOnly = true;
+                return unchecked ? data : validate(data);
             };
             const toBase64 = buffer => {
                 const bytes = new Uint8Array(buffer);
@@ -117,24 +124,6 @@ const SuiteBackup = (() => {
                 setTimeout(() => URL.revokeObjectURL(url), 30000);
             };
             const applySnapshot = async data => {
-                if (data.localforage['document_journal_v1']) {
-                    try {
-                        const localJournal = await localforage.getItem('document_journal_v1');
-                        if (localJournal) {
-                            const incoming = data.localforage['document_journal_v1'];
-                            ['tasks', 'ovt', 'positions'].forEach(tab => {
-                                if (Array.isArray(incoming[tab]) && Array.isArray(localJournal[tab])) {
-                                    const localMap = new Map(localJournal[tab].map(item => [item.id, !!item.reportedInPbd]));
-                                    incoming[tab].forEach(item => {
-                                        if (localMap.has(item.id)) {
-                                            item.reportedInPbd = localMap.get(item.id);
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    } catch (e) {}
-                }
                 for (const key of await localforage.keys()) {
                     if (ownsLF(key) && !Object.hasOwn(data.localforage, key)) await localforage.removeItem(key);
                 }
@@ -144,16 +133,23 @@ const SuiteBackup = (() => {
                 }
                 for (const [key, value] of Object.entries(data.localstorage)) localStorage.setItem(key, value);
             };
-            const restore = async (data, password) => {
+            const restore = async (data, password, { localRecovery = false } = {}) => {
                 validate(data); // Validate fully before touching persistent data.
                 if (window.SuiteRuntime) {
                     window.SuiteRuntime.freeze();
                     await window.SuiteRuntime.drain();
                 }
-                const before = await collect();
+                const before = await collect({ localState: true });
+                const prepared = structuredClone(data);
+                if (prepared.localforage.document_journal_v1) {
+                    prepared.localforage.document_journal_v1 = prepareJournalRestore(
+                        prepared.localforage.document_journal_v1, before.localforage.document_journal_v1,
+                        localRecovery && data.localOnly === true);
+                }
+                validate(prepared);
                 const recovery = await encrypt(before, password);
                 await localforage.setItem(RECOVERY_KEY, recovery);
-                try { await applySnapshot(data); }
+                try { await applySnapshot(prepared); }
                 catch {
                     try { await applySnapshot(before); }
                     catch { fail('Збій сховища. Автоматичне повернення не завершено. Не редагуйте записи: використайте «Попередній стан» із тим самим паролем.'); }
@@ -161,7 +157,7 @@ const SuiteBackup = (() => {
                 }
                 return recovery;
             };
-            return { collect, encrypt, decrypt, validate, readFile, download, restore,
+            return { collect, encrypt, decrypt, validate, readFile, download, restore, backupSummary,
                 getRecovery: () => localforage.getItem(RECOVERY_KEY) };
         })();
 

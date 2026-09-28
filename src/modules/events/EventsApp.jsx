@@ -1,9 +1,11 @@
 import { default as React, useRef, useEffect, useState, useMemo } from 'react';
-import { Chart, localforage } from '../../core/vendor.js';
+import { Chart, localforage, ExcelJS } from '../../core/vendor.js';
 import { MedicalDailyTotals } from '../../core/medical-totals.js';
 import { useSharedDictionaries } from '../../core/use-shared-dictionaries.js';
 import { AssaultReportModal } from './AssaultReportModal.jsx';
 import { isCompletedAssault } from './assault-report.js';
+import { PersonnelView } from './PersonnelView.jsx';
+import { escapeHtml } from '../../core/html.js';
 
 const EventsApp = (function() {
             
@@ -165,8 +167,17 @@ const EventsApp = (function() {
             if (!record.actionDetails?.startDate) issues.push('Не вказано дату');
             if (!String(record.description || '').trim()) issues.push('Не заповнено опис');
             const isAssault = record.types?.includes(EVENT_TYPES.ASSAULT) || record.types?.includes('ШД');
-            if (isAssault && (!record.actionDetails?.endTime || !String(record.actionDetails.endTime).trim())) {
-                issues.push('ШД без часу закінчення');
+            if (isAssault) {
+                const ad = record.actionDetails || {};
+                if (!String(ad.endTime || '').trim()) issues.push('ШД без часу закінчення');
+                if (!String(ad.startTime || '').trim()) issues.push('ШД: Не вказано час початку');
+                if (!String(ad.conductedBy || '').trim()) issues.push('ШД: Не вказано ким проводилось');
+                if (!String(ad.docLoc || '').trim()) issues.push('ШД: Не вказано Док. місце');
+                if (!String(ad.factLoc || '').trim()) issues.push('ШД: Не вказано Факт. місце');
+                if (!String(ad.direction || '').trim()) issues.push('ШД: Не вказано напрямок');
+                if (!ad.friendlyCount || parseInt(ad.friendlyCount) === 0) issues.push('ШД: Не вказано к-ть о/с');
+                if (!ad.enemySize || parseInt(ad.enemySize) === 0) issues.push('ШД: Не вказано сили ворога');
+                if (ad.hasVehicles && !String(ad.vehicleDetails || '').trim()) issues.push('ШД: Відсутній опис техніки');
             }
             return issues;
         };
@@ -196,7 +207,7 @@ const EventsApp = (function() {
             return data;
         };
 
-        const DOCUMENT_CHECKS = ['Немає ідентифікатора', 'Не вказано дату', 'Не заповнено опис', 'ШД без часу закінчення', 'Повтор ідентифікатора'];
+        const DOCUMENT_CHECKS = ['Немає ідентифікатора', 'Не вказано дату', 'Не заповнено опис', 'ШД без часу закінчення', 'ШД: Не вказано час початку', 'ШД: Не вказано ким проводилось', 'ШД: Не вказано Док. місце', 'ШД: Не вказано Факт. місце', 'ШД: Не вказано напрямок', 'ШД: Не вказано к-ть о/с', 'ШД: Не вказано сили ворога', 'ШД: Відсутній опис техніки', 'Повтор ідентифікатора'];
         const documentViewDefaults = () => ({
             checks: [...DOCUMENT_CHECKS],
             onlyIssues: false,
@@ -459,7 +470,7 @@ const EventsApp = (function() {
 
         const EnemyAppContext = React.createContext(null);
 
-        const SearchablePowSelect = ({ value, options, onChange, currentLegacy }) => {
+        const SearchablePowSelect = ({ value, options, onChange, currentLegacy, disabled }) => {
                 const [search, setSearch] = useState('');
                 const [isOpen, setIsOpen] = useState(false);
                 const wrapperRef = useRef(null);
@@ -484,11 +495,12 @@ const EventsApp = (function() {
                     <div className="relative" ref={wrapperRef}>
                         <input 
                             type="text" 
+                            disabled={disabled}
                             value={inputValue}
                             onChange={e => { setSearch(e.target.value); setIsOpen(true); }}
                             onFocus={() => { setIsOpen(true); setSearch(''); }}
                             placeholder="- Ні -"
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs font-mono font-bold text-rose-500 focus:border-rose-500 cursor-text"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs font-mono font-bold text-rose-500 focus:border-rose-500 cursor-text disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                         {isOpen && (
                             <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
@@ -509,9 +521,39 @@ const EventsApp = (function() {
                 );
             };
 
+        const CallsignArrayInput = ({ count, values = [], onChange, label, colorClass, isRequired = false, listId = "personnel-callsigns-list" }) => {
+            if (!count || count < 1) return null;
+            
+            const handleCallsignChange = (index, newVal) => {
+                const newValues = [...values];
+                while (newValues.length < count) newValues.push('');
+                newValues[index] = newVal;
+                onChange(newValues.slice(0, count));
+            };
+
+            return (
+                <div className="mt-2 space-y-2 border-l-2 pl-3 ml-1" style={{ borderColor: 'var(--border-color, #475569)' }}>
+                    <div className={`text-[10px] font-bold uppercase ${colorClass} opacity-80`}>Деталізація: {label}</div>
+                    {Array.from({ length: count }).map((_, i) => (
+                        <div key={i} className="relative">
+                            <input 
+                                type="text" 
+                                placeholder={isRequired ? "Позивний (ОБОВ'ЯЗКОВО)" : "Позивний (опц.)"}
+                                required={isRequired}
+                                value={values[i] || ''} 
+                                onChange={e => handleCallsignChange(i, e.target.value)}
+                                list={listId}
+                                className={`w-full bg-slate-900 border ${isRequired && !values[i] ? 'border-amber-500/50' : 'border-slate-700'} rounded-md px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-slate-500`}
+                            />
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
         const EventForm = ({ eventToEdit, onClose, onSave }) => {
                 const dictionaryOptions = useSharedDictionaries();
-                const { allPOWs, events, settings } = React.useContext(EnemyAppContext);
+                const { allPOWs, events, settings, personnel } = React.useContext(EnemyAppContext);
                 const [formData, setFormData] = useState(eventToEdit || {
                     id: generateId(),
                     createdAt: new Date().toISOString(),
@@ -573,7 +615,13 @@ const EventsApp = (function() {
                             count300: 0, 
                             countPOW: 0,
                             count200POW: 0,
-                            killedPowId: ''
+                            killedPowId: '',
+                            callsigns200: [],
+                            callsigns200Unconfirmed: [],
+                            callsigns200Discovered: [],
+                            callsigns300: [],
+                            callsignsPOW: [],
+                            callsigns200POW: []
                         }]
                     }));
                 };
@@ -746,7 +794,7 @@ const EventsApp = (function() {
                                                 <div key={loss.id} className="flex flex-col bg-slate-950 p-3 rounded-xl border border-slate-800/80 gap-3">
                                                     
                                                     {/* Верхній ряд: Зброя, Хто наносив, Позивний, Час ураження */}
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 gap-3">
                                                         <div>
                                                             <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase">Засіб ураження</label>
                                                             <select value={loss.weapon} onChange={e => updateEnemyLoss(loss.id, 'weapon', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:border-red-500">
@@ -756,10 +804,6 @@ const EventsApp = (function() {
                                                         <div>
                                                             <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase">Хто наносив ураження (наші)</label>
                                                             <input type="text" placeholder="Позивний / Підрозділ" value={loss.inflicter} onChange={e => updateEnemyLoss(loss.id, 'inflicter', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:border-red-500" />
-                                                        </div>
-                                                        <div>
-                                                            <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase">Позивний противника (опц.)</label>
-                                                            <input type="text" placeholder="Позивний (радіоперехоплення)" value={loss.callsign} onChange={e => updateEnemyLoss(loss.id, 'callsign', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:border-red-500" />
                                                         </div>
                                                         <div>
                                                             <label className="block text-[10px] font-semibold text-amber-400 mb-1 uppercase flex items-center gap-1">
@@ -787,28 +831,12 @@ const EventsApp = (function() {
                                                             <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase">300 (Поранені)</label>
                                                             <input type="number" min="0" value={loss.count300} onChange={e => updateEnemyLoss(loss.id, 'count300', parseInt(e.target.value)||0)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-mono font-bold text-amber-400 focus:border-amber-500 text-center" />
                                                         </div>
-                                                        <div className="flex-[1.5]">
-                                                            <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase" title="Оберіть конкретного полоненого">Загиблий полонений</label>
-                                                            <SearchablePowSelect 
-                                                                value={loss.killedPowId || (loss.count200POW > 0 ? 'legacy' : '')} 
-                                                                options={allPOWs.filter(p => p.isAlive || p.id === loss.killedPowId)} 
-                                                                currentLegacy={loss.count200POW > 0 && !loss.killedPowId}
-                                                                onChange={(val) => {
-                                                                    if (val === 'legacy') {
-                                                                        updateEnemyLoss(loss.id, 'killedPowId', 'legacy');
-                                                                        updateEnemyLoss(loss.id, 'count200POW', 1);
-                                                                    } else if (val === '') {
-                                                                        updateEnemyLoss(loss.id, 'killedPowId', '');
-                                                                        updateEnemyLoss(loss.id, 'count200POW', 0);
-                                                                    } else {
-                                                                        updateEnemyLoss(loss.id, 'killedPowId', val);
-                                                                        updateEnemyLoss(loss.id, 'count200POW', 1);
-                                                                    }
-                                                                }} 
-                                                            />
+                                                        <div className="flex-1">
+                                                            <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase" title="Вкажіть кількість вбитих полонених">Загиблі полонені</label>
+                                                            <input type="number" min="0" value={loss.count200POW} onChange={e => updateEnemyLoss(loss.id, 'count200POW', parseInt(e.target.value)||0)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-mono font-bold text-rose-500 focus:border-rose-400 text-center" />
                                                         </div>
                                                         <div className="flex-1">
-                                                            <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase">Полонені</label>
+                                                            <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase text-center">Полон</label>
                                                             <input type="number" min="0" value={loss.countPOW} onChange={e => updateEnemyLoss(loss.id, 'countPOW', parseInt(e.target.value)||0)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-mono font-bold text-emerald-400 focus:border-emerald-500 text-center" />
                                                         </div>
                                                         <div className="w-auto flex items-end justify-center pt-5">
@@ -816,6 +844,16 @@ const EventsApp = (function() {
                                                                 <Icon name="trash-2" className="w-4 h-4" />
                                                             </button>
                                                         </div>
+                                                    </div>
+
+                                                    {/* Динамічні інпути для позивних */}
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-2 pl-2">
+                                                        <CallsignArrayInput count={loss.count200} values={loss.callsigns200} onChange={v => updateEnemyLoss(loss.id, 'callsigns200', v)} label="200 (Вбиті)" colorClass="text-red-500" />
+                                                        <CallsignArrayInput count={loss.count200Unconfirmed} values={loss.callsigns200Unconfirmed} onChange={v => updateEnemyLoss(loss.id, 'callsigns200Unconfirmed', v)} label="200* (Ймовірно)" colorClass="text-rose-300" />
+                                                        <CallsignArrayInput count={loss.count200Discovered} values={loss.callsigns200Discovered} onChange={v => updateEnemyLoss(loss.id, 'callsigns200Discovered', v)} label="Виявлені 200" colorClass="text-purple-400" />
+                                                        <CallsignArrayInput count={loss.count300} values={loss.callsigns300} onChange={v => updateEnemyLoss(loss.id, 'callsigns300', v)} label="300 (Поранені)" colorClass="text-amber-400" />
+                                                        <CallsignArrayInput count={loss.countPOW} values={loss.callsignsPOW} onChange={v => updateEnemyLoss(loss.id, 'callsignsPOW', v)} label="Полонені" colorClass="text-emerald-400" isRequired={true} />
+                                                        <CallsignArrayInput count={loss.count200POW} values={loss.callsigns200POW} onChange={v => updateEnemyLoss(loss.id, 'callsigns200POW', v)} label="Загиблі полонені" colorClass="text-rose-500" isRequired={true} listId="personnel-pow-callsigns-list" />
                                                     </div>
                                                 </div>
                                             ))}
@@ -873,6 +911,22 @@ const EventsApp = (function() {
                                     <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider border-b border-slate-800 pb-1">Короткий опис події</h3>
                                     <textarea value={formData.description} onChange={e => setFormData(p => ({...p, description: e.target.value}))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-amber-500 h-20 resize-none" placeholder="Додаткова інформація..."></textarea>
                                 </div>
+                                
+                                <datalist id="personnel-callsigns-list">
+                                    {personnel.filter(p => ['alive', '300'].includes(p.status)).map(p => (
+                                        <option key={p.id} value={p.callsign}>
+                                            {p.callsign}
+                                        </option>
+                                    ))}
+                                </datalist>
+
+                                <datalist id="personnel-pow-callsigns-list">
+                                    {personnel.filter(p => p.status === 'pow').map(p => (
+                                        <option key={p.id} value={p.callsign}>
+                                            {p.callsign}
+                                        </option>
+                                    ))}
+                                </datalist>
                                 
                             </form>
                             
@@ -968,20 +1022,32 @@ const EventsApp = (function() {
                                     {event.enemyLosses.length > 0 ? (
                                         <div className="space-y-2">
                                             {event.enemyLosses.map((l, i) => (
-                                                <div key={i} className="flex flex-wrap md:flex-nowrap items-center gap-3 bg-slate-900 p-2 rounded-lg border border-slate-700/50 text-sm">
-                                                    <div className="w-full md:w-1/3 shrink-0 flex items-center gap-1.5">
-                                                        {l.time && <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-800/60 shrink-0">{l.time}</span>}
-                                                        <span className="font-semibold text-slate-300">{l.weapon}</span> 
-                                                        {l.inflicter && <span className="text-slate-500 text-xs ml-1">(від: {l.inflicter})</span>}
+                                                <div key={i} className="flex flex-col gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-700/50 text-sm">
+                                                    <div className="flex flex-wrap md:flex-nowrap items-center gap-3 w-full">
+                                                        <div className="w-full md:w-1/3 shrink-0 flex items-center gap-1.5">
+                                                            {l.time && <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-800/60 shrink-0">{l.time}</span>}
+                                                            <span className="font-semibold text-slate-300">{l.weapon}</span> 
+                                                            {l.inflicter && <span className="text-slate-500 text-xs ml-1">(від: {l.inflicter})</span>}
+                                                        </div>
+                                                        <div className="flex-1 flex gap-4 justify-end font-mono text-xs md:text-sm">
+                                                            {(l.count200 || 0) + (l.count200POW || 0) > 0 && <span className="text-red-400" title="200">200: {(l.count200 || 0) + (l.count200POW || 0)}</span>}
+                                                            {l.count200Unconfirmed > 0 && <span className="text-rose-400" title="200*">200*: {l.count200Unconfirmed}</span>}
+                                                            {l.count200Discovered > 0 && <span className="text-purple-400" title="Виявлені 200">В: {l.count200Discovered}</span>}
+                                                            {l.count300 > 0 && <span className="text-amber-400" title="300">300: {l.count300}</span>}
+                                                            {l.countPOW > 0 && <span className="text-emerald-400" title="Полонені">П: {l.countPOW}</span>}
+                                                        </div>
                                                     </div>
-                                                    <div className="w-full md:w-1/4 shrink-0 text-slate-400">{l.callsign ? `Поз: ${l.callsign}` : ''}</div>
-                                                    <div className="flex-1 flex gap-4 justify-end font-mono text-xs md:text-sm">
-                                                        {(l.count200 || 0) + (l.count200POW || 0) > 0 && <span className="text-red-400" title="200">200: {(l.count200 || 0) + (l.count200POW || 0)}</span>}
-                                                        {l.count200Unconfirmed > 0 && <span className="text-rose-400" title="200*">200*: {l.count200Unconfirmed}</span>}
-                                                        {l.count200Discovered > 0 && <span className="text-purple-400" title="Виявлені 200">В: {l.count200Discovered}</span>}
-                                                        {l.count300 > 0 && <span className="text-amber-400" title="300">300: {l.count300}</span>}
-                                                        {l.countPOW > 0 && <span className="text-emerald-400" title="Полонені">П: {l.countPOW}</span>}
-                                                    </div>
+                                                    
+                                                    {((l.callsigns200 && l.callsigns200.some(c=>c)) || (l.callsigns200Unconfirmed && l.callsigns200Unconfirmed.some(c=>c)) || (l.callsigns200Discovered && l.callsigns200Discovered.some(c=>c)) || (l.callsigns300 && l.callsigns300.some(c=>c)) || (l.callsignsPOW && l.callsignsPOW.some(c=>c)) || (l.callsigns200POW && l.callsigns200POW.some(c=>c))) && (
+                                                        <div className="pt-1.5 mt-0.5 border-t border-slate-800/60 flex gap-4 text-[11px] font-mono flex-wrap">
+                                                            {l.callsigns200 && l.callsigns200.some(c=>c) && <span className="text-red-400/80">200: {l.callsigns200.filter(c=>c).join(', ')}</span>}
+                                                            {l.callsigns200Unconfirmed && l.callsigns200Unconfirmed.some(c=>c) && <span className="text-rose-300/80">200*: {l.callsigns200Unconfirmed.filter(c=>c).join(', ')}</span>}
+                                                            {l.callsigns200Discovered && l.callsigns200Discovered.some(c=>c) && <span className="text-purple-400/80">Вияв: {l.callsigns200Discovered.filter(c=>c).join(', ')}</span>}
+                                                            {l.callsigns300 && l.callsigns300.some(c=>c) && <span className="text-amber-400/80">300: {l.callsigns300.filter(c=>c).join(', ')}</span>}
+                                                            {l.callsignsPOW && l.callsignsPOW.some(c=>c) && <span className="text-emerald-400/80">Полон: {l.callsignsPOW.filter(c=>c).join(', ')}</span>}
+                                                            {l.callsigns200POW && l.callsigns200POW.some(c=>c) && <span className="text-rose-500/80">Заг.Полон: {l.callsigns200POW.filter(c=>c).join(', ')}</span>}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
@@ -1189,7 +1255,18 @@ const EventsApp = (function() {
                                         {l.time && <span className="font-mono text-amber-300 font-bold bg-amber-950/60 px-1 rounded border border-amber-900/50">{l.time}</span>}
                                         <span className="font-semibold text-slate-200">{l.weapon}</span>
                                         {l.inflicter && <span className="text-slate-400">(від: {l.inflicter})</span>}
-                                        {l.callsign && <span className="text-slate-400">[поз: {l.callsign}]</span>}
+                                        {((l.callsigns200 && l.callsigns200.some(c=>c)) || (l.callsigns200Unconfirmed && l.callsigns200Unconfirmed.some(c=>c)) || (l.callsigns200Discovered && l.callsigns200Discovered.some(c=>c)) || (l.callsigns300 && l.callsigns300.some(c=>c)) || (l.callsignsPOW && l.callsignsPOW.some(c=>c)) || (l.callsigns200POW && l.callsigns200POW.some(c=>c))) && (
+                                            <span className="text-slate-400" title="Деталізовані позивні">
+                                                [{[
+                                                    ...(l.callsigns200||[]).filter(c=>c).map(c=>`200:${c}`),
+                                                    ...(l.callsigns200Unconfirmed||[]).filter(c=>c).map(c=>`200*:${c}`),
+                                                    ...(l.callsigns200Discovered||[]).filter(c=>c).map(c=>`Вияв:${c}`),
+                                                    ...(l.callsigns300||[]).filter(c=>c).map(c=>`300:${c}`),
+                                                    ...(l.callsignsPOW||[]).filter(c=>c).map(c=>`Полон:${c}`),
+                                                    ...(l.callsigns200POW||[]).filter(c=>c).map(c=>`Заг.Полон:${c}`)
+                                                ].join(', ')}]
+                                            </span>
+                                        )}
                                         <span className="font-mono text-slate-400 ml-1">
                                             {l.count200 > 0 && <span className="text-red-400 mr-1">200:{l.count200}</span>}
                                             {l.count200Unconfirmed > 0 && <span className="text-rose-400 mr-1">200*:{l.count200Unconfirmed}</span>}
@@ -2169,41 +2246,46 @@ const EventsApp = (function() {
                 );
             };
 
-        const ReportView = ({ data, onClose, allEvents }) => {
-                const { events: rawEvents, dateFrom, dateTo, weaponFilter, eventFilters } = data;
-                
-                const events = useMemo(() => {
-                    return rawEvents.filter(ev => {
-                        if (weaponFilter !== 'all' && !(ev.enemyLosses || []).some(l => l.weapon === weaponFilter)) return false;
+        const handleOpenPrintableReport = (data) => {
+            const { events: rawEvents, allEvents, dateFrom, dateTo, weaponFilter, eventFilters } = data;
+            try {
+                const win = window.open('', '_blank');
+                if (!win) {
+                    alert("Будь ласка, дозвольте відкриття спливаючих вікон у браузері");
+                    return;
+                }
+
+                // Filter logic
+                const filteredEvents = rawEvents.filter(ev => {
+                    if (weaponFilter !== 'all' && !(ev.enemyLosses || []).some(l => l.weapon === weaponFilter)) return false;
+                    
+                    const hasActiveFilters = eventFilters ? Object.values(eventFilters).some(v => v) : false;
+                    if (hasActiveFilters) {
+                        let keep = false;
+                        const e200 = ev.enemyLosses.reduce((s,l)=>s+(l.count200||0),0);
+                        const e200u = ev.enemyLosses.reduce((s,l)=>s+(l.count200Unconfirmed||0),0);
+                        const e200d = ev.enemyLosses.reduce((s,l)=>s+Number(l.count200Discovered||0),0);
+                        const e300 = ev.enemyLosses.reduce((s,l)=>s+(l.count300||0),0);
+                        const capturedPOW = ev.enemyLosses.some(l => l.countPOW > 0);
+                        const killedPOW = ev.enemyLosses.some(l => l.count200POW > 0);
                         
-                        const hasActiveFilters = eventFilters ? Object.values(eventFilters).some(v => v) : false;
-                        if (hasActiveFilters) {
-                            let keep = false;
-                            const e200 = ev.enemyLosses.reduce((s,l)=>s+(l.count200||0),0);
-                            const e200u = ev.enemyLosses.reduce((s,l)=>s+(l.count200Unconfirmed||0),0);
-                            const e200d = ev.enemyLosses.reduce((s,l)=>s+Number(l.count200Discovered||0),0);
-                            const e300 = ev.enemyLosses.reduce((s,l)=>s+(l.count300||0),0);
-                            const capturedPOW = ev.enemyLosses.some(l => l.countPOW > 0);
-                            const killedPOW = ev.enemyLosses.some(l => l.count200POW > 0);
-                            
-                            if (eventFilters.e200 && e200 > 0) keep = true;
-                            if (eventFilters.e200u && e200u > 0) keep = true;
-                            if (eventFilters.e200d && e200d > 0) keep = true;
-                            if (eventFilters.e300 && e300 > 0) keep = true;
-                            if (eventFilters.epow && capturedPOW) keep = true;
-                            if (eventFilters.epowDead && killedPOW) keep = true;
-                            
-                            if (!keep) return false;
-                        }
-                        return true;
-                    });
-                }, [rawEvents, weaponFilter, eventFilters]);
-                
+                        if (eventFilters.e200 && e200 > 0) keep = true;
+                        if (eventFilters.e200u && e200u > 0) keep = true;
+                        if (eventFilters.e200d && e200d > 0) keep = true;
+                        if (eventFilters.e300 && e300 > 0) keep = true;
+                        if (eventFilters.epow && capturedPOW) keep = true;
+                        if (eventFilters.epowDead && killedPOW) keep = true;
+                        
+                        if (!keep) return false;
+                    }
+                    return true;
+                });
+
                 let e200 = 0, e200u = 0, e200d = 0, e300 = 0, epow = 0;
                 const weaponsCount = {};
                 const locCount = {};
                 
-                events.forEach(ev => {
+                filteredEvents.forEach(ev => {
                     const lStr = ev.actionDetails?.documentLocation || ev.actionDetails?.actualLocation || 'Невідомо';
                     if (!locCount[lStr]) locCount[lStr] = 0;
                     
@@ -2220,7 +2302,7 @@ const EventsApp = (function() {
                                 shouldSubtractPow = true;
                             } else {
                                 const sourceEventId = l.killedPowId.split('_')[0];
-                                if (allEvents.some(e => e.id === sourceEventId)) {
+                                if ((allEvents || rawEvents).some(e => e.id === sourceEventId)) {
                                     shouldSubtractPow = true;
                                 }
                             }
@@ -2236,136 +2318,270 @@ const EventsApp = (function() {
                         }
                     });
                 });
-                
-                const topWeapons = Object.entries(weaponsCount).sort((a,b)=>b[1]-a[1]).slice(0, 10);
-                const topLocs = Object.entries(locCount).sort((a,b)=>b[1]-a[1]).slice(0, 10);
-                
-                useEffect(() => {
-                    const timer = setTimeout(() => {
-                        window.print();
-                    }, 500);
-                    return () => clearTimeout(timer);
-                }, []);
-                
-                return (
-                    <div className="fixed inset-0 w-full h-full bg-white text-black p-8 z-[9999] print:relative print:p-0 print:block overflow-y-auto" style={{ margin: 0 }}>
-                        <div className="flex justify-between items-center print:hidden mb-4">
-                            <h2 className="text-xl font-bold text-slate-800">Попередній перегляд звіту</h2>
-                            <div className="flex gap-4">
-                                <button onClick={() => window.print()} className="bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 px-4 rounded shadow">
-                                    Друкувати (Зберегти PDF)
-                                </button>
-                                <button onClick={onClose} className="bg-slate-300 hover:bg-slate-400 text-black font-bold py-2 px-4 rounded">
-                                    Закрити
-                                </button>
-                            </div>
-                        </div>
 
-                        <div className="border-b-2 border-black pb-4 mb-6">
-                            <h1 className="text-3xl font-black uppercase text-center mb-2">Звіт щодо втрат противника</h1>
-                            <div className="flex justify-between text-sm font-bold">
-                                <div>Період: {dateFrom ? dateFrom.split('-').reverse().join('.') : 'Початок'} — {dateTo ? dateTo.split('-').reverse().join('.') : 'Сьогодні'}</div>
-                                <div>Засоби ураження: {weaponFilter === 'all' ? 'Всі засоби' : weaponFilter}</div>
-                            </div>
-                        </div>
+                const topWeapons = Object.entries(weaponsCount).sort((a,b)=>b[1]-a[1]).slice(0, 10);
+                const maxW = topWeapons[0] ? topWeapons[0][1] : 1;
+                const topWeaponsHtml = topWeapons.map(([w, c]) => {
+                    const pct = Math.max(1, Math.round((c / maxW) * 100));
+                    return `<tr><td style="padding:4px 6px;">${escapeHtml(w)}<svg width="100%" height="8" style="display:block; margin-top:4px;"><rect width="100%" height="100%" fill="#e2e8f0" rx="3"></rect><rect width="${pct}%" height="100%" fill="#d97706" rx="3"></rect></svg></td><td style="width:40px; text-align:right; font-weight:bold; vertical-align:middle;">${escapeHtml(c)}</td></tr>`;
+                }).join('');
+                const topLocs = Object.entries(locCount).sort((a,b)=>b[1]-a[1]).slice(0, 10);
+                const maxL = topLocs[0] ? topLocs[0][1] : 1;
+                const topLocsHtml = topLocs.map(([l, c]) => {
+                    const pct = Math.max(1, Math.round((c / maxL) * 100));
+                    return `<tr><td style="padding:4px 6px;">${escapeHtml(l)}<svg width="100%" height="8" style="display:block; margin-top:4px;"><rect width="100%" height="100%" fill="#e2e8f0" rx="3"></rect><rect width="${pct}%" height="100%" fill="#475569" rx="3"></rect></svg></td><td style="width:40px; text-align:right; font-weight:bold; vertical-align:middle;">${escapeHtml(c)}</td></tr>`;
+                }).join('');
+
+                const periodStr = (dateFrom || dateTo) 
+                    ? `${dateFrom ? dateFrom.split('-').reverse().join('.') : 'Початок'} — ${dateTo ? dateTo.split('-').reverse().join('.') : 'Сьогодні'}` 
+                    : 'За весь період ведення бойових дій';
+                const nowStr = new Date().toLocaleString('uk-UA');
+
+                const rowsHtml = filteredEvents.map(ev => {
+                    const dStr = getEventDateStr(ev).split('-').reverse().join('.');
+                    const loc = ev.actionDetails?.docLoc || ev.actionDetails?.factLoc || '-';
+                    const desc = escapeHtml(ev.description).replace(/\n/g, '<br>');
+                    
+                    const lossesHtml = ev.enemyLosses.map(l => {
+                        if (weaponFilter !== 'all' && l.weapon !== weaponFilter) return '';
+                        const parts = [];
+                        const c200 = (l.count200||0) + (l.count200POW||0);
+                        if (c200 > 0) parts.push(`200: ${c200}`);
+                        if (l.count300 > 0) parts.push(`300: ${l.count300}`);
+                        if (l.countPOW > 0) parts.push(`ПОЛОН: ${l.countPOW}`);
+                        if (l.count200Unconfirmed > 0) parts.push(`200*: ${l.count200Unconfirmed}`);
+                        if (l.count200Discovered > 0) parts.push(`ВИЯВ: ${l.count200Discovered}`);
+                        if (parts.length === 0) return '';
                         
-                        <div className="grid grid-cols-5 gap-4 mb-8 avoid-break">
-                            <div className="border-2 border-black p-4 text-center bg-gray-100">
-                                <div className="text-4xl font-black mb-1 text-black">{e200}</div>
-                                <div className="text-xs uppercase font-bold text-gray-800">200 (Вбиті)</div>
-                            </div>
-                            <div className="border-2 border-black p-4 text-center">
-                                <div className="text-4xl font-black mb-1">{e300}</div>
-                                <div className="text-xs uppercase font-bold">300 (Поранені)</div>
-                            </div>
-                            <div className="border-2 border-black p-4 text-center">
-                                <div className="text-4xl font-black mb-1">{epow}</div>
-                                <div className="text-xs uppercase font-bold">Полонені</div>
-                            </div>
-                            <div className="border-2 border-black p-4 text-center">
-                                <div className="text-4xl font-black mb-1">{e200u}</div>
-                                <div className="text-xs uppercase font-bold">200* (Непідтв.)</div>
-                            </div>
-                            <div className="border-2 border-black p-4 text-center">
-                                <div className="text-4xl font-black mb-1">{e200d}</div>
-                                <div className="text-xs uppercase font-bold">Виявлені тіла</div>
-                            </div>
-                        </div>
+                        const cList = [
+                            ...(l.callsigns200||[]).filter(c=>c),
+                            ...(l.callsigns200Unconfirmed||[]).filter(c=>c),
+                            ...(l.callsigns200Discovered||[]).filter(c=>c),
+                            ...(l.callsigns300||[]).filter(c=>c),
+                            ...(l.callsignsPOW||[]).filter(c=>c),
+                            ...(l.callsigns200POW||[]).filter(c=>c)
+                        ];
+                        const cStr = cList.length > 0 ? ` <span style="color:#64748b; font-size:7pt;">[${escapeHtml(cList.join(', '))}]</span>` : '';
                         
-                        <div className="grid grid-cols-2 gap-12 mb-8 avoid-break">
-                            <div>
-                                <h3 className="font-bold text-sm border-b border-black mb-2 uppercase pb-1">Топ засобів ураження</h3>
-                                {topWeapons.map(([w, c]) => (
-                                    <div key={w} className="flex justify-between text-sm mb-1">
-                                        <span>{w}</span><span className="font-bold">{c}</span>
-                                    </div>
-                                ))}
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-sm border-b border-black mb-2 uppercase pb-1">Топ локацій ураження</h3>
-                                {topLocs.map(([l, c]) => (
-                                    <div key={l} className="flex justify-between text-sm mb-1 truncate gap-2">
-                                        <span className="truncate">{l}</span><span className="font-bold">{c}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        
-                        <h3 className="font-bold text-sm border-b-2 border-black mb-4 uppercase avoid-break pb-1">Детальний реєстр подій</h3>
-                        <table className="w-full text-left text-xs border-collapse">
-                            <thead>
-                                <tr className="border-b-2 border-black uppercase text-[10px]">
-                                    <th className="p-2 w-20">Дата</th>
-                                    <th className="p-2 w-32">Місце</th>
-                                    <th className="p-2 w-48">Втрати</th>
-                                    <th className="p-2">Деталі / Опис</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {events.map(ev => {
-                                    const dStr = getEventDateStr(ev);
-                                    const loc = ev.actionDetails?.documentLocation || ev.actionDetails?.actualLocation || '-';
-                                    const desc = ev.description || '';
-                                    return (
-                                        <tr key={ev.id} className="border-b border-gray-300 avoid-break">
-                                            <td className="p-2 align-top font-bold text-gray-700">{dStr.split('-').reverse().join('.')}</td>
-                                            <td className="p-2 align-top">
-                                                <div className="line-clamp-3">{loc}</div>
-                                            </td>
-                                            <td className="p-2 align-top">
-                                                {ev.enemyLosses.map((l, idx) => {
-                                                    if (weaponFilter !== 'all' && l.weapon !== weaponFilter) return null;
-                                                    const parts = [];
-                                                    const c200 = (l.count200||0) + (l.count200POW||0);
-                                                    if (c200 > 0) parts.push(`200:${c200}`);
-                                                    if (l.count300 > 0) parts.push(`300:${l.count300}`);
-                                                    if (l.countPOW > 0) parts.push(`ПОЛОН:${l.countPOW}`);
-                                                    if (l.count200Unconfirmed > 0) parts.push(`200*:${l.count200Unconfirmed}`);
-                                                    if (l.count200Discovered > 0) parts.push(`ВИЯВ:${l.count200Discovered}`);
-                                                    
-                                                    if (parts.length === 0) return null;
-                                                    return (
-                                                        <div key={idx} className="mb-1">
-                                                            <span className="font-bold">{parts.join(', ')}</span> 
-                                                            <span className="text-gray-600"> ({l.weapon})</span>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </td>
-                                            <td className="p-2 align-top text-justify">
-                                                <div className="text-gray-700">{desc}</div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                );
-            };
+                        return `<div style="margin-bottom:2px;"><b>${escapeHtml(parts.join(', '))}</b>${cStr} <span style="color:#475569;">(${escapeHtml(l.weapon)})</span></div>`;
+                    }).join('');
+
+                    
+                    const total200 = ev.enemyLosses.reduce((s,l) => s + (l.count200||0) + (l.count200POW||0), 0);
+                    const total300 = ev.enemyLosses.reduce((s,l) => s + (l.count300||0), 0);
+                    const totalPOW = ev.enemyLosses.reduce((s,l) => s + (l.countPOW||0), 0);
+                    return `
+                        <tr class="event-row" data-h200="${total200>0?'1':'0'}" data-h300="${total300>0?'1':'0'}" data-hpow="${totalPOW>0?'1':'0'}">
+                            <td style="font-weight:700; color:#334155; vertical-align:top;">${escapeHtml(dStr)}</td>
+                            <td style="vertical-align:top;">${escapeHtml(loc)}</td>
+                            <td style="vertical-align:top;">${lossesHtml}</td>
+                            <td style="vertical-align:top; text-align:justify;">${desc}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Звіт щодо втрат противника</title>
+    <style>
+        body { font-family: 'Inter', -apple-system, sans-serif; font-size: 10pt; color: #1e293b; line-height: 1.4; background: #f8fafc; padding: 20px; margin: 0; }
+        .action-bar {
+            background: #0f172a; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); color: #e2e8f0; font-size: 9pt;
+        }
+        .action-btn {
+            background: #d97706; color: white; border: none; padding: 6px 14px; border-radius: 6px;
+            font-weight: 600; cursor: pointer; font-size: 9pt; transition: background 0.2s;
+        }
+        .action-btn:hover { background: #b45309; }
+        .action-btn.secondary { background: #334155; }
+        .action-btn.secondary:hover { background: #475569; }
+        .check-toggle { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
+        .check-toggle input { cursor: pointer; accent-color: #d97706; }
+        
+        .page-container {
+            max-width: 1200px; margin: 0 auto; background: #ffffff; padding: 24px 28px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08); border-radius: 8px;
+        }
+        .header-title { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 14px; }
+        .header-title h1 { font-size: 13pt; font-weight: 800; text-transform: uppercase; margin: 0 0 4px 0; color: #0f172a; }
+        .meta-info { display: flex; justify-content: space-between; font-size: 8pt; color: #475569; font-weight: 500; }
+        
+        .summary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; }
+        .summary-card { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; background: #f8fafc; }
+        .summary-card .label { font-size: 7.5pt; text-transform: uppercase; font-weight: 700; color: #64748b; margin-bottom: 2px; }
+        .summary-card .value { font-size: 15pt; font-weight: 800; color: #0f172a; line-height: 1.1; }
+        
+        .section-title {
+            font-size: 8.5pt; font-weight: 800; text-transform: uppercase; color: #0f172a;
+            border-left: 3px solid #0f172a; padding-left: 6px; margin: 12px 0 6px 0;
+        }
+        .two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+        
+        table.data-table { width: 100%; border-collapse: collapse; font-size: 7.5pt; margin-bottom: 12px; }
+        table.data-table th, table.data-table td { border: 1px solid #cbd5e1; padding: 4px 6px; text-align: left; vertical-align: top; }
+        table.data-table th { background-color: #f1f5f9; font-weight: 700; color: #1e293b; text-transform: uppercase; }
+        table.data-table tr:nth-child(even) { background-color: #f8fafc; }
+        
+        .footer-sign { margin-top: 32px; padding-top: 14px; display: flex; justify-content: space-between; font-size: 8.5pt; font-weight: 600; }
+
+        @media print {
+            body { background: #ffffff !important; padding: 0 !important; font-size: 8pt !important; }
+            .page-container { box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }
+            .action-bar { display: none !important; }
+            .summary-card { border: 1px solid #94a3b8 !important; }
+            table.data-table th, table.data-table td { border: 1px solid #94a3b8 !important; }
+            tr { page-break-inside: avoid; break-inside: avoid; }
+            @page { size: A4 portrait; margin: 8mm; }
+        }
+    </style>
+</head>
+<body>
+    <div class="action-bar">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="font-weight: 800; font-size: 9.5pt; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.5px;">🎛️ Конструктор доповіді:</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="action-btn" onclick="window.print()">🖨️ Друк / PDF</button>
+                <button class="action-btn secondary" onclick="window.close()">✕ Закрити</button>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px;">
+            <span style="color: #94a3b8; font-weight: 700;">Реєстр:</span>
+            <label class="check-toggle"><input type="checkbox" id="f-200" onchange="filterRegister()"> Тільки 200</label>
+            <label class="check-toggle"><input type="checkbox" id="f-300" onchange="filterRegister()"> Тільки 300</label>
+            <label class="check-toggle"><input type="checkbox" id="f-pow" onchange="filterRegister()"> Тільки полонені</label>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <span style="color: #94a3b8; font-weight: 700;">Блоки:</span>
+            <label class="check-toggle"><input type="checkbox" id="chk-cards" checked onchange="toggleBlock('block-cards', this.checked)"> Зведені картки</label>
+            <label class="check-toggle"><input type="checkbox" id="chk-analytics" checked onchange="toggleBlock('block-analytics', this.checked)"> Аналітика</label>
+            <label class="check-toggle"><input type="checkbox" id="chk-register" checked onchange="toggleBlock('block-register', this.checked)"> Реєстр втрат</label>
+            <label class="check-toggle"><input type="checkbox" id="chk-signs" checked onchange="toggleBlock('block-signs', this.checked)"> Підписи</label>
+        </div>
+    </div>
+
+    <div class="page-container" id="printable-doc">
+        <div class="header-title" id="block-header">
+            <h1 id="doc-main-title">БОЙОВЕ ДОНЕСЕННЯ / ЗВЕДЕННЯ ПРО ВТРАТИ ПРОТИВНИКА</h1>
+            <div class="meta-info">
+                <div>Період: <b>${escapeHtml(periodStr)}</b></div>
+                <div>Засоби ураження: <b>${escapeHtml(weaponFilter === 'all' ? 'Всі' : weaponFilter)}</b></div>
+                <div>Сформовано: <b>${nowStr}</b></div>
+            </div>
+        </div>
+
+        <div id="block-cards" class="summary-grid">
+            <div class="summary-card" style="border-left: 3px solid #0f172a;">
+                <div class="label">Загиблі (200)</div>
+                <div class="value">${escapeHtml(e200)}</div>
+            </div>
+            <div class="summary-card" style="border-left: 3px solid #dc2626;">
+                <div class="label" style="color: #dc2626;">Поранені (300)</div>
+                <div class="value" style="color: #dc2626;">${escapeHtml(e300)}</div>
+            </div>
+            <div class="summary-card" style="border-left: 3px solid #16a34a;">
+                <div class="label" style="color: #16a34a;">Полонені</div>
+                <div class="value" style="color: #16a34a;">${escapeHtml(epow)}</div>
+            </div>
+            <div class="summary-card" style="border-left: 3px solid #8b5cf6;">
+                <div class="label" style="color: #8b5cf6;">Виявлені тіла</div>
+                <div class="value" style="color: #8b5cf6;">${escapeHtml(e200d)}</div>
+            </div>
+            <div class="summary-card" style="border-left: 3px solid #f59e0b;">
+                <div class="label" style="color: #f59e0b;">Непідтв. (200*)</div>
+                <div class="value" style="color: #f59e0b;">${escapeHtml(e200u)}</div>
+            </div>
+        </div>
+
+        <div id="block-analytics">
+            <div class="two-cols">
+                <div>
+                    <div class="section-title">Топ засобів ураження</div>
+                    <table class="data-table">
+                        ${topWeapons.length > 0 ? topWeaponsHtml : '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">Дані відсутні</td></tr>'}
+                    </table>
+                </div>
+                <div>
+                    <div class="section-title">Топ локацій ураження</div>
+                    <table class="data-table">
+                        ${topLocs.length > 0 ? topLocsHtml : '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">Дані відсутні</td></tr>'}
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="block-register">
+            <div class="section-title">Детальний реєстр подій (<span id="register-count">${filteredEvents.length}</span> записів)</div>
+            <table class="data-table" id="register-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">Дата</th>
+                        <th style="width: 120px;">Місце</th>
+                        <th style="width: 180px;">Втрати</th>
+                        <th>Деталі / Опис</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml || '<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:10px;">Дані відсутні за обраними критеріями</td></tr>'}
+                </tbody>
+            </table>
+        </div>
+
+        <div id="block-signs" class="footer-sign">
+            <div>Посада ______________</div>
+            <div>В/звання ______________</div>
+            <div>Прізвище, ініціали __________________</div>
+            <div>Підпис ______________</div>
+        </div>
+    </div>
+
+    <script>
+        function toggleBlock(blockId, isVisible) {
+            var el = document.getElementById(blockId);
+            if (el) el.style.display = isVisible ? (blockId === 'block-cards' ? 'grid' : (blockId === 'block-signs' ? 'flex' : 'block')) : 'none';
+        }
+        function filterRegister() {
+            var only200 = document.getElementById('f-200').checked;
+            var only300 = document.getElementById('f-300').checked;
+            var onlyPow = document.getElementById('f-pow').checked;
+            
+            var rows = document.querySelectorAll('.event-row');
+            var visCount = 0;
+            rows.forEach(function(r) {
+                var h200 = r.getAttribute('data-h200') === '1';
+                var h300 = r.getAttribute('data-h300') === '1';
+                var hpow = r.getAttribute('data-hpow') === '1';
+                
+                var show = true;
+                if (only200 && !h200) show = false;
+                if (only300 && !h300) show = false;
+                if (onlyPow && !hpow) show = false;
+                
+                r.style.display = show ? '' : 'none';
+                if (show) visCount++;
+            });
+            document.getElementById('register-count').innerText = visCount;
+        }
+    </script>
+</body>
+</html>`;
+                
+                win.document.open();
+                win.document.write(htmlContent);
+                win.document.close();
+            } catch (err) {
+                console.error("handleOpenPrintableReport error:", err);
+                alert("Помилка формування доповіді: " + err.message);
+            }
+        };
 
         const AnalyticsView = ({ onGenerateReport }) => {
-                const { dailyFriendlyLosses, events, medicalSync, settings } = React.useContext(EnemyAppContext);
+                const { dailyFriendlyLosses, events, medicalSync, settings, showToast } = React.useContext(EnemyAppContext);
                 const [dateFrom, setDateFrom] = useState('');
                 const [dateTo, setDateTo] = useState('');
                 const [weaponFilter, setWeaponFilter] = useState('all');
@@ -2376,6 +2592,179 @@ const EventsApp = (function() {
 
                 const toggleExpand = (dateStr) => {
                     setExpandedDates(prev => ({...prev, [dateStr]: !prev[dateStr]}));
+                };
+
+                const handleExportExcel = async () => {
+                    if (!window.ExcelJS) {
+                        showToast("Бібліотека ExcelJS не завантажена");
+                        return;
+                    }
+                    
+                    try {
+                        const workbook = new window.ExcelJS.Workbook();
+                        const sheet = workbook.addWorksheet('Облік втрат');
+                        
+                        sheet.columns = [
+                            { header: 'ID', key: 'id', width: 10 },
+                            { header: 'Дата', key: 'date', width: 15 },
+                            { header: 'Час', key: 'time', width: 12 },
+                            { header: 'Типи', key: 'types', width: 15 },
+                            { header: '200', key: 'e200', width: 10 },
+                            { header: '200*', key: 'e200u', width: 10 },
+                            { header: '300', key: 'e300', width: 10 },
+                            { header: 'Полон', key: 'epow', width: 10 },
+                            { header: '200(п)', key: 'e200pow', width: 10 },
+                            { header: 'Наші 200', key: 'f200', width: 12 },
+                            { header: 'Наші 300', key: 'f300', width: 12 },
+                            { header: 'ЗБВ', key: 'fzbv', width: 10 },
+                            { header: 'Ким проводилось', key: 'conductedBy', width: 20 },
+                            { header: 'Док. місце', key: 'docLoc', width: 20 },
+                            { header: 'Факт. місце', key: 'factLoc', width: 20 },
+                            { header: 'Напрямок', key: 'direction', width: 20 },
+                            { header: 'К-ть о/с', key: 'friendlyCount', width: 10 },
+                            { header: 'Сили ворога', key: 'enemySize', width: 15 },
+                            { header: 'Техніка', key: 'vehicleDetails', width: 20 },
+                            { header: 'Позивні ворога', key: 'callsigns', width: 40 },
+                            { header: 'Опис', key: 'desc', width: 50 }
+                        ];
+                        
+                        sheet.getRow(1).font = { bold: true };
+                        
+                        const sortedEvents = [...filteredEvents].sort((a, b) => {
+                            const dateA = getEventDateStr(a) || '';
+                            const dateB = getEventDateStr(b) || '';
+                            if (dateA !== dateB) return dateA.localeCompare(dateB);
+                            const timeA = a.actionDetails?.startTime || '';
+                            const timeB = b.actionDetails?.startTime || '';
+                            return timeA.localeCompare(timeB);
+                        });
+                        
+                        sortedEvents.forEach(ev => {
+                            const e200 = (ev.enemyLosses||[]).reduce((s,l)=>s+(l.count200||0)+(l.count200POW||0),0);
+                            const e200u = (ev.enemyLosses||[]).reduce((s,l)=>s+(l.count200Unconfirmed||0),0);
+                            const e300 = (ev.enemyLosses||[]).reduce((s,l)=>s+(l.count300||0),0);
+                            const epow = (ev.enemyLosses||[]).reduce((s,l)=>s+(l.countPOW||0)-(l.count200POW||0),0);
+                            const e200pow = (ev.enemyLosses||[]).reduce((s,l)=>s+(l.count200POW||0),0);
+                            
+                            const cList = [];
+                            (ev.enemyLosses||[]).forEach(l => {
+                                if(l.callsigns200) cList.push(...l.callsigns200.filter(c=>c).map(c=>`200:${c}`));
+                                if(l.callsigns200Unconfirmed) cList.push(...l.callsigns200Unconfirmed.filter(c=>c).map(c=>`200*:${c}`));
+                                if(l.callsigns200Discovered) cList.push(...l.callsigns200Discovered.filter(c=>c).map(c=>`Вияв:${c}`));
+                                if(l.callsigns300) cList.push(...l.callsigns300.filter(c=>c).map(c=>`300:${c}`));
+                                if(l.callsignsPOW) cList.push(...l.callsignsPOW.filter(c=>c).map(c=>`Полон:${c}`));
+                                if(l.callsigns200POW) cList.push(...l.callsigns200POW.filter(c=>c).map(c=>`Заг.Полон:${c}`));
+                            });
+                            const callsStr = String(cList.join(', '));
+                            
+                            const dStrRaw = getEventDateStr(ev);
+                            const dStr = dStrRaw ? dStrRaw.split('-').reverse().join('.') : '';
+                            const tStr = ev.actionDetails?.startTime ? ev.actionDetails.startTime + (ev.actionDetails.endTime ? ' - ' + ev.actionDetails.endTime : '') : '';
+                            
+                            sheet.addRow({
+                                id: ev.id,
+                                date: dStr,
+                                time: tStr,
+                                types: (ev.types||[]).join('|'),
+                                e200: e200,
+                                e200u: e200u,
+                                e300: e300,
+                                epow: epow,
+                                e200pow: e200pow,
+                                f200: ev.friendlyLosses?.count200||0,
+                                f300: ev.friendlyLosses?.count300||0,
+                                fzbv: ev.friendlyLosses?.countZBV||0,
+                                conductedBy: ev.actionDetails?.conductedBy || '',
+                                docLoc: ev.actionDetails?.docLoc || '',
+                                factLoc: ev.actionDetails?.factLoc || '',
+                                direction: ev.actionDetails?.direction || '',
+                                friendlyCount: ev.actionDetails?.friendlyCount || '',
+                                enemySize: ev.actionDetails?.enemySize || '',
+                                vehicleDetails: ev.actionDetails?.hasVehicles ? (ev.actionDetails?.vehicleDetails || 'Так') : '',
+                                callsigns: callsStr,
+                                desc: ev.description||''
+                            });
+                        });
+                        
+                        
+                        const sheet2 = workbook.addWorksheet('Деталізація по ураженнях');
+                        
+                        sheet2.columns = [
+                            { header: 'ID Події', key: 'id', width: 10 },
+                            { header: 'Дата', key: 'date', width: 15 },
+                            { header: 'Час', key: 'time', width: 12 },
+                            { header: 'Тип (Зброя)', key: 'weapon', width: 25 },
+                            { header: '200', key: 'e200', width: 10 },
+                            { header: '200*', key: 'e200u', width: 10 },
+                            { header: '300', key: 'e300', width: 10 },
+                            { header: 'Полон', key: 'epow', width: 10 },
+                            { header: '200(п)', key: 'e200pow', width: 10 },
+                            { header: 'Наші 200', key: 'f200', width: 12 },
+                            { header: 'Наші 300', key: 'f300', width: 12 },
+                            { header: 'ЗБВ', key: 'fzbv', width: 10 },
+                            { header: 'Позивні ворога', key: 'callsigns', width: 40 },
+                            { header: 'Опис події', key: 'desc', width: 50 }
+                        ];
+                        
+                        sheet2.getRow(1).font = { bold: true };
+                        
+                        sortedEvents.forEach(ev => {
+                            const dStrRaw = getEventDateStr(ev);
+                            const dStr = dStrRaw ? dStrRaw.split('-').reverse().join('.') : '';
+                            const tStr = ev.actionDetails?.startTime ? ev.actionDetails.startTime + (ev.actionDetails.endTime ? ' - ' + ev.actionDetails.endTime : '') : '';
+                            const f200 = ev.friendlyLosses?.count200||0;
+                            const f300 = ev.friendlyLosses?.count300||0;
+                            const fzbv = ev.friendlyLosses?.countZBV||0;
+                            const desc = ev.description||'';
+                            
+                            (ev.enemyLosses||[]).forEach(l => {
+                                const e200 = (l.count200||0) + (l.count200POW||0);
+                                const e200u = l.count200Unconfirmed||0;
+                                const e300 = l.count300||0;
+                                const epow = (l.countPOW||0) - (l.count200POW||0);
+                                const e200pow = l.count200POW||0;
+                                
+                                const cList = [];
+                                if(l.callsigns200) cList.push(...l.callsigns200.filter(c=>c).map(c=>`200:${c}`));
+                                if(l.callsigns200Unconfirmed) cList.push(...l.callsigns200Unconfirmed.filter(c=>c).map(c=>`200*:${c}`));
+                                if(l.callsigns200Discovered) cList.push(...l.callsigns200Discovered.filter(c=>c).map(c=>`Вияв:${c}`));
+                                if(l.callsigns300) cList.push(...l.callsigns300.filter(c=>c).map(c=>`300:${c}`));
+                                if(l.callsignsPOW) cList.push(...l.callsignsPOW.filter(c=>c).map(c=>`Полон:${c}`));
+                                if(l.callsigns200POW) cList.push(...l.callsigns200POW.filter(c=>c).map(c=>`Заг.Полон:${c}`));
+                                const callsStr = String(cList.join(', '));
+                                
+                                sheet2.addRow({
+                                    id: ev.id,
+                                    date: dStr,
+                                    time: tStr,
+                                    weapon: l.weapon || 'Невідомо',
+                                    e200: e200,
+                                    e200u: e200u,
+                                    e300: e300,
+                                    epow: epow,
+                                    e200pow: e200pow,
+                                    f200: f200,
+                                    f300: f300,
+                                    fzbv: fzbv,
+                                    callsigns: callsStr,
+                                    desc: desc
+                                });
+                            });
+                        });
+                        
+                        const buffer = await workbook.xlsx.writeBuffer();
+                        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        const today = new Date().toISOString().split('T')[0];
+                        link.download = `oblik-vtrat-${today}.xlsx`;
+                        link.click();
+                        URL.revokeObjectURL(link.href);
+                        showToast('Експорт в Excel завершено');
+                    } catch (err) {
+                        console.error("Excel export error:", err);
+                        showToast('Помилка при експорті Excel');
+                    }
                 };
 
                 // Фільтруємо події за датою та зброєю (якщо обрано конкретну)
@@ -2486,11 +2875,24 @@ const EventsApp = (function() {
                     return filteredFinalDates.sort((a,b) => b.localeCompare(a));
                 }, [groupedByDate, dailyFriendlyLosses, dateFrom, dateTo, eventFilters]);
 
+                const activeStats = useMemo(() => {
+                    let days = 0;
+                    let records = 0;
+                    sortedDates.forEach(date => {
+                        const dayData = groupedByDate[date] || { c200: 0, c200Unc: 0, c200Discovered: 0, c300: 0, pow: 0, losses: [] };
+                        const fLoss = dailyFriendlyLosses[date] || { count200: 0, count300: 0, countZBV: 0 };
+                        if(dayData.c200 === 0 && dayData.c200Unc === 0 && dayData.c200Discovered === 0 && dayData.c300 === 0 && dayData.pow === 0 && (!fLoss.count200 && !fLoss.count300 && !fLoss.countZBV) && weaponFilter !== 'all') return;
+                        days++;
+                        records += dayData.losses.length;
+                    });
+                    return { days, records };
+                }, [sortedDates, groupedByDate, dailyFriendlyLosses, weaponFilter]);
+
                 return (
                     <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-[#020617]">
                         <div className="w-full max-w-[2400px] px-2 lg:px-4 mx-auto space-y-6">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Аналітика / Звіти</h1>
+                                <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Аналітика / Звіти <span className="text-sm font-normal text-slate-400">({activeStats.records} записів)</span></h1>
                                 <div className="flex flex-wrap items-center gap-3 bg-slate-900 p-2 rounded-xl border border-slate-800">
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs text-slate-400 font-semibold pl-2">З:</span>
@@ -2515,7 +2917,10 @@ const EventsApp = (function() {
                                         <button onClick={() => toggleFilter('epowDead')} className={`px-2 py-0.5 text-[10px] font-bold rounded transition-colors ${eventFilters.epowDead ? 'bg-rose-600 text-white' : 'text-slate-500 hover:bg-slate-800'}`}>200(п)</button>
                                     </div>
                                     <div className="flex-1 min-w-[20px]"></div>
-                                    <button onClick={() => onGenerateReport({ events: filteredEvents, dateFrom, dateTo, weaponFilter, eventFilters })} className="bg-amber-600 hover:bg-amber-500 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition whitespace-nowrap shadow-[0_0_15px_rgba(217,119,6,0.4)] flex items-center gap-1.5">
+                                    <button onClick={handleExportExcel} className="bg-emerald-700 hover:bg-emerald-600 text-emerald-50 font-bold py-1.5 px-3 rounded-lg text-xs transition whitespace-nowrap shadow-[0_0_15px_rgba(4,120,87,0.4)] flex items-center gap-1.5 border border-emerald-600">
+                                        <Icon name="file-spreadsheet" className="w-4 h-4" /> Excel
+                                    </button>
+                                    <button onClick={() => onGenerateReport({ events: filteredEvents, allEvents: events, dateFrom, dateTo, weaponFilter, eventFilters })} className="bg-amber-600 hover:bg-amber-500 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition whitespace-nowrap shadow-[0_0_15px_rgba(217,119,6,0.4)] flex items-center gap-1.5">
                                         <Icon name="printer" className="w-4 h-4" /> PDF Звіт
                                     </button>
                                     <DatePresets dateFrom={dateFrom} dateTo={dateTo} setDateFrom={setDateFrom} setDateTo={setDateTo} />
@@ -2610,7 +3015,25 @@ const EventsApp = (function() {
                                                                                     <td className="px-3 py-2 font-mono text-xs text-amber-400/90 whitespace-nowrap">{l.time ? `🕒 ${l.time}` : <span className="text-slate-600">—</span>}</td>
                                                                                     <td className="px-4 py-2 font-medium">{l.weapon}</td>
                                                                                     <td className="px-4 py-2">{l.inflicter || <span className="text-slate-600">-</span>}</td>
-                                                                                    <td className="px-4 py-2">{l.callsign || <span className="text-slate-600">-</span>}</td>
+                                                                                    <td className="px-4 py-2 text-xs">
+                                                                                        {[
+                                                                                            ...(l.callsigns200||[]).filter(c=>c),
+                                                                                            ...(l.callsigns200Unconfirmed||[]).filter(c=>c),
+                                                                                            ...(l.callsigns200Discovered||[]).filter(c=>c),
+                                                                                            ...(l.callsigns300||[]).filter(c=>c),
+                                                                                            ...(l.callsignsPOW||[]).filter(c=>c),
+                                                                                            ...(l.callsigns200POW||[]).filter(c=>c)
+                                                                                        ].length > 0 ? (
+                                                                                            [
+                                                                                                ...(l.callsigns200||[]).filter(c=>c),
+                                                                                                ...(l.callsigns200Unconfirmed||[]).filter(c=>c),
+                                                                                                ...(l.callsigns200Discovered||[]).filter(c=>c),
+                                                                                                ...(l.callsigns300||[]).filter(c=>c),
+                                                                                                ...(l.callsignsPOW||[]).filter(c=>c),
+                                                                                                ...(l.callsigns200POW||[]).filter(c=>c)
+                                                                                            ].join(', ')
+                                                                                        ) : <span className="text-slate-600">-</span>}
+                                                                                    </td>
                                                                                     <td className="px-4 py-2 text-center font-mono">{l.count200 || '-'}</td>
                                                                                     <td className="px-4 py-2 text-center font-mono">{l.count200Unconfirmed || '-'}</td>
                                                                                     <td data-testid="detail-discovered" className="px-4 py-2 text-center font-mono text-purple-300">{l.count200Discovered || 0}</td>
@@ -2639,7 +3062,7 @@ const EventsApp = (function() {
             };
 
         const SettingsView = () => {
-                const { dailyFriendlyLosses, events, replaceDocumentData, requestPassword, saveSettings, setViewingEvent, settings, showToast } = React.useContext(EnemyAppContext);
+                const { dailyFriendlyLosses, events, personnel, replaceDocumentData, requestPassword, saveSettings, setViewingEvent, settings, showToast } = React.useContext(EnemyAppContext);
                 const [newWeapon, setNewWeapon] = useState('');
                 const [newPosition, setNewPosition] = useState('');
                 const fileRef = useRef(null);
@@ -2701,7 +3124,8 @@ const EventsApp = (function() {
                             exportedAt: new Date().toISOString(),
                             events,
                             settings,
-                            dailyFriendlyLosses
+                            dailyFriendlyLosses,
+                            personnel
                         };
                         const encrypted = await window.crypto.subtle.encrypt(
                             { name: 'AES-GCM', iv },
@@ -2733,25 +3157,7 @@ const EventsApp = (function() {
                     }
                 };
 
-                const exportCsv = () => {
-                    const rows = [['id','дата','типи','200','200*','300','полон','наші 200','наші 300','ЗБВ','опис']];
-                    events.forEach(ev => {
-                        const e200 = (ev.enemyLosses||[]).reduce((s,l)=>s+(l.count200||0)+(l.count200POW||0),0);
-                        const e200u = (ev.enemyLosses||[]).reduce((s,l)=>s+(l.count200Unconfirmed||0),0);
-                        const e300 = (ev.enemyLosses||[]).reduce((s,l)=>s+(l.count300||0),0);
-                        const epow = (ev.enemyLosses||[]).reduce((s,l)=>s+(l.countPOW||0)-(l.count200POW||0),0);
-                        const desc = String(ev.description||'').replace(/"/g,'""');
-                        rows.push([ev.id, getEventDateStr(ev), (ev.types||[]).join('|'), e200, e200u, e300, epow, ev.friendlyLosses?.count200||0, ev.friendlyLosses?.count300||0, ev.friendlyLosses?.countZBV||0, `"${desc}"`]);
-                    });
-                    const blob = new Blob(['\uFEFF' + rows.map(r=>r.join(';')).join('\n')], { type: 'text/csv;charset=utf-8' });
-                    const a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob);
-                    a.download = `oblik-vtrat-${todayISO()}.csv`;
-                    a.click();
-                    URL.revokeObjectURL(a.href);
-                    showToast('CSV експортовано');
-                };
-
+                
                 const importEncryptedBackup = async (file) => {
                     const password = await requestPassword('Введіть пароль від бекапу', 'Ваш пароль', null, 'Розшифрувати');
                     if (!password) return;
@@ -2796,7 +3202,7 @@ const EventsApp = (function() {
                                 <h3 className="text-sm font-bold text-slate-300 uppercase">Резерв і обмін</h3>
                                 <div className="flex flex-wrap gap-2">
                                     <button type="button" onClick={exportEncryptedBackup} className="px-3 py-2 rounded-xl text-sm font-semibold bg-slate-800 border border-slate-700 hover:border-amber-500/50 flex items-center gap-2"><Icon name="lock-keyhole" className="w-4 h-4"/> Зашифрована копія</button>
-                                    <button type="button" onClick={exportCsv} className="px-3 py-2 rounded-xl text-sm font-semibold bg-slate-800 border border-slate-700 hover:border-amber-500/50 flex items-center gap-2"><Icon name="file-text" className="w-4 h-4"/> CSV</button>
+                                    
                                     <button type="button" onClick={()=>fileRef.current?.click()} className="px-3 py-2 rounded-xl text-sm font-semibold bg-slate-800 border border-slate-700 hover:border-amber-500/50 flex items-center gap-2"><Icon name="upload" className="w-4 h-4"/> Відновити копію</button>
                                     <input ref={fileRef} type="file" accept=".oblik" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) importEncryptedBackup(f); e.target.value=''; }} />
                                 </div>
@@ -2852,14 +3258,13 @@ const EventsApp = (function() {
 
         function App() {
             const [events, setEvents] = useState([]);
-
+            const [personnel, setPersonnel] = useState([]);
             const [settings, setSettings] = useState({ weapons: DEFAULT_WEAPONS, positions: DEFAULT_POSITIONS });
             const [isLoading, setIsLoading] = useState(true);
             const [activeTab, setActiveTab] = useState('list'); // 'list', 'analytics', 'dashboard', 'settings'
             const [isFormOpen, setIsFormOpen] = useState(false);
             const [editingEvent, setEditingEvent] = useState(null);
             const [viewingEvent, setViewingEvent] = useState(null);
-            const [reportData, setReportData] = useState(null);
             const [assaultReportEvent, setAssaultReportEvent] = useState(null);
             const [medicalSync, setMedicalSync] = useState({ daily: {}, included: 0, excluded: 0, invalid: 0, duplicates: 0, loading: true, error: '' });
             const dailyFriendlyLosses = medicalSync.daily;
@@ -2903,6 +3308,7 @@ const EventsApp = (function() {
                     try {
                         const savedEvents = await localforage.getItem('enemy_events_v2') || await localforage.getItem('enemy_events_v1') || [];
                         const savedSettings = await localforage.getItem('enemy_settings_v1') || { weapons: DEFAULT_WEAPONS, positions: DEFAULT_POSITIONS };
+                        let savedPersonnel = await localforage.getItem('enemy_personnel_v1') || [];
                         
                         // Migration v1 -> v2 (if needed)
                         const migratedEvents = savedEvents.map(e => {
@@ -2941,8 +3347,76 @@ const EventsApp = (function() {
                             return e;
                         });
 
+                        // Legacy callsign migration to personnel DB and Event format migration
+                        let updatedPersonnel = [...savedPersonnel];
+                        let personnelChanged = false;
+                        let eventsChanged = false;
+                        
+                        migratedEvents.forEach(e => {
+                            if (!e.enemyLosses) return;
+                            const eventDate = e.actionDetails?.startDate || e.createdAt?.split('T')[0] || new Date().toISOString().split('T')[0];
+                            
+                            e.enemyLosses.forEach(loss => {
+                                    if (loss.callsign && loss.callsign.trim()) {
+                                        const trimmedCs = loss.callsign.trim();
+                                        const cleanCs = trimmedCs.toLowerCase();
+                                        
+                                        let assignedStatus = '200';
+                                        if (loss.count200 > 0) { assignedStatus = '200'; loss.callsigns200 = loss.callsigns200 || []; if(!loss.callsigns200.includes(trimmedCs)) loss.callsigns200.push(trimmedCs); }
+                                        else if (loss.count200Unconfirmed > 0) { assignedStatus = '200_unc'; loss.callsigns200Unconfirmed = loss.callsigns200Unconfirmed || []; if(!loss.callsigns200Unconfirmed.includes(trimmedCs)) loss.callsigns200Unconfirmed.push(trimmedCs); }
+                                        else if (loss.count200Discovered > 0) { assignedStatus = '200_disc'; loss.callsigns200Discovered = loss.callsigns200Discovered || []; if(!loss.callsigns200Discovered.includes(trimmedCs)) loss.callsigns200Discovered.push(trimmedCs); }
+                                        else if (loss.count200POW > 0) { assignedStatus = '200_pow'; loss.callsigns200POW = loss.callsigns200POW || []; if(!loss.callsigns200POW.includes(trimmedCs)) loss.callsigns200POW.push(trimmedCs); }
+                                        else if (loss.countPOW > 0) { assignedStatus = 'pow'; loss.callsignsPOW = loss.callsignsPOW || []; if(!loss.callsignsPOW.includes(trimmedCs)) loss.callsignsPOW.push(trimmedCs); }
+                                        else if (loss.count300 > 0) { assignedStatus = '300'; loss.callsigns300 = loss.callsigns300 || []; if(!loss.callsigns300.includes(trimmedCs)) loss.callsigns300.push(trimmedCs); }
+                                        
+                                        eventsChanged = true;
+                                        delete loss.callsign;
+                                        
+                                        const pIndex = updatedPersonnel.findIndex(p => p.callsign.toLowerCase().trim() === cleanCs);
+                                        const isDeadStatus = ['200', '200_unc', '200_disc', '200_pow'].includes(assignedStatus);
+                                        
+                                        if (pIndex !== -1) {
+                                            const currentStatus = updatedPersonnel[pIndex].status;
+                                            const currentIsDead = ['200', '200_unc', '200_disc', '200_pow'].includes(currentStatus);
+                                            let newStatus = currentStatus;
+                                            
+                                            if (isDeadStatus) newStatus = assignedStatus;
+                                            else if (assignedStatus === 'pow' && !currentIsDead) newStatus = 'pow';
+                                            else if (assignedStatus === '300' && !currentIsDead && currentStatus !== 'pow') newStatus = '300';
+                                            
+                                            if (newStatus !== currentStatus) {
+                                                updatedPersonnel[pIndex] = { ...updatedPersonnel[pIndex], status: newStatus, lastUpdated: new Date().toISOString() };
+                                                personnelChanged = true;
+                                            }
+                                        } else {
+                                            updatedPersonnel.push({
+                                                id: 'evt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                                                callsign: trimmedCs,
+                                                status: assignedStatus,
+                                                notes: `Імпортовано зі старого запису (подія від ${eventDate})`,
+                                                createdAt: new Date().toISOString(),
+                                                lastUpdated: new Date().toISOString()
+                                            });
+                                            personnelChanged = true;
+                                        }
+                                    }
+                                });
+                            });
+                            
+                            if (personnelChanged) {
+                                await localforage.setItem('enemy_personnel_v1', updatedPersonnel);
+                                savedPersonnel = updatedPersonnel;
+                            }
+                            if (eventsChanged) {
+                                await localforage.setItem('enemy_events_v2', migratedEvents);
+                            }
+                            
+                            savedSettings.hasMigratedLegacyCallsigns = true;
+                            await localforage.setItem('enemy_settings_v1', savedSettings);
+
                         setEvents(migratedEvents);
                         setSettings(savedSettings);
+                        setPersonnel(savedPersonnel);
                         setIsLoading(false);
                     } catch (e) {
                         console.error("Помилка завантаження", e);
@@ -2957,6 +3431,11 @@ const EventsApp = (function() {
                 setEvents(newEvents);
             };
 
+            const savePersonnel = async (newPersonnel) => {
+                await window.SuiteRuntime.setItem('enemy_personnel_v1', newPersonnel);
+                setPersonnel(newPersonnel);
+            };
+
             const saveSettings = async (newSettings) => {
                 await window.SuiteRuntime.setItem('enemy_settings_v1', newSettings);
                 setSettings(newSettings);
@@ -2964,15 +3443,17 @@ const EventsApp = (function() {
 
             const replaceDocumentData = async (data) => {
                 validateDocumentBackup(data);
-                const previous = { events, settings, dailyFriendlyLosses };
+                const previous = { events, settings, dailyFriendlyLosses, personnel };
                 await window.SuiteRuntime.setItem('document_before_restore_v1', previous);
                 try {
                     await window.SuiteRuntime.setItem('enemy_events_v2', data.events);
                     await window.SuiteRuntime.setItem('enemy_settings_v1', data.settings);
+                    if (data.personnel) await window.SuiteRuntime.setItem('enemy_personnel_v1', data.personnel);
                 } catch (error) {
                     try {
                         await window.SuiteRuntime.setItem('enemy_events_v2', previous.events);
                         await window.SuiteRuntime.setItem('enemy_settings_v1', previous.settings);
+                        await window.SuiteRuntime.setItem('enemy_personnel_v1', previous.personnel);
                     } catch {
                         showToast('Помилка сховища. Копія попередніх даних збережена для відновлення.');
                     }
@@ -3043,6 +3524,8 @@ const EventsApp = (function() {
 
             
 
+
+
             useEffect(() => {
                 const onKey = (e) => {
                     if (document.querySelector('[data-suite-module="enemy"]')?.dataset.suiteActive !== 'true') return;
@@ -3055,16 +3538,30 @@ const EventsApp = (function() {
                     if (e.key === '1') setActiveTab('list');
                     if (e.key === '2') setActiveTab('dashboard');
                     if (e.key === '3') setActiveTab('analytics');
-                    if (e.key === '4') setActiveTab('settings');
+                    if (e.key === '4') setActiveTab('personnel');
+                    if (e.key === '5') setActiveTab('settings');
                 };
                 window.addEventListener('keydown', onKey);
                 return () => window.removeEventListener('keydown', onKey);
             }, []);
 
+            useEffect(() => {
+                const openReviewed = ({ detail }) => {
+                    if (detail?.module !== 'enemy') return;
+                    if (detail.kind === 'personnel') { setActiveTab('personnel'); return; }
+                    if (!detail.recordId) return;
+                    const matches = events.filter(row => String(row.id) === detail.recordId);
+                    setActiveTab('list');
+                    if (matches.length === 1) { setEditingEvent(matches[0]); setIsFormOpen(true); }
+                    else showToast('Неможливо однозначно відкрити запис за ID. Перевірте список.');
+                };
+                window.addEventListener('suite-review-record', openReviewed);
+                return () => window.removeEventListener('suite-review-record', openReviewed);
+            }, [events]);
             if (isLoading) return <div className="flex-1 flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full"></div></div>;
 
             return (
-                <EnemyAppContext.Provider value={{ allPOWs, dailyFriendlyLosses, deleteEvent, events, medicalSync, replaceDocumentData, requestPassword, saveSettings, setEditingEvent, setIsFormOpen, setViewingEvent, setAssaultReportEvent, settings, showToast }}>
+                <EnemyAppContext.Provider value={{ allPOWs, dailyFriendlyLosses, deleteEvent, events, medicalSync, replaceDocumentData, requestPassword, saveSettings, setEditingEvent, setIsFormOpen, setViewingEvent, setAssaultReportEvent, settings, showToast, personnel, savePersonnel }}>
                 <div className="flex flex-col h-full">
                     {/* Header Nav */}
                     <header className="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 shrink-0 print:hidden">
@@ -3087,6 +3584,9 @@ const EventsApp = (function() {
                                 <button onClick={() => setActiveTab('analytics')} className={`shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold transition flex items-center gap-2 snap-start ${activeTab === 'analytics' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}>
                                     <Icon name="bar-chart-2" className="w-4 h-4" /> Таблиця
                                 </button>
+                                <button onClick={() => setActiveTab('personnel')} className={`shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold transition flex items-center gap-2 snap-start ${activeTab === 'personnel' ? 'bg-slate-800 text-amber-400 shadow-sm' : 'text-slate-400 hover:text-amber-400/70'}`}>
+                                    <Icon name="users" className="w-5 h-5" /> База в/сл противника
+                                </button>
                                 <button onClick={() => setActiveTab('settings')} className={`shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold transition flex items-center gap-2 snap-start ${activeTab === 'settings' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}>
                                     <Icon name="settings" className="w-5 h-5" /> Налаштування
                                 </button>
@@ -3108,13 +3608,13 @@ const EventsApp = (function() {
                     <div className="flex-1 overflow-hidden relative print:hidden">
                         <div className={`absolute inset-0 flex flex-col ${activeTab === 'list' ? 'z-10' : 'z-0 invisible pointer-events-none'}`}><ListView /></div>
                         <div className={`absolute inset-0 flex flex-col ${activeTab === 'dashboard' ? 'z-10' : 'z-0 invisible pointer-events-none'}`}><DashboardView /></div>
-                        <div className={`absolute inset-0 flex flex-col ${activeTab === 'analytics' ? 'z-10' : 'z-0 invisible pointer-events-none'}`}><AnalyticsView onGenerateReport={setReportData} /></div>
+                        <div className={`absolute inset-0 flex flex-col ${activeTab === 'analytics' ? 'z-10' : 'z-0 invisible pointer-events-none'}`}><AnalyticsView onGenerateReport={handleOpenPrintableReport} /></div>
                         <div className={`absolute inset-0 flex flex-col ${activeTab === 'settings' ? 'z-10' : 'z-0 invisible pointer-events-none'}`}><SettingsView /></div>
+                        <div className={`absolute inset-0 flex flex-col ${activeTab === 'personnel' ? 'z-10' : 'z-0 invisible pointer-events-none'}`}><PersonnelView personnel={personnel} savePersonnel={savePersonnel} showToast={showToast} Icon={Icon} generateId={generateId} /></div>
                     </div>
 
                     {/* Modals */}
                     {assaultReportEvent && <AssaultReportModal key={assaultReportEvent.id} event={assaultReportEvent} onClose={() => setAssaultReportEvent(null)} />}
-                    {reportData && <ReportView data={reportData} allEvents={events} onClose={() => setReportData(null)} />}
                     {viewingEvent && (
                         <EventViewModal event={viewingEvent} onClose={() => setViewingEvent(null)} />
                     )}
@@ -3139,7 +3639,76 @@ const EventsApp = (function() {
                                 } else {
                                     newEvents = [eventData, ...newEvents];
                                 }
-                                try { await saveEvents(newEvents); }
+                                try { 
+                                    await saveEvents(newEvents); 
+                                    
+                                    if (eventData.enemyLosses && eventData.enemyLosses.length > 0) {
+                                        let updatedPersonnel = [...personnel];
+                                        let personnelChanged = false;
+                                        
+                                        eventData.enemyLosses.forEach(loss => {
+                                            const checkAndSync = (csArray, assignedStatus) => {
+                                                if (!Array.isArray(csArray)) return;
+                                                csArray.forEach(cs => {
+                                                    if (!cs || !cs.trim()) return;
+                                                    const cleanCs = cs.toLowerCase().trim();
+                                                    const pIndex = updatedPersonnel.findIndex(p => p.callsign.toLowerCase().trim() === cleanCs);
+                                                    
+                                                    const isDeadStatus = ['200', '200_unc', '200_disc', '200_pow'].includes(assignedStatus);
+                                                    
+                                                    if (pIndex !== -1) {
+                                                        const currentStatus = updatedPersonnel[pIndex].status;
+                                                        const currentIsDead = ['200', '200_unc', '200_disc', '200_pow'].includes(currentStatus);
+                                                        let newStatus = currentStatus;
+                                                        
+                                                        // Dead overrides everything. POW overrides 300.
+                                                        if (isDeadStatus) newStatus = assignedStatus;
+                                                        else if (assignedStatus === 'pow' && !currentIsDead) newStatus = 'pow';
+                                                        else if (assignedStatus === '300' && !currentIsDead && currentStatus !== 'pow') newStatus = '300';
+                                                        
+                                                        if (newStatus !== currentStatus) {
+                                                            updatedPersonnel[pIndex] = { ...updatedPersonnel[pIndex], status: newStatus, lastUpdated: new Date().toISOString() };
+                                                            personnelChanged = true;
+                                                        }
+                                                    } else {
+                                                        // Create new personnel
+                                                        updatedPersonnel.push({
+                                                            id: generateId(),
+                                                            callsign: cs.trim(),
+                                                            status: assignedStatus,
+                                                            notes: 'Імпортовано автоматично з форми втрат',
+                                                            createdAt: new Date().toISOString(),
+                                                            lastUpdated: new Date().toISOString()
+                                                        });
+                                                        personnelChanged = true;
+                                                    }
+                                                });
+                                            };
+                                            
+                                            checkAndSync(loss.callsigns200, '200');
+                                            checkAndSync(loss.callsigns200Unconfirmed, '200_unc');
+                                            checkAndSync(loss.callsigns200Discovered, '200_disc');
+                                            checkAndSync(loss.callsigns200POW, '200_pow');
+                                            checkAndSync(loss.callsignsPOW, 'pow');
+                                            checkAndSync(loss.callsigns300, '300');
+                                            
+                                            if (loss.callsign && loss.callsign.trim()) {
+                                                let inferredStatus = null;
+                                                if (loss.count200 > 0) inferredStatus = '200';
+                                                else if (loss.count200Unconfirmed > 0) inferredStatus = '200_unc';
+                                                else if (loss.count200Discovered > 0) inferredStatus = '200_disc';
+                                                else if (loss.count200POW > 0) inferredStatus = '200_pow';
+                                                else if (loss.countPOW > 0) inferredStatus = 'pow';
+                                                else if (loss.count300 > 0) inferredStatus = '300';
+                                                if (inferredStatus) checkAndSync([loss.callsign], inferredStatus);
+                                            }
+                                        });
+                                        
+                                        if (personnelChanged) {
+                                            await savePersonnel(updatedPersonnel);
+                                        }
+                                    }
+                                }
                                 catch { showToast('Не вдалося зберегти запис. Форма залишається відкритою.'); return; }
                                 setIsFormOpen(false);
                                 setEditingEvent(null);

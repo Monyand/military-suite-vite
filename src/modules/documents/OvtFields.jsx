@@ -6,10 +6,10 @@ import { OVT_IDENTIFIERS, OVT_REGISTRATIONS, prepareOvtDraft } from './ovt-form.
 import { buildOvtReport } from './ovt-report.js';
 import './ovt-form.css';
 
-const lists = { nomenclature: 'models', taskText: 'tasks', routeText: 'routes', equipmentType: 'equipmentTypes', eventDescription: 'descriptions', consequence: 'consequences' };
+const lists = { nomenclature: 'models', taskText: 'tasks', routeText: 'routes', equipmentType: 'equipmentTypes', eventDescription: 'descriptions', consequence: 'consequences', crewName: 'crews' };
 export function OvtFields({ draft: source, setDraft, rows, modelOptions, busy }) {
     const options = useSharedDictionaries(), templates = useOvtTemplates();
-    const draft = prepareOvtDraft(source), isTransport = draft.category === 'Транспорт';
+    const draft = prepareOvtDraft(source), isTransport = draft.category === 'Транспорт', isUav = draft.category === 'БпЛА';
     const preview = useRef(null), [message, setMessage] = useState('');
     const change = (key, value) => {
         setMessage('');
@@ -22,7 +22,7 @@ export function OvtFields({ draft: source, setDraft, rows, modelOptions, busy })
         setDraft(prepareOvtDraft(next));
     };
     const field = (key, title, { type = 'text', choices, wide = false, required = false } = {}) => {
-        if (choices === undefined) choices = key === 'position' ? options('docPlaces', rows.map(row => row.position), draft.position) : key === 'nomenclature' && !isTransport ? modelOptions : lists[key] ? ovtTemplateOptions(templates, lists[key], draft) : null;
+        if (choices === undefined) choices = key === 'position' ? options('docPlaces', rows.map(row => row.position), draft.position) : key === 'nomenclature' ? modelOptions : lists[key] ? ovtTemplateOptions(templates, lists[key], draft) : null;
         const id = 'ovt-field-' + key;
         return <label key={key} className={'ovt-field' + (wide ? ' ovt-wide' : '')}>
             <span>{title}{required ? ' *' : ''}</span>
@@ -54,17 +54,18 @@ export function OvtFields({ draft: source, setDraft, rows, modelOptions, busy })
                 {field('status', 'Статус', { type: 'select', choices: isTransport ? OVT_STATUSES : D.schemas.ovt.fields.find(([key]) => key === 'status')[2] })}
                 {isTransport && field('equipmentType', 'Тип транспорту', { wide: true })}
                 {field('nomenclature', 'Номенклатура / Модель', { wide: true, required: true })}
-                {switchedField('identifierType', 'Тип ідентифікатора', OVT_IDENTIFIERS)}
-                {switchedField('registrationType', 'Тип реєстраційного номера', OVT_REGISTRATIONS)}
-                {isTransport && field('taskText', 'Завдання', { wide: true })}
-                <div className="ovt-wide ovt-location">
+                {isUav ? field('serialNumber', 'Серійний номер') : switchedField('identifierType', 'Тип ідентифікатора', OVT_IDENTIFIERS)}
+                {!isUav && switchedField('registrationType', 'Тип реєстраційного номера', OVT_REGISTRATIONS)}
+                {(isTransport || isUav) && field('taskText', 'Завдання', { wide: true })}
+                {isUav && field('crewName', 'Назва екіпажу (наприклад «БАМБУК»)', { wide: true })}
+                {!isUav && <div className="ovt-wide ovt-location">
                     <div role="group" aria-label="Місце у документі" className="ovt-segments">{[['position', 'Позиція у документі'], ['route', 'Маршрут']].map(([value, label]) => <button key={value} type="button" disabled={busy} aria-pressed={draft.locationMode === value} onClick={() => change('locationMode', value)}>{label}</button>)}</div>
                     {draft.locationMode === 'route' ? field('routeText', 'Маршрут') : field('position', 'Позиція у документі')}
-                </div>
-                {isTransport ? <>
-                    {field('eventDescription', 'Опис події', { wide: true })}
+                </div>}
+                {(isTransport || isUav) ? <>
+                    {field('eventDescription', isUav ? 'Причина втрати / Опис події' : 'Опис події', { wide: true })}
                     {field('coordinates', 'Координати події', { wide: true })}
-                    {field('consequence', 'Наслідок', { wide: true })}
+                    {isTransport && field('consequence', 'Наслідок', { wide: true })}
                 </> : <label className="ovt-field ovt-wide"><span>Коментар / Причина</span><textarea aria-label="Коментар / Причина" className="dj-input" rows={3} disabled={busy} maxLength={10000} value={draft.comment || ''} onChange={event => change('comment', event.target.value)} /></label>}
                 {field('urgentDocNo', '№ позатермінового донесення')}
                 <label className="ovt-checkbox"><input aria-label="Подія з поміткою *" type="checkbox" disabled={busy} checked={!!draft.isEvent} onChange={event => change('isEvent', event.target.checked)} /> Подія з поміткою *</label>
@@ -75,7 +76,7 @@ export function OvtFields({ draft: source, setDraft, rows, modelOptions, busy })
             <div className="ovt-preview-heading"><div><span className="ovt-eyebrow">ПОЗАТЕРМІНОВЕ ДОНЕСЕННЯ</span><h3>Попередній перегляд</h3></div><span className="ovt-live">● Наживо</span></div>
             <textarea ref={preview} aria-label="Попередній перегляд донесення" readOnly value={buildOvtReport(draft)} />
             <p className="ovt-help">Текст змінюється разом із полями. Квадратні дужки позначають пропущені відомості.</p>
-            {isTransport && <p className="ovt-help">Власні моделі й фрази запам’ятовуються після збереження за типом транспорту. Статус впливає тільки на наслідок. Номери й координати в шаблони не записуються.</p>}
+            {(isTransport || isUav) && <p className="ovt-help">Власні моделі й фрази запам’ятовуються після збереження за типом. Номери й координати в шаблони не записуються.</p>}
             {message && <p role="status" className="ovt-message">{message}</p>}
             <button type="button" className="dj-button dj-indigo" onClick={async () => {
                 try { await navigator.clipboard.writeText(buildOvtReport(draft)); setMessage('Текст скопійовано.'); }

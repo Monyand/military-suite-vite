@@ -3,6 +3,7 @@ import { localforage } from './vendor.js';
 const MedicalDailyTotals = (() => {
             const fields = new Map([
                 ['загибель (200)', 'count200'],
+                ['200 (від ран)', 'count200'],
                 ['поранення (300)', 'count300'],
                 ['бойове травмування (300)', 'count300'],
                 ['бойове травмування', 'count300'],
@@ -54,7 +55,12 @@ const MedicalDailyTotals = (() => {
                 }
                 return aggregate(episodes);
             };
-            return { aggregate, read, dateKey };
+            const classify = lossType => {
+                const type = String(lossType || '').trim().toLocaleLowerCase('uk-UA').replace(/\s+/g, ' ');
+                if (fields.has(type)) return 'included';
+                return ['небойова смерть (200)', 'небойове травмування (300)', 'сзч', 'дезертирство'].includes(type) ? 'excluded' : 'unknown';
+            };
+            return { aggregate, read, dateKey, classify };
         })();
 
 export { MedicalDailyTotals };

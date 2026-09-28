@@ -11,7 +11,7 @@ const DocumentJournal = (() => {
                 ] },
                 ovt: { title: 'Втрати ОВТ', sheets: ['втрати овт', 'овт', 'ovt'], fields: [
                     ['date', 'Дата', 'date'], ['time', 'Час', 'time'], ['position', 'Позиція у документі', 'text'],
-                    ['category', 'Категорія', ['БпЛА', 'Зброя', 'Транспорт', 'РЕБ', 'Зв\'язок', 'Інше']], ['nomenclature', 'Номенклатура / Модель', 'text', true],
+                    ['category', 'Категорія', ['БпЛА', 'Зброя', 'Транспорт', 'Інше']], ['nomenclature', 'Номенклатура / Модель', 'text', true],
                     ['status', 'Статус', ['ВТРАЧЕНО', 'ЗНИЩЕНО', 'ПОШКОДЖЕНО', 'ЗНАЙДЕНО']],
                     ['serialNumber', 'Серійний номер / VIN', 'text'], ['plateNumber', 'Номер авто', 'text'],
                     ['isEvent', 'Подія з поміткою *', 'checkbox'], ['urgentDocNo', '№ позатермінового донесення', 'text'], ['comment', 'Коментар / Причина', 'textarea'],
@@ -19,7 +19,8 @@ const DocumentJournal = (() => {
                     ['taskText', 'Завдання', 'text'], ['routeText', 'Маршрут', 'text'], ['equipmentType', 'Тип техніки', 'text'],
                     ['eventDescription', 'Опис події', 'text'], ['consequence', 'Наслідок', 'text'], ['coordinates', 'Координати події', 'text'],
                     ['reportSubject', 'Формулювання у висновку', 'text'], ['factoryNumber', 'Заводський номер', 'text'], ['boardNumber', 'Бортовий номер', 'text'],
-                    ['locationMode', 'Спосіб зазначення місця', 'text'], ['identifierType', 'Тип ідентифікатора', 'text'], ['registrationType', 'Тип реєстраційного номера', 'text']
+                    ['locationMode', 'Спосіб зазначення місця', 'text'], ['identifierType', 'Тип ідентифікатора', 'text'], ['registrationType', 'Тип реєстраційного номера', 'text'],
+                    ['crewName', 'Назва екіпажу', 'text']
                 ] },
                 positions: { title: 'Статус позицій', sheets: ['статус позицій', 'позиції', 'positions'], fields: [
                     ['date', 'Дата зміни', 'date'], ['name', 'Назва позиції', 'text', true],
@@ -36,8 +37,8 @@ const DocumentJournal = (() => {
             // Group only the cards/filter; keep original document categories intact.
             const positionCategoryCards = ['Піхотні', 'ОВгП', 'БпЛА', 'Інші', 'Запасні позиції'];
             const matchesPositionCategory = (category, filter) => filter === 'ОВгП' ? ['Мін. Батр.', 'Вогневі', 'ОВгП'].includes(category) : category === filter;
-            const filters = () => ({ search: '', from: '', to: '', status: '', category: '', event: '', unreported: false, missingDoc: false, needsReview: false });
-            const defaultOvtDict = { 'БпЛА': ['DJI Mavic 3', 'DJI Mavic 3T', 'Autel EVO Max 4T'], 'Зброя': ['АК-74', 'РКК', 'ПКМ'], 'Транспорт': [], 'РЕБ': ['Силует', 'Купол'], 'Зв\'язок': ['Starlink', 'Motorola 4400'], 'Інше': [] };
+            const filters = () => ({ search: '', from: '', to: '', status: '', category: '', event: '', unreported: false, missingDoc: false, needsReview: false, onlyActual: false, pageSize: 50 });
+            const defaultOvtDict = { 'БпЛА': ['DJI Mavic 3', 'DJI Mavic 3T', 'Autel EVO Max 4T'], 'Зброя': ['АК-74', 'РКК', 'ПКМ'], 'Транспорт': [], 'Інше': [] };
             const empty = () => ({ version: 1, tasks: [], ovt: [], positions: [], settings: { tab: 'tasks', filters: Object.fromEntries(tabs.map(tab => [tab, filters()])), ovtDict: defaultOvtDict } });
             const settings = value => ({ tab: tabs.includes(value?.tab) ? value.tab : 'tasks', ovtDict: value?.ovtDict || defaultOvtDict, filters: Object.fromEntries(tabs.map(tab => [tab,
                 Object.fromEntries(Object.entries(filters()).map(([key, fallback]) => [key, typeof value?.filters?.[tab]?.[key] === typeof fallback ? value.filters[tab][key] : fallback]))
@@ -73,6 +74,21 @@ const DocumentJournal = (() => {
                 if (missing) return `Заповніть поле «${missing[1]}».`;
                 if (!row.status) return 'Оберіть статус / документальну дію.';
                 return '';
+            };
+            // Revision 1 is additive and reversible: IDs, dates and existing values are untouched.
+            // Older transfer files deliberately omit local PBD flags.
+            const migrate = data => {
+                if (!data || data.version !== 1) throw new Error('Непідтримувана версія документального журналу.');
+                const revision = data.schemaRevision ?? 0;
+                if (![0, 1].includes(revision)) throw new Error('Журнал створено новішою версією програми. Оновіть програму перед відновленням.');
+                const next = structuredClone(data);
+                for (const tab of ['tasks', 'positions']) {
+                    if (Array.isArray(next[tab])) for (const row of next[tab]) {
+                        if (row && typeof row === 'object' && row.reportedInPbd === undefined) row.reportedInPbd = false;
+                    }
+                }
+                next.schemaRevision = 1;
+                return next;
             };
             const validate = data => {
                 if (!data || data.version !== 1 || typeof data.settings !== 'object' || !data.settings || Array.isArray(data.settings)) throw new Error('Невірний формат документального журналу. Дані не перезаписано.');
@@ -137,8 +153,8 @@ const DocumentJournal = (() => {
                     (!options.from || row.date >= options.from) && (!options.to || row.date <= options.to) &&
                     (!options.status || row.status === options.status) && (!options.category || (options.category === '__uncategorized' ? !row.category : tab === 'positions' ? matchesPositionCategory(row.category, options.category) : row.category === options.category)) && (!options.event || row.isEvent === (options.event === 'marked')) &&
                     (!options.unreported || !row.reportedInPbd) && (!options.missingDoc || !hasDoc(row));
-            }).sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || ''));
-            return { KEY, tabs, schemas, positionCategoryCards, matchesPositionCategory, filters, defaultOvtDict, empty, settings, norm, checked, dateKey, dateLabel, timeValue, cleanRow, rowError, validate, fingerprint, merge, readWorkbook, hasDoc, filtered };
+            }).sort((a, b) => tab === 'tasks' ? (a.date.localeCompare(b.date) || (a.createdAt || '').localeCompare(b.createdAt || '')) : (b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || '')));
+            return { KEY, tabs, schemas, positionCategoryCards, matchesPositionCategory, filters, defaultOvtDict, empty, settings, norm, checked, dateKey, dateLabel, timeValue, cleanRow, rowError, migrate, validate, fingerprint, merge, readWorkbook, hasDoc, filtered };
         })();
 
 export { DocumentJournal };

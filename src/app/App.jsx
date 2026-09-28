@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { SuiteBackup } from '../core/backup.js';
 import { ReactDOM } from '../core/vendor.js';
 import { SharedDictionariesPanel } from './SharedDictionariesPanel.jsx';
+import { IntegrityPanel } from './IntegrityPanel.jsx';
+import { inspectIntegrity } from '../core/integrity.js';
 
 const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
             const [activeApp, setActiveApp] = useState('enemy');
@@ -11,6 +13,9 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
             const [backupConfirm, setBackupConfirm] = useState('');
             const [backupSource, setBackupSource] = useState(null);
             const [backupPreview, setBackupPreview] = useState(null);
+            const [backupReport, setBackupReport] = useState(null);
+            const [localRecovery, setLocalRecovery] = useState(false);
+            const [integrityOpen, setIntegrityOpen] = useState(false);
             const [backupFileName, setBackupFileName] = useState('');
             const [backupMessage, setBackupMessage] = useState('');
             const [backupBusy, setBackupBusy] = useState(false);
@@ -23,7 +28,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
             const openBackup = mode => {
                 if (backupLock.current || restoreStarted) return;
                 setBackupMode(mode); setBackupPassword(''); setBackupConfirm('');
-                setBackupSource(null); setBackupPreview(null); setBackupFileName('');
+                setBackupSource(null); setBackupPreview(null); setBackupFileName(''); setBackupReport(null); setLocalRecovery(false);
                 setBackupMessage(''); setRestoreConfirmed(false); setRestoreComplete(false);
             };
             const closeBackup = () => {
@@ -50,12 +55,14 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                 setBackupMessage('Зашифровану копію підготовлено для завантаження. Збережіть файл і пароль окремо: без пароля відновлення неможливе.');
             });
             const chooseBackup = file => runBackupAction(async () => {
+                setLocalRecovery(false); setBackupReport(null);
                 setBackupSource(null); setBackupPreview(null); setRestoreConfirmed(false);
                 setBackupPassword(''); setBackupConfirm('');
                 setBackupFileName(file?.name || '');
                 setBackupSource(await SuiteBackup.readFile(file));
             });
             const chooseRecovery = () => runBackupAction(async () => {
+                setLocalRecovery(true); setBackupReport(null);
                 setBackupSource(null); setBackupPreview(null); setRestoreConfirmed(false);
                 setBackupPassword(''); setBackupConfirm(''); setBackupFileName('Попередній стан');
                 const recovery = await SuiteBackup.getRecovery();
@@ -65,6 +72,9 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
             const checkBackup = () => runBackupAction(async () => {
                 if (legacyBackup) requireNewPassword();
                 const data = legacyBackup ? SuiteBackup.validate(backupSource) : await SuiteBackup.decrypt(backupSource, backupPassword);
+                await window.SuiteRuntime.drain();
+                const current = await SuiteBackup.collect({ localState: true, unchecked: true });
+                setBackupReport({ rows: SuiteBackup.backupSummary(data, current), audit: inspectIntegrity(data) });
                 setBackupPreview(data); setRestoreConfirmed(false);
             });
             const handleRestore = () => runBackupAction(async () => {
@@ -73,7 +83,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                 // Unmount synchronously: cancel module timers/listeners before
                 // draining writes. Stay suspended on both success and failure.
                 ReactDOM.flushSync(() => setRestoreStarted(true));
-                await SuiteBackup.restore(backupPreview, backupPassword);
+                await SuiteBackup.restore(backupPreview, backupPassword, { localRecovery });
                 setRestoreComplete(true);
                 setBackupPassword(''); setBackupConfirm(''); setBackupPreview(null); setBackupSource(null);
                 setBackupMessage('Відновлення завершено. Попередній стан збережено зашифрованим у цьому браузері (кнопка «Попередній стан», той самий пароль). Перезавантажте програму.');
@@ -93,6 +103,10 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
             
             const EnemyApp = EventsApp;
             const MedApp = MedicalApp;
+            const openIntegrityRecord = issue => {
+                ReactDOM.flushSync(() => { setActiveApp(issue.module); setIntegrityOpen(false); });
+                window.dispatchEvent(new CustomEvent('suite-review-record', { detail: issue }));
+            };
 
             return (
                 <div className="flex flex-col h-full w-full relative">
@@ -109,6 +123,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                             </div>
                         </div>
                         <div className="flex gap-2 shrink-0 ml-2">
+                        <button aria-label="Перевірка даних" disabled={restoreStarted} onClick={() => setIntegrityOpen(true)} className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1.5 rounded-lg text-sm font-bold">Перевірка даних</button>
                         <button aria-label="Спільні довідники" disabled={restoreStarted} onClick={() => setDictionariesOpen(true)} className="bg-teal-950 hover:bg-teal-900 text-teal-200 border border-teal-700 px-3 py-1.5 rounded-lg text-sm font-bold"><span className="hidden lg:inline">Спільні довідники</span><span className="lg:hidden">Довідники</span></button>
                         <button aria-label="Створити Єдиний Бекап" onClick={() => openBackup('export')} className="bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-900/50 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2">
                             <span className="hidden lg:inline">Створити Єдиний Бекап</span><span className="lg:hidden">Бекап</span>
@@ -124,10 +139,12 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                         </>}
                     </div>
                     {dictionariesOpen && <SharedDictionariesPanel onClose={() => setDictionariesOpen(false)} onSuspend={() => ReactDOM.flushSync(() => setRestoreStarted(true))} />}
+                    {integrityOpen && <IntegrityPanel onClose={() => setIntegrityOpen(false)} onOpen={openIntegrityRecord} />}
                     {backupMode && <div className="fixed inset-0 z-[20000] bg-black/80 flex items-center justify-center p-4">
-                        <section role="dialog" aria-modal="true" aria-labelledby="suite-backup-title" className="bg-slate-900 text-slate-200 border border-slate-600 rounded-2xl p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto space-y-4">
+                        <section role="dialog" aria-modal="true" aria-labelledby="suite-backup-title" className="bg-slate-900 text-slate-200 border border-slate-600 rounded-2xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto space-y-4">
                             <h2 id="suite-backup-title" className="text-xl font-bold">{backupMode === 'export' ? 'Єдиний зашифрований бекап' : 'Відновлення єдиного бекапу'}</h2>
                             <p className="text-sm text-slate-300">Дані та збережені налаштування всіх модулів, включно з документальним журналом. AES-256-GCM · PBKDF2-SHA-256 · 600 000 ітерацій. Пароль не записується у файл.</p>
+                            <p className="text-sm text-amber-200">Відмітки «Подано в ПБД» не передаються у файлі. При отриманні бекапу свої галочки залишаються для тих самих ID записів; нові записи отримують «не подано».</p>
                             {!restoreStarted && <>
                                 {backupMode === 'import' && <div className="space-y-3">
                                     <label className="block text-sm">Файл бекапу
@@ -147,6 +164,13 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                                 </>}
                                 {backupPreview && <div className="rounded-lg border border-amber-700 bg-amber-950/30 p-3 space-y-3 text-sm">
                                     <p>Файл перевірено. Створений: {backupPreview.timestamp || 'дата невідома'}. Наборів даних: {Object.keys(backupPreview.localforage).length}; параметрів локального сховища: {Object.keys(backupPreview.localstorage).length}.</p>
+                                    <p>Формат даних: {backupPreview.version}; ревізія журналу: {backupPreview.localforage.document_journal_v1?.schemaRevision ?? 0} → 1. Старим записам додаються лише відсутні локальні відмітки, без зміни ID, дат і змісту.</p>
+                                    {localRecovery && backupPreview.localOnly && <p className="text-amber-200">Вибрано місцеву захисну копію: повернуться також власні відмітки ПБД на момент її створення. Ця копія не є файлом для передачі.</p>}
+                                    {backupReport && <>
+                                        <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr>{['Розділ', 'Зараз', 'Після', 'Нові ID', 'Зникнуть'].map(title => <th key={title} className="p-2 border-b border-slate-600">{title}</th>)}</tr></thead><tbody>{backupReport.rows.map(row => <tr key={row.title}><td className="p-2">{row.title}</td><td>{row.current}</td><td>{row.incoming}</td><td>{row.added}</td><td className={row.removed ? 'text-rose-300 font-bold' : ''}>{row.removed}</td></tr>)}</tbody></table></div>
+                                        <p>«Зникнуть» — поточні записи, чиїх ID немає у файлі. Відсутні у файлі розділи будуть очищені; це заміна бази, не об’єднання.</p>
+                                        {!!backupReport.audit.issues.length && <details><summary className="cursor-pointer text-amber-200">Потребує звірки: {backupReport.audit.issues.length}</summary><ul className="list-disc pl-5">{backupReport.audit.issues.slice(0, 30).map((issue, index) => <li key={index}>{issue.recordId}: {issue.message}</li>)}</ul>{backupReport.audit.issues.length > 30 && <p>Решта доступна в «Перевірка даних» після відновлення.</p>}</details>}
+                                    </>}
                                     <p>Відновлення замінить дані й налаштування всіх модулів, а не доповнить їх. Поточний стан буде збережено окремо в зашифрованому вигляді з тим самим паролем. Закрийте інші вкладки програми.</p>
                                     <label className="flex gap-2 items-start"><input type="checkbox" disabled={backupBusy} checked={restoreConfirmed} onChange={event => setRestoreConfirmed(event.target.checked)} />Я закрив інші вкладки та підтверджую заміну поточних даних</label>
                                 </div>}

@@ -60,7 +60,9 @@ async function main() {
     const decrypted = await h.api.decrypt(encrypted, 'test-document-password');
     h.persistent.set(D.KEY, D.empty());
     await h.api.restore(decrypted, 'test-document-password');
-    assert.deepEqual(h.persistent.get(D.KEY), result.next);
+    const restored = D.migrate(result.next);
+    for (const tab of ['tasks', 'positions']) restored[tab].forEach(row => { row.reportedInPbd = false; });
+    assert.deepEqual(h.persistent.get(D.KEY), restored, 'Transferred PBD flags never replace recipient state; a clean browser starts unreported');
     assert.equal(JSON.parse(h.storage.getItem('document_journal_view_v1')).tab, 'positions');
     assert.throws(() => h.api.validate({ ...snapshot, localforage: { [D.KEY]: {} } }), /журнал/);
     console.log('PASS: three-register allowlist, dates/times, old/new position schema, deduplication, PBD preservation, filters, encrypted backup/restore with settings');

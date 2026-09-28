@@ -2,9 +2,10 @@
 export const OVT_TEMPLATE_LISTS = [
     ['tasks', 'Завдання', 'підвозу будівельних матеріалів'],
     ['routes', 'Маршрут', 'Святогірськ—Соснове—Новоселівка'],
-    ['equipmentTypes', 'Тип транспорту', 'вантажний автомобіль'],
+    ['equipmentTypes', 'Тип транспорту / техніки', 'вантажний автомобіль'],
+    ['crews', 'Екіпаж', 'екіпажем 2 мб 125 овмбр «БАМБУК»'],
     ['models', 'Номенклатура / Модель', 'ГАЗ-3307'],
-    ['descriptions', 'Опис події', 'зазнав вогневого ураження'],
+    ['descriptions', 'Опис події / Причина втрати', 'зазнав вогневого ураження'],
     ['consequences', 'Наслідок', 'транспортний засіб був повністю знищений'],
 ];
 export const OVT_STATUSES = ['ЗНИЩЕНО', 'ПОШКОДЖЕНО'];
@@ -12,11 +13,11 @@ export const OVT_SUBJECTS = ['транспортний засіб', 'техні�
 export const emptyOvtTemplates = () => Object.fromEntries(OVT_TEMPLATE_LISTS.map(([key]) => [key, []]));
 const norm = text => String(text || '').normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('uk-UA');
 export const ovtTemplateName = entry => typeof entry === 'string' ? entry : entry.name;
-const identity = entry => JSON.stringify([norm(ovtTemplateName(entry)), entry.status || '', norm(entry.equipmentType)]);
+const identity = entry => JSON.stringify([norm(ovtTemplateName(entry)), entry.status || '', norm(entry.equipmentType), norm(entry.category || '')]);
 export function validateOvtTemplates(value) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Пошкоджені шаблони ОВТ.');
     for (const [key, title] of OVT_TEMPLATE_LISTS) {
-        if (key === 'models' && value[key] === undefined) continue; // Older backups have five lists.
+        if (value[key] === undefined) continue; // Older backups might lack newer lists.
         if (!Array.isArray(value[key]) || value[key].length > 1000) throw new Error('Шаблони ОВТ: потрібен список до 1000 варіантів — ' + title);
         const names = new Set();
         for (const entry of value[key]) {
@@ -25,6 +26,7 @@ export function validateOvtTemplates(value) {
             if (typeof name !== 'string' || !name.trim() || name.length > 1000) throw new Error('Шаблони ОВТ: порожній або завеликий текст — ' + title);
             if (entry.status !== undefined && entry.status !== '' && !OVT_STATUSES.includes(entry.status)) throw new Error('Невідомий статус шаблону ОВТ.');
             if (entry.equipmentType !== undefined && (typeof entry.equipmentType !== 'string' || entry.equipmentType.length > 1000)) throw new Error('Некоректний тип транспорту шаблону.');
+            if (entry.category !== undefined && typeof entry.category !== 'string') throw new Error('Некоректна категорія шаблону.');
             if (entry.subject !== undefined && !OVT_SUBJECTS.includes(entry.subject)) throw new Error('Невідоме старе формулювання шаблону.');
             const id = key === 'equipmentTypes' ? norm(name) : identity(entry);
             if (names.has(id)) throw new Error('Шаблони ОВТ: повторюється варіант — ' + name);
@@ -35,13 +37,13 @@ export function validateOvtTemplates(value) {
 }
 export function normalizeOvtTemplates(value) {
     const next = structuredClone(validateOvtTemplates(value));
-    next.models ??= [];
-    for (const key of ['tasks', 'routes', 'descriptions', 'models']) {
+    for (const key of OVT_TEMPLATE_LISTS.map(([k]) => k)) next[key] ??= [];
+    for (const key of OVT_TEMPLATE_LISTS.map(([k]) => k)) {
         const seen = new Set();
         next[key] = next[key].map(entry => {
-            if (typeof entry === 'string') return entry;
+            if (typeof entry === 'string') return { name: entry, category: 'Транспорт' };
             const { status, ...phrase } = entry;
-            return phrase;
+            return { ...phrase, category: entry.category || 'Транспорт', ...(key === 'consequences' && status !== undefined ? { status } : {}) };
         }).filter(entry => {
             const id = identity(entry);
             if (seen.has(id)) return false;
@@ -71,16 +73,18 @@ export function addOvtTemplateLines(value, key, text, context = {}) {
     const lines = String(text).split(/\r?\n/).map(line => line.trim()).filter(Boolean);
     if (!lines.length) throw new Error('Введіть хоча б один варіант: кожен із нового рядка.');
     for (const name of lines) {
-        const entry = key === 'equipmentTypes' ? { name, ...(typeof context === 'string' ? { subject: context } : {}) }
-            : { name, ...(key === 'consequences' ? { status: context.status || '' } : {}), equipmentType: context.equipmentType?.trim() || '' };
+        const entry = key === 'equipmentTypes' ? { name, category: context.category || 'Транспорт', ...(typeof context === 'string' ? { subject: context } : {}) }
+            : { name, category: context.category || 'Транспорт', ...(key === 'consequences' ? { status: context.status || '' } : {}), equipmentType: context.equipmentType?.trim() || '' };
         const id = key === 'equipmentTypes' ? norm(name) : identity(entry);
         if (!next[key].some(item => (key === 'equipmentTypes' ? norm(ovtTemplateName(item)) : identity(item)) === id)) next[key].push(entry);
     }
     return validateOvtTemplates(next);
 }
 export function ovtTemplateOptions(templates, key, row) {
+    const category = row.category || 'Транспорт';
     return [...new Set((templates[key] || []).filter(entry => {
-        if (key === 'equipmentTypes') return true;
+        if ((entry.category || 'Транспорт') !== category) return false;
+        if (key === 'equipmentTypes' || key === 'crews') return true;
         // Legacy consequences must be explicitly classified before suggesting.
         if (key === 'consequences' && !OVT_STATUSES.includes(entry.status)) return false;
         return (key !== 'consequences' || entry.status === row.status) && (!entry.equipmentType || norm(entry.equipmentType) === norm(row.equipmentType));
@@ -88,9 +92,9 @@ export function ovtTemplateOptions(templates, key, row) {
 }
 export function learnOvtTemplates(value, row) {
     let next = normalizeOvtTemplates(value);
-    if (row.category !== 'Транспорт' || !OVT_STATUSES.includes(row.status)) return next;
-    const context = { status: row.status, equipmentType: row.equipmentType || '' };
-    const fields = { equipmentTypes: 'equipmentType', models: 'nomenclature', tasks: 'taskText', descriptions: 'eventDescription', consequences: 'consequence' };
+    if (!['Транспорт', 'БпЛА', 'Зброя', 'Інше'].includes(row.category) || !['ВТРАЧЕНО', 'ЗНИЩЕНО', 'ПОШКОДЖЕНО', 'ЗНАЙДЕНО'].includes(row.status)) return next;
+    const context = { status: OVT_STATUSES.includes(row.status) ? row.status : '', equipmentType: row.equipmentType || '', category: row.category };
+    const fields = { equipmentTypes: 'equipmentType', models: 'nomenclature', tasks: 'taskText', descriptions: 'eventDescription', consequences: 'consequence', crews: 'crewName' };
     if (row.locationMode === 'route' || (!row.locationMode && row.routeText)) fields.routes = 'routeText';
     for (const [key, field] of Object.entries(fields)) {
         const name = String(row[field] || '').trim();
