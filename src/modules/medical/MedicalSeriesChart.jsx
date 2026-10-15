@@ -23,11 +23,11 @@ export function MedicalSeriesChart({ id, title, exportTitle, buckets, rows, pref
         <section className="med-series-card lg:col-span-12" aria-labelledby={`${id}-heading`} data-med-chart={id}>
             <div className="med-series-heading">
                 <div>
-                    <p className="med-chart-eyebrow">{daily ? 'Хронологія' : 'Розподіл за годинами'}</p>
-                    <h3 id={`${id}-heading`}>{title}</h3>
+                    <h3 id={`${id}-heading`}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 17 6-6 4 4 8-10"/><path d="M15 5h6v6"/></svg>{title}</h3>
                     <p className="med-chart-caption">{daily ? `${buckets.length} днів · ` : 'Заокруглено до години · '}{total} епізодів у вибраних типах, без повторів</p>
                 </div>
                 <div className="med-chart-actions" aria-label="Вигляд діаграми">
+                    {presets.map(preset => <button key={preset.label} type="button" onClick={() => onChange({ ...view, showCombined: true, combined: [...preset.keys] })}>{preset.label}</button>)}
                     <button type="button" aria-pressed={view.type === 'line'} onClick={() => onChange({ ...view, type: 'line' })}>Лінії</button>
                     <button type="button" aria-pressed={view.type === 'bar'} onClick={() => onChange({ ...view, type: 'bar' })}>Стовпчики</button>
                     <button type="button" title="Скинути лише налаштування цієї діаграми" onClick={() => onChange(normalizeChartView())}>Скинути</button>
@@ -45,18 +45,20 @@ export function MedicalSeriesChart({ id, title, exportTitle, buckets, rows, pref
                 <fieldset className="med-series-summary">
                     <legend><label><input type="checkbox" checked={view.showCombined} onChange={event => onChange({ ...view, showCombined: event.target.checked })} /> Зведення — сума обраних</label></legend>
                     <div className="med-series-chips">{checks('combined')}</div>
-                    <div className="med-series-shortcuts">{presets.map(preset => <button key={preset.label} type="button" onClick={() => onChange({ ...view, showCombined: true, combined: [...preset.keys] })}>{preset.label}</button>)}</div>
                     {view.showCombined && !view.combined.length && <p className="med-chart-caption" role="status">Оберіть хоча б один тип для зведення.</p>}
                 </fieldset>
             </div>
-            <p className="med-chart-caption med-chart-note">Блакитний {view.type === 'line' ? 'пунктир' : 'ряд'} — сума обраних типів. Налаштування діють лише на цю діаграму; записи та звіти не змінюються.</p>
+            <p className="med-chart-caption med-chart-note">Галочки зліва показують кожен тип окремо. Блакитне зведення — сума обраних типів{view.type === 'line' ? ' із напівпрозорим заповненням' : ''}. Налаштування діють лише на цю діаграму; записи та звіти не змінюються.</p>
             {data.datasets.length && buckets.length ? <ChartComponent
                 title={exportTitle} type={view.type} data={data} showLabels={showLabels} showPercentages={showPercentages}
                 className="med-series-canvas"
                 options={{
                     interaction: { mode: 'index', intersect: false },
-                    plugins: { legend: { position: 'bottom' }, tooltip: { mode: 'index', intersect: false } },
-                    scales: { x: { grid: { display: false }, ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: daily ? 16 : 24 } }, y: { beginAtZero: true, grace: '12%', ticks: { precision: 0 }, title: { display: true, text: 'Кількість епізодів' } } },
+                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', usePointStyle: false, boxWidth: 12, boxHeight: 10, padding: 10, font: { size: 11 } } }, tooltip: { mode: 'index', intersect: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(51,65,85,0.35)' }, ticks: { color: '#64748b', maxRotation: 0, autoSkip: true, maxTicksLimit: 12, ...(daily ? { callback: function(value) { return this.getLabelForValue(value).slice(0, 5); } } : {}) } },
+                        y: { beginAtZero: true, grace: '12%', grid: { color: 'rgba(51,65,85,0.35)' }, ticks: { color: '#64748b', precision: 0 }, title: { display: true, text: 'Кількість', color: '#64748b' } },
+                    },
                 }}
             /> : <div className="med-chart-empty" role="status">{buckets.length ? 'Оберіть окремі типи або увімкніть зведення, щоб побудувати діаграму.' : 'За вибраний період немає даних. Спробуйте змінити фільтри.'}</div>}
         </section>

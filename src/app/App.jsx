@@ -15,6 +15,8 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
             const [backupPreview, setBackupPreview] = useState(null);
             const [backupReport, setBackupReport] = useState(null);
             const [localRecovery, setLocalRecovery] = useState(false);
+            const [exportPbd, setExportPbd] = useState(false);
+            const [importPbd, setImportPbd] = useState(false);
             const [integrityOpen, setIntegrityOpen] = useState(false);
             const [backupFileName, setBackupFileName] = useState('');
             const [backupMessage, setBackupMessage] = useState('');
@@ -24,10 +26,12 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
             const [restoreStarted, setRestoreStarted] = useState(false);
             const backupLock = useRef(false);
             const legacyBackup = backupSource?.format === 'military-suite-unified';
+            const incomingPbdCount = ['tasks', 'positions'].reduce((count, tab) => count + (backupPreview?.localforage?.document_journal_v1?.[tab] || []).filter(row => typeof row.reportedInPbd === 'boolean').length, 0);
 
             const openBackup = mode => {
                 if (backupLock.current || restoreStarted) return;
                 setBackupMode(mode); setBackupPassword(''); setBackupConfirm('');
+                setExportPbd(false); setImportPbd(false);
                 setBackupSource(null); setBackupPreview(null); setBackupFileName(''); setBackupReport(null); setLocalRecovery(false);
                 setBackupMessage(''); setRestoreConfirmed(false); setRestoreComplete(false);
             };
@@ -49,13 +53,14 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
             };
             const handleBackup = () => runBackupAction(async () => {
                 requireNewPassword();
-                const envelope = await SuiteBackup.encrypt(await SuiteBackup.collect(), backupPassword);
+                const envelope = await SuiteBackup.encrypt(await SuiteBackup.collect({ includePbd: exportPbd }), backupPassword);
                 SuiteBackup.download(envelope);
                 setBackupPassword(''); setBackupConfirm('');
                 setBackupMessage('Зашифровану копію підготовлено для завантаження. Збережіть файл і пароль окремо: без пароля відновлення неможливе.');
             });
             const chooseBackup = file => runBackupAction(async () => {
                 setLocalRecovery(false); setBackupReport(null);
+                setImportPbd(false);
                 setBackupSource(null); setBackupPreview(null); setRestoreConfirmed(false);
                 setBackupPassword(''); setBackupConfirm('');
                 setBackupFileName(file?.name || '');
@@ -63,6 +68,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
             });
             const chooseRecovery = () => runBackupAction(async () => {
                 setLocalRecovery(true); setBackupReport(null);
+                setImportPbd(false);
                 setBackupSource(null); setBackupPreview(null); setRestoreConfirmed(false);
                 setBackupPassword(''); setBackupConfirm(''); setBackupFileName('Попередній стан');
                 const recovery = await SuiteBackup.getRecovery();
@@ -83,7 +89,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                 // Unmount synchronously: cancel module timers/listeners before
                 // draining writes. Stay suspended on both success and failure.
                 ReactDOM.flushSync(() => setRestoreStarted(true));
-                await SuiteBackup.restore(backupPreview, backupPassword, { localRecovery });
+                await SuiteBackup.restore(backupPreview, backupPassword, { localRecovery: localRecovery && importPbd, importPbd });
                 setRestoreComplete(true);
                 setBackupPassword(''); setBackupConfirm(''); setBackupPreview(null); setBackupSource(null);
                 setBackupMessage('Відновлення завершено. Попередній стан збережено зашифрованим у цьому браузері (кнопка «Попередній стан», той самий пароль). Перезавантажте програму.');
@@ -144,8 +150,9 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                         <section role="dialog" aria-modal="true" aria-labelledby="suite-backup-title" className="bg-slate-900 text-slate-200 border border-slate-600 rounded-2xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto space-y-4">
                             <h2 id="suite-backup-title" className="text-xl font-bold">{backupMode === 'export' ? 'Єдиний зашифрований бекап' : 'Відновлення єдиного бекапу'}</h2>
                             <p className="text-sm text-slate-300">Дані та збережені налаштування всіх модулів, включно з документальним журналом. AES-256-GCM · PBKDF2-SHA-256 · 600 000 ітерацій. Пароль не записується у файл.</p>
-                            <p className="text-sm text-amber-200">Відмітки «Подано в ПБД» не передаються у файлі. При отриманні бекапу свої галочки залишаються для тих самих ID записів; нові записи отримують «не подано».</p>
+                            <p className="text-sm text-amber-200">За замовчуванням відмітки «Подано в ПБД» залишаються локальними. Включення відміток у файл та їх застосування при відновленні вмикаються окремо.</p>
                             {!restoreStarted && <>
+                                {backupMode === 'export' && <label className="flex gap-2 items-start text-sm"><input type="checkbox" disabled={backupBusy} checked={exportPbd} onChange={event => setExportPbd(event.target.checked)} />Включити в бекап відмітки «Подано в ПБД»</label>}
                                 {backupMode === 'import' && <div className="space-y-3">
                                     <label className="block text-sm">Файл бекапу
                                         <input aria-label="Файл єдиного бекапу" type="file" accept=".mils,.enc,.json" disabled={backupBusy} onChange={event => { const file = event.target.files[0]; event.target.value = ''; if (file) chooseBackup(file); }} className="block w-full mt-2 text-sm" />
@@ -163,9 +170,11 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                                     </label>}
                                 </>}
                                 {backupPreview && <div className="rounded-lg border border-amber-700 bg-amber-950/30 p-3 space-y-3 text-sm">
-                                    <p>Файл перевірено. Створений: {backupPreview.timestamp || 'дата невідома'}. Наборів даних: {Object.keys(backupPreview.localforage).length}; параметрів локального сховища: {Object.keys(backupPreview.localstorage).length}.</p>
+                                    <p>Файл перевірено. Створений: {window.SuiteDates.localDateTime(backupPreview.timestamp)}. Наборів даних: {Object.keys(backupPreview.localforage).length}; параметрів локального сховища: {Object.keys(backupPreview.localstorage).length}.</p>
                                     <p>Формат даних: {backupPreview.version}; ревізія журналу: {backupPreview.localforage.document_journal_v1?.schemaRevision ?? 0} → 1. Старим записам додаються лише відсутні локальні відмітки, без зміни ID, дат і змісту.</p>
-                                    {localRecovery && backupPreview.localOnly && <p className="text-amber-200">Вибрано місцеву захисну копію: повернуться також власні відмітки ПБД на момент її створення. Ця копія не є файлом для передачі.</p>}
+                                    {localRecovery && backupPreview.localOnly && <p className="text-amber-200">Вибрано місцеву захисну копію. Щоб повернути також відмітки ПБД на момент її створення, увімкніть їх завантаження нижче.</p>}
+                                    <label className="flex gap-2 items-start"><input type="checkbox" disabled={backupBusy || !incomingPbdCount} checked={importPbd} onChange={event => { setImportPbd(event.target.checked); setRestoreConfirmed(false); }} />Завантажити з бекапу відмітки «Подано в ПБД»</label>
+                                    <p className="text-amber-200">{!incomingPbdCount ? 'У файлі немає збережених відміток ПБД. Ваші галочки для тих самих ID залишаться; нові записи отримають «не подано».' : importPbd ? `У ${incomingPbdCount} записах будуть застосовані значення з файлу — і встановлені, і зняті галочки. Там, де значення відсутнє, залишиться ваша відмітка.` : 'Відмітки з файлу ігноруватимуться. Ваші галочки для тих самих ID залишаться; нові записи отримають «не подано».'}</p>
                                     {backupReport && <>
                                         <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr>{['Розділ', 'Зараз', 'Після', 'Нові ID', 'Зникнуть'].map(title => <th key={title} className="p-2 border-b border-slate-600">{title}</th>)}</tr></thead><tbody>{backupReport.rows.map(row => <tr key={row.title}><td className="p-2">{row.title}</td><td>{row.current}</td><td>{row.incoming}</td><td>{row.added}</td><td className={row.removed ? 'text-rose-300 font-bold' : ''}>{row.removed}</td></tr>)}</tbody></table></div>
                                         <p>«Зникнуть» — поточні записи, чиїх ID немає у файлі. Відсутні у файлі розділи будуть очищені; це заміна бази, не об’єднання.</p>

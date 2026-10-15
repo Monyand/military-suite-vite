@@ -3,10 +3,11 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const source = readSource('core/medical-totals.js');
+const localMedicalInput = new Function(readSource('core/medical-records.js').replace(/^export /gm, '') + '\nreturn localMedicalInput;')();
 const html = readSource('modules/events/EventsApp.jsx');
 function harness(forageValue, legacy = {}) {
-    return new Function('localforage', 'localStorage', source + '\nreturn MedicalDailyTotals;')(
-        { getItem: async () => forageValue }, { getItem: key => legacy[key] ?? null });
+    return new Function('localforage', 'localStorage', 'localMedicalInput', source + '\nreturn MedicalDailyTotals;')(
+        { getItem: async () => forageValue }, { getItem: key => legacy[key] ?? null }, localMedicalInput);
 }
 const fixture = [
     { id: 'dead', date: '2026-09-14T23:59:00', lossType: 'Загибель (200)', evacTime: '2026-09-16' },
@@ -38,7 +39,8 @@ async function main() {
     assert.equal(api.dateKey('2024-02-29'), '2024-02-29');
     assert.equal(api.dateKey('2026-02-29'), '');
     assert.equal(api.dateKey('2026-13-01'), '');
-    assert.equal(api.dateKey('2026-09-14T23:59:00Z'), '2026-09-14', 'Use documented episode date, matching medical module');
+    assert.equal(api.dateKey('2026-09-14T23:59:00Z'), localMedicalInput('2026-09-14T23:59:00Z').slice(0, 10), 'Use the same local episode day as medical UI');
+    assert.equal(api.dateKey(45550.5), '2024-09-15');
     assert.equal(api.dateKey('14.09.2026 22:55'), '2026-09-14');
     const edited = fixture.filter(row => !['dead', 'wounded', 'trauma-old'].includes(row.id)).map(row => row.id === 'trauma' ? { ...row, date: '2026-09-15' } : row);
     assert.deepEqual(api.aggregate(edited).daily, { '2026-09-15': { count200: 0, count300: 1, countZBV: 1, source: 'medical' } });

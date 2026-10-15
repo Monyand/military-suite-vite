@@ -284,7 +284,7 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
                 sheet['!cols'] = fields.map(([, , type]) => ({ wch: type === 'textarea' ? 48 : 25 }));
                 XLSX.utils.book_append_sheet(workbook, sheet, D.schemas[key].title);
             });
-            XLSX.writeFile(workbook, 'Документальний_журнал_' + (onlyFiltered ? tab + '_' : '') + new Date().toISOString().slice(0, 10) + '.xlsx');
+            XLSX.writeFile(workbook, 'Документальний_журнал_' + (onlyFiltered ? tab + '_' : '') + window.SuiteDates.localISO() + '.xlsx');
             setNotice('Excel підготовлено. Це незашифрований звіт; для захищеної копії використовуйте єдиний бекап.');
         } catch (error) { setNotice('Експорт не виконано: ' + error.message); }
     };

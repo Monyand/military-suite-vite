@@ -1,7 +1,7 @@
 import { DocumentJournal as D } from './documents.js';
 
-// Transfer copies never carry the recipient's local PBD workflow state,
-// including flags inside audit/recovery snapshots nested in document data.
+// Transfer copies omit PBD state unless the sender explicitly includes it.
+// Also strip flags inside audit/recovery snapshots nested in document data.
 export function withoutLocalPbd(value) {
     if (Array.isArray(value)) return value.map(withoutLocalPbd);
     if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value)
@@ -9,11 +9,12 @@ export function withoutLocalPbd(value) {
     return value;
 }
 
-export function prepareJournalRestore(incoming, local, localRecovery = false) {
-    const next = D.migrate(incoming);
+export function prepareJournalRestore(incoming, local, localRecovery = false, importPbd = false) {
+    const next = D.migrate(localRecovery || importPbd ? incoming : withoutLocalPbd(incoming));
     if (!localRecovery) for (const tab of ['tasks', 'positions']) {
         const flags = new Map((local?.[tab] || []).map(row => [row.id, row.reportedInPbd === true]));
-        for (const row of next[tab] || []) row.reportedInPbd = flags.get(row.id) ?? false;
+        const incomingFlags = new Map((incoming?.[tab] || []).filter(row => typeof row.reportedInPbd === 'boolean').map(row => [row.id, row.reportedInPbd]));
+        for (const row of next[tab] || []) row.reportedInPbd = importPbd && incomingFlags.has(row.id) ? incomingFlags.get(row.id) : (flags.get(row.id) ?? false);
     }
     return D.validate(next);
 }

@@ -1,6 +1,33 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Native menus must not combine the browser's white popup with light app text.
+   Existing utility classes and status badges still style the closed control. */
+select {
+    color-scheme: dark;
+    background-color: var(--select-menu-bg, #0f172a);
+    color: var(--select-menu-fg, #e2e8f0);
+}
+input[list] { color-scheme: dark; }
+select option,
+select optgroup {
+    background-color: var(--select-menu-bg, #0f172a);
+    color: var(--select-menu-fg, #e2e8f0);
+}
+
+/* The personnel journal also supports a light theme. */
+#app-tactical-container {
+    --select-menu-bg: #ffffff;
+    --select-menu-fg: #111827;
+}
+#app-tactical-container :is(select, input[list]) { color-scheme: light; }
+.dark #app-tactical-container {
+    --select-menu-bg: #1f2937;
+    --select-menu-fg: #f9fafb;
+}
+.dark #app-tactical-container :is(select, input[list]) { color-scheme: dark; }
+
 body, html { margin: 0; padding: 0; height: 100%; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -55,9 +82,21 @@ body, html { margin: 0; padding: 0; height: 100%; }
             border-color: #6366f1 !important;
             box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.5) !important;
         }
-    
 
-        
+        /* Modern View Transitions API cross-fade */
+        ::view-transition-old(root),
+        ::view-transition-new(root) {
+            animation-duration: 150ms;
+            animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        body.modal-open {
+            overflow: hidden !important;
+        }
+
+        .modal-scroll-container {
+            overscroll-behavior: contain;
+        }
         @media print {
             body, #root { height: auto !important; overflow: visible !important; min-height: auto !important; background-color: white !important; }
             @page { margin: 10mm; size: A4; }

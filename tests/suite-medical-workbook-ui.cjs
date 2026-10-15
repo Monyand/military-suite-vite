@@ -1,0 +1,51 @@
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const { pathToFileURL } = require('node:url');
+const { chromium } = require('playwright');
+const ExcelJS = require('exceljs');
+const { fixture, findRow } = require('./suite-medical-workbook.cjs');
+(async () => {
+    const browser = await chromium.launch({ channel: process.env.SUITE_BROWSER || 'msedge', headless: true });
+    try {
+        const context = await browser.newContext({ viewport: { width: 1600, height: 1100 }, timezoneId: 'Europe/Kyiv', acceptDownloads: true });
+        const page = await context.newPage(), errors = []; page.setDefaultTimeout(15000);
+        page.on('pageerror', error => errors.push(error.message));
+        await page.route('http://127.0.0.1:8765/**', route => route.abort());
+        await page.clock.install({ time: new Date('2026-10-03T12:00:00+03:00') });
+        await page.goto(process.env.SUITE_TEST_URL || pathToFileURL(path.resolve(__dirname, '../dist-single/MilitarySuite.html')).href);
+        const ready = () => page.getByRole('heading', { name: 'Стрічка подій', exact: true }).waitFor();
+        await ready();
+        const records = fixture().allEpisodes;
+        await page.evaluate(async episodes => {
+            await window.SuiteRuntime.drain();
+            await localforage.setItem('med_episodes_v3', episodes);
+            await localforage.setItem('med_soldiers_v3', [...new Set(episodes.map(ep => ep.soldierId))].map(id => ({ id, name: 'ТЕСТОВИЙ Іван Петрович', callsign: id, unit: 'Тестова рота', rank: 'Солдат' })));
+        }, records);
+        await page.reload(); await ready();
+        await page.getByRole('button', { name: 'Медична Евакуація', exact: true }).click();
+        const med = page.locator('#med-app');
+        await med.locator('header').getByRole('button', { name: 'Аналітика', exact: true }).click();
+        await med.getByTitle('Вибрати точний період дат у календарі').click();
+        await med.locator('input[type=date]').nth(0).fill('2026-09-26');
+        await med.locator('input[type=date]').nth(1).fill('2026-09-30');
+        await med.getByRole('button', { name: 'Застосувати', exact: true }).click();
+        const before = await page.evaluate(async () => JSON.stringify(await localforage.getItem('med_episodes_v3')));
+        const downloadWait = page.waitForEvent('download');
+        await med.getByRole('button', { name: 'Експорт (Excel)', exact: true }).click();
+        const book = new ExcelJS.Workbook(); await book.xlsx.readFile(await (await downloadWait).path());
+        assert.equal(book.worksheets.length, 6);
+        const summary = book.worksheets[0];
+        assert.deepEqual(findRow(summary, 'Евакуйовано за звітний період (епізодів)').values.slice(2), [3, 2, '—']);
+        assert.equal(findRow(summary, '200 (ПВР)').getCell(2).value, 1);
+        assert.equal(findRow(summary, 'З них події сталися до початку періоду').getCell(2).value, 1);
+        assert.ok(book.worksheets[1].getColumn(13).values.includes('before-future-death'));
+        assert.equal(book.worksheets[1].getColumn(13).values.includes('future-death'), false);
+        assert.equal(findRow(book.worksheets[5], 'awol', 20).getCell(14).value, 'Повернувся');
+        assert.equal(await page.evaluate(async () => JSON.stringify(await localforage.getItem('med_episodes_v3'))), before);
+        await med.getByTitle('Вибрати точний період дат у календарі').click();
+        assert.equal(await med.locator('input[type=date]').nth(0).inputValue(), '2026-09-26');
+        assert.equal(await med.locator('input[type=date]').nth(1).inputValue(), '2026-09-30');
+        assert.deepEqual(errors, []);
+        console.log('PASS: offline browser export preserves period filters and source records, exports PVR and evacuations of older injuries, and reconstructs the historical queue.');
+    } finally { await browser.close(); }
+})().catch(error => { console.error(error); process.exitCode = 1; });

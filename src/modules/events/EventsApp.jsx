@@ -89,7 +89,7 @@ const EventsApp = (function() {
             const [y, m, d] = iso.split('-');
             return `${d}.${m}.${y}`;
         };
-        const getEventDateStr = (ev) => ev?.actionDetails?.startDate || (ev?.createdAt ? String(ev.createdAt).split('T')[0] : '');
+        const getEventDateStr = (ev) => ev?.actionDetails?.startDate || (ev?.createdAt ? window.SuiteDates.localISO(new Date(ev.createdAt)) : '');
         const eventMatchesQuery = (ev, q) => {
             if (!q) return true;
             const s = q.toLowerCase().trim();
@@ -409,7 +409,7 @@ const EventsApp = (function() {
                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                     <div className="flex items-center gap-2">
                                         <span className="text-[11px] font-mono text-slate-400">{record.id || 'Без ID'}</span>
-                                        <span className="text-xs text-slate-500">· {record.actionDetails?.startDate || record.createdAt?.split('T')[0] || '—'}</span>
+                                        <span className="text-xs text-slate-500">· {getEventDateStr(record) || '—'}</span>
                                         {(record.types || []).map(t => (
                                             <span key={t} className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-amber-400 border border-slate-700">{t}</span>
                                         ))}
@@ -563,7 +563,7 @@ const EventsApp = (function() {
                     enemyLosses: [],
                     friendlyLosses: { count200: 0, count300: 0, countZBV: 0, details: '' },
                     actionDetails: {
-                        startDate: new Date().toISOString().split('T')[0],
+                        startDate: window.SuiteDates.localISO(),
                         startTime: '',
                         endDate: '',
                         endTime: '',
@@ -2756,7 +2756,7 @@ const EventsApp = (function() {
                         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
                         const link = document.createElement('a');
                         link.href = URL.createObjectURL(blob);
-                        const today = new Date().toISOString().split('T')[0];
+                        const today = window.SuiteDates.localISO();
                         link.download = `oblik-vtrat-${today}.xlsx`;
                         link.click();
                         URL.revokeObjectURL(link.href);
@@ -2770,7 +2770,7 @@ const EventsApp = (function() {
                 // Фільтруємо події за датою та зброєю (якщо обрано конкретну)
                 const filteredEvents = useMemo(() => {
                     return events.filter(ev => {
-                        const dateStr = ev.actionDetails?.startDate || ev.createdAt.split('T')[0];
+                        const dateStr = getEventDateStr(ev);
                         if (dateFrom && dateStr < dateFrom) return false;
                         if (dateTo && dateStr > dateTo) return false;
                         return true;
@@ -2781,7 +2781,7 @@ const EventsApp = (function() {
                 const groupedByDate = useMemo(() => {
                     const groups = {};
                     filteredEvents.forEach(ev => {
-                        const dStr = ev.actionDetails?.startDate || ev.createdAt.split('T')[0];
+                        const dStr = getEventDateStr(ev);
                         if (!groups[dStr]) groups[dStr] = { c200: 0, c200Unc: 0, c200Discovered: 0, c300: 0, pow: 0, losses: [], events: [] };
                         
                         groups[dStr].events.push(ev);
@@ -3321,7 +3321,7 @@ const EventsApp = (function() {
                             }
                             if (!e.actionDetails) {
                                 e.actionDetails = {
-                                    startDate: e.createdAt.split('T')[0], startTime: '', endDate: '', endTime: '',
+                                    startDate: getEventDateStr(e), startTime: '', endDate: '', endTime: '',
                                     direction: '', position: '', friendlyCount: 0, enemySize: 0, hasVehicles: false, vehicleDetails: '',
                                     conductedBy: '', docLoc: '', factLoc: ''
                                 };
@@ -3354,7 +3354,7 @@ const EventsApp = (function() {
                         
                         migratedEvents.forEach(e => {
                             if (!e.enemyLosses) return;
-                            const eventDate = e.actionDetails?.startDate || e.createdAt?.split('T')[0] || new Date().toISOString().split('T')[0];
+                            const eventDate = getEventDateStr(e) || window.SuiteDates.localISO();
                             
                             e.enemyLosses.forEach(loss => {
                                     if (loss.callsign && loss.callsign.trim()) {

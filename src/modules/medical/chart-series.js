@@ -30,8 +30,8 @@ export function buildMedicalSeries(buckets, rows, preferences, labels = buckets)
     const datasets = selected.map(series => ({
         label: series.label, seriesKeys: [series.key],
         data: buckets.map(bucket => value(bucket, series.key)),
-        borderColor: series.color, backgroundColor: view.type === 'bar' ? series.color + 'cc' : series.color,
-        borderWidth: 2, tension: 0, pointRadius: buckets.length > 45 ? 0 : 2.5,
+        borderColor: series.color, backgroundColor: series.color + '33',
+        borderWidth: 2, tension: 0.25, fill: false, pointRadius: buckets.length > 40 ? 0 : 3,
         pointHoverRadius: 5, pointHitRadius: 10, maxBarThickness: 30,
     }));
     if (view.showCombined && view.combined.length) {
@@ -41,9 +41,9 @@ export function buildMedicalSeries(buckets, rows, preferences, labels = buckets)
             exportLabel: combinedLabel,
             seriesKeys: view.combined, isCombined: true,
             data: buckets.map(bucket => view.combined.reduce((sum, key) => sum + value(bucket, key), 0)),
-            borderColor: '#22d3ee', backgroundColor: view.type === 'bar' ? '#22d3eecc' : '#22d3ee',
-            borderWidth: 3, borderDash: view.type === 'line' ? [7, 4] : [], tension: 0,
-            pointRadius: buckets.length > 45 ? 0 : 3, pointStyle: 'rectRot', pointHoverRadius: 6, pointHitRadius: 10,
+            borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.12)',
+            borderWidth: 3, tension: 0.25, fill: view.type === 'line',
+            pointRadius: 0, pointHoverRadius: 6, pointHitRadius: 10,
             maxBarThickness: 30, order: -1,
         });
     }

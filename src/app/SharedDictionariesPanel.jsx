@@ -3,6 +3,7 @@ import { SharedDictionaries } from '../core/dictionary-service.js';
 import { DICTIONARY_KINDS, emptyDictionaries, addRules, parseReplacementPairs, validateDictionaries, inventoryLabels, normalizeLabel } from '../core/shared-dictionaries.js';
 import { SuiteBackup } from '../core/backup.js';
 import { OvtTemplatesEditor } from './OvtTemplatesEditor.jsx';
+import { PersonNamesEditor } from './PersonNamesEditor.jsx';
 import './shared-dictionaries.css';
 
 const lines = text => text.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
@@ -119,13 +120,17 @@ export function SharedDictionariesPanel({ onClose, onSuspend }) {
             <header className="sd-header"><div><div className="sd-eyebrow">ЄДИНИЙ СТАНДАРТ НАПИСАННЯ</div><h2 id="sd-title">Спільні довідники</h2><p>Підказки для форм · перевірка назв · контрольоване виправлення документів</p></div><button type="button" disabled={busy || suspended} onClick={close} aria-label="Закрити спільні довідники">Закрити ✕</button></header>
             <div className="sd-layout">
                 <nav aria-label="Розділи спільних довідників">{DICTIONARY_KINDS.map(([key, title]) => <button type="button" key={key} aria-pressed={key === kind} disabled={busy || suspended} onClick={() => {
-                    if ((standards.trim() || sources.trim() || pairs.trim()) && !window.confirm('Очистити ще не доданий текст і перейти до іншого розділу?')) return;
+                    if ((templatePending || standards.trim() || sources.trim() || pairs.trim()) && !window.confirm('Очистити ще не доданий текст і перейти до іншого розділу?')) return;
                     setKind(key); setStandards(''); setSources(''); setPairs(''); setTarget(''); setSearch(''); setPlan(null); setMessage('');
                 }}><span>{title}</span><small>{config.dictionaries[key].canonical.length} стандартів · {inventory[key].filter(item => !item.canonical).length} невідомих</small></button>)}
                     <button type="button" aria-pressed={kind === 'ovtTemplates'} disabled={busy || suspended} onClick={() => {
-                        if ((standards.trim() || sources.trim() || pairs.trim()) && !window.confirm('Очистити ще не доданий текст і перейти до шаблонів ОВТ?')) return;
+                        if ((templatePending || standards.trim() || sources.trim() || pairs.trim()) && !window.confirm('Очистити ще не доданий текст і перейти до шаблонів ОВТ?')) return;
                         setKind('ovtTemplates'); setStandards(''); setSources(''); setPairs(''); setTarget(''); setPlan(null); setMessage('');
                     }}><span>Шаблони ОВТ</span><small>Завдання · маршрут · тип · подія · наслідок</small></button>
+                    <button type="button" aria-pressed={kind === 'names'} disabled={busy || suspended} onClick={() => {
+                        if (dirty || templatePending || standards.trim() || sources.trim() || pairs.trim()) { setMessage('Спочатку збережіть або скасуйте незастосовані зміни довідників.'); return; }
+                        setKind('names'); setPlan(null); setMessage('');
+                    }}><span>ПІБ і дублікати</span><small>Усі модулі · перевірка збігів · стандартне написання</small></button>
                     <p className="sd-note">Підказки документальних назв беруться з останніх незакритих історій у «Статусі позицій». Старі назви залишаються в документах та історії. Це не підтвердження фактичного стану.</p>
                 </nav>
                 <main className="sd-main">
@@ -133,7 +138,12 @@ export function SharedDictionariesPanel({ onClose, onSuspend }) {
                     {busy && <p role="status">Обробка… не закривайте програму.</p>}
                     {suspended ? <div className="sd-card"><h3>{recovery ? 'Зміни збережено' : 'Запис даних призупинено'}</h3><p>Модулі зупинені, щоб старий відкритий стан не перезаписав дані. Після завершення операції потрібно перезавантаження.</p>{!busy && <div className="sd-actions">{recovery && <button onClick={() => SuiteBackup.download(recovery, 'before_dictionary_correction')}>Завантажити захисну копію</button>}<button className="sd-primary" onClick={() => location.reload()}>Перезавантажити програму</button></div>}</div> : !fatal && <fieldset disabled={busy}>
                         <div hidden={kind !== 'ovtTemplates'}><OvtTemplatesEditor value={config.ovtTemplates} onChange={ovtTemplates => edit({ ...config, ovtTemplates })} onPendingChange={setTemplatePending} /></div>
-                        {kind !== 'ovtTemplates' && <><div className="sd-section-heading"><h3>{titles[kind]}</h3><span className="sd-badge">{unknownCount} нерозпізнаних</span></div>
+                        {kind === 'names' && <PersonNamesEditor onError={setMessage} onBusyChange={setBusy} onPendingChange={setTemplatePending} onSuspend={() => { setSuspended(true); onSuspend(); }} onApplied={copy => {
+                            setRecovery(copy); setDirty(false); setTemplatePending(false);
+                            setMessage('ПІБ стандартизовано. ID та зв’язки з подіями збережено. Попередній стан збережено зашифрованим; завантажте захисну копію й перезавантажте програму.');
+                            try { SuiteBackup.download(copy, 'before_name_standardization'); } catch { /* Recovery remains in storage and can be downloaded above. */ }
+                        }} />}
+                        {kind !== 'ovtTemplates' && kind !== 'names' && <><div className="sd-section-heading"><h3>{titles[kind]}</h3><span className="sd-badge">{unknownCount} нерозпізнаних</span></div>
                         <p className="sd-note">Правила зіставляють повне значення поля (без урахування регістру та зайвих пробілів). Коментарі, ПІБ, ідентифікатори та статуси не змінюються. Збереження правил саме по собі не переписує наявні записи.</p>
                         <div className="sd-columns">
                             <section className="sd-card"><h3>1. Стандартні назви</h3><label>Нові стандартні назви<textarea aria-label="Нові стандартні назви" value={standards} onChange={event => setStandards(event.target.value)} placeholder="Кожна назва — з нового рядка" rows={4} /></label><button onClick={() => invoke(() => { addStandards(lines(standards)); setStandards(''); })}>Додати назви</button>
@@ -160,7 +170,7 @@ export function SharedDictionariesPanel({ onClose, onSuspend }) {
                     </fieldset>}
                 </main>
             </div>
-            {!suspended && <footer className="sd-footer"><span>{templatePending ? 'Є ще не доданий текст шаблонів' : dirty ? 'Є незбережені зміни довідників' : 'Наявні записи не змінюються при збереженні довідників'}</span><div className="sd-actions">{kind !== 'ovtTemplates' && <><button disabled={busy || fatal || !!inventoryError} onClick={() => preview([kind])}>Перегляд цього розділу</button><button disabled={busy || fatal || !!inventoryError} onClick={() => preview(DICTIONARY_KINDS.map(([key]) => key))}>Перегляд усіх замін</button></>}<button className="sd-primary" disabled={busy || fatal || (!dirty && !templatePending)} onClick={save}>Зберегти довідники</button></div></footer>}
+            {!suspended && kind !== 'names' && <footer className="sd-footer"><span>{templatePending ? 'Є ще не доданий текст шаблонів' : dirty ? 'Є незбережені зміни довідників' : 'Наявні записи не змінюються при збереженні довідників'}</span><div className="sd-actions">{kind !== 'ovtTemplates' && <><button disabled={busy || fatal || !!inventoryError} onClick={() => preview([kind])}>Перегляд цього розділу</button><button disabled={busy || fatal || !!inventoryError} onClick={() => preview(DICTIONARY_KINDS.map(([key]) => key))}>Перегляд усіх замін</button></>}<button className="sd-primary" disabled={busy || fatal || (!dirty && !templatePending)} onClick={save}>Зберегти довідники</button></div></footer>}
         </section>
     </div>;
 }

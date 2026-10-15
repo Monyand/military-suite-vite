@@ -36,6 +36,23 @@ const { chromium } = require('playwright');
         }, id);
         const daily = page.locator('[data-med-chart=daily]');
         const hourly = page.locator('[data-med-chart=hourly]');
+        for (const id of ['daily', 'hourly']) {
+            const appearance = await page.evaluate(id => {
+                const card = document.querySelector(`[data-med-chart=${id}]`), c = Chart.getChart(card.querySelector('canvas'));
+                return { background: getComputedStyle(card).backgroundColor, radius: getComputedStyle(card).borderRadius,
+                    legendColor: c.options.plugins.legend.labels.color, legendWidth: c.options.plugins.legend.labels.boxWidth,
+                    pointLegend: c.options.plugins.legend.labels.usePointStyle, grid: c.options.scales.x.grid.color,
+                    rotation: c.options.scales.x.ticks.maxRotation, labels: c.options.scales.x.ticks.callback.call(c.scales.x, 0) };
+            }, id);
+            assert.equal(appearance.background, 'rgb(15, 23, 42)');
+            assert.equal(appearance.radius, '16px');
+            assert.equal(appearance.legendColor, '#94a3b8');
+            assert.equal(appearance.legendWidth, 12);
+            assert.equal(appearance.pointLegend, false);
+            assert.equal(appearance.grid, 'rgba(51,65,85,0.35)');
+            assert.equal(appearance.rotation, 0);
+            assert.equal(appearance.labels, id === 'daily' ? '01.09' : '00:00');
+        }
         const baseHourly = await chart('hourly');
         const otherChartSnapshot = () => page.evaluate(() => Object.values(Chart.instances).filter(c => c.canvas.closest('#med-app') && !c.canvas.closest('[data-med-chart]')).map(c => JSON.stringify(c.data)));
         const otherCharts = await otherChartSnapshot();
@@ -44,6 +61,8 @@ const { chromium } = require('playwright');
         assert.deepEqual(state.labels, ['01.09.2026', '02.09.2026', '03.09.2026']);
         assert.deepEqual(state.datasets.find(ds => ds.combined).data, [2, 0, 0]);
         assert.deepEqual(state.total, [3, 0, 4]);
+        fs.mkdirSync(path.join(__dirname, '../test-results'), { recursive: true });
+        await daily.screenshot({ path: path.join(__dirname, '../test-results/medical-series-reference-style.png') });
         assert.deepEqual(await chart('hourly'), baseHourly, 'Views are independent');
         await daily.getByRole('button', { name: 'Приховати окремі', exact: true }).click();
         const summary = daily.locator('fieldset').nth(1);
@@ -95,7 +114,7 @@ const { chromium } = require('playwright');
         await daily.getByRole('checkbox', { name: 'Зведення — сума обраних', exact: true }).uncheck();
         await daily.getByRole('status').getByText('Оберіть окремі типи', { exact: false }).waitFor();
         await daily.getByRole('button', { name: 'Скинути', exact: true }).click();
-        assert.equal((await chart('daily')).datasets.length, 8);
+        assert.equal((await chart('daily')).datasets.length, 9, 'Reset shows every supported medical loss category, including 200 (ПВР)');
         assert.equal((await chart('hourly')).type, 'bar', 'Reset applies only to one chart');
         // Backup includes the chart preferences, without changing its established format.
         await page.getByRole('button', { name: 'База / Бекап', exact: true }).click();

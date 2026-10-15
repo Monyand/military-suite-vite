@@ -72,6 +72,12 @@ const { createHarness } = require('./suite-backup-unit.cjs');
     const unpacked = await h.api.decrypt(packed, 'test-position-password');
     h.persistent.set(D.KEY, D.empty());
     await h.api.restore(unpacked, 'test-position-password');
-    assert.deepEqual(h.persistent.get(D.KEY), corrected, 'Encrypted backup retains links and audit snapshots');
+    const strip = row => { if (!row) return null; const { reportedInPbd, ...rest } = row; return rest; };
+    const expected = {
+        ...corrected,
+        schemaRevision: 1,
+        positionAudit: corrected.positionAudit.map(entry => ({ ...entry, before: strip(entry.before), after: strip(entry.after) }))
+    };
+    assert.deepEqual(h.persistent.get(D.KEY), expected, 'Encrypted backup retains links and audit snapshots');
     console.log('PASS: documentary registry, stable links/renames, chronological validity, closed/duplicate guards, dependent deletion, legacy orphan preservation, audit trail, Excel merge and encrypted backup');
 })().catch(error => { console.error(error); process.exitCode = 1; });

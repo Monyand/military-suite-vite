@@ -48,12 +48,12 @@ const SuiteBackup = (() => {
                 validateBackupRecords(data);
                 return data;
             };
-            const collect = async ({ localState = false, unchecked = false } = {}) => {
+            const collect = async ({ localState = false, unchecked = false, includePbd = false } = {}) => {
                 const data = { format: 'military-suite-unified', version: 1, timestamp: new Date().toISOString(), localforage: {}, localstorage: {} };
                 for (const key of await localforage.keys()) {
                     if (ownsLF(key)) {
                         let val = await localforage.getItem(key);
-                        if (!localState) val = withoutLocalPbd(val);
+                        if (!localState && !includePbd) val = withoutLocalPbd(val);
                         data.localforage[key] = val;
                     }
                 }
@@ -62,6 +62,7 @@ const SuiteBackup = (() => {
                     if (ownsLS(key)) data.localstorage[key] = localStorage.getItem(key);
                 }
                 if (localState) data.localOnly = true;
+                data.pbdIncluded = localState || includePbd;
                 return unchecked ? data : validate(data);
             };
             const toBase64 = buffer => {
@@ -117,7 +118,7 @@ const SuiteBackup = (() => {
                 const url = URL.createObjectURL(new Blob([JSON.stringify(envelope)], { type: 'application/octet-stream' }));
                 const anchor = document.createElement('a');
                 anchor.href = url;
-                anchor.download = prefix + '_' + new Date().toISOString().replace(/[:.]/g, '-') + '.mils.enc';
+                anchor.download = prefix + '_' + window.SuiteDates.fileTimestamp() + '.mils.enc';
                 document.body.appendChild(anchor);
                 anchor.click();
                 anchor.remove();
@@ -133,7 +134,7 @@ const SuiteBackup = (() => {
                 }
                 for (const [key, value] of Object.entries(data.localstorage)) localStorage.setItem(key, value);
             };
-            const restore = async (data, password, { localRecovery = false } = {}) => {
+            const restore = async (data, password, { localRecovery = false, importPbd = false } = {}) => {
                 validate(data); // Validate fully before touching persistent data.
                 if (window.SuiteRuntime) {
                     window.SuiteRuntime.freeze();
@@ -144,7 +145,7 @@ const SuiteBackup = (() => {
                 if (prepared.localforage.document_journal_v1) {
                     prepared.localforage.document_journal_v1 = prepareJournalRestore(
                         prepared.localforage.document_journal_v1, before.localforage.document_journal_v1,
-                        localRecovery && data.localOnly === true);
+                        localRecovery && data.localOnly === true, importPbd);
                 }
                 validate(prepared);
                 const recovery = await encrypt(before, password);

@@ -3,6 +3,10 @@ import { Chart, ExcelJS, localforage, CryptoJS } from '../../core/vendor.js';
 import { MedicalPersonnelDirectory } from '../../core/personnel-directory.js';
 import { MedicalSeriesChart } from './MedicalSeriesChart.jsx';
 import { useSharedDictionaries } from '../../core/use-shared-dictionaries.js';
+import { parseMedicalDate, medicalWaitTime, pickMedicalEpisode, chronologyIssues, localMedicalInput, describeInjuries, injuryGroups, INJURY_LABELS, INJURY_GROUPS } from '../../core/medical-records.js';
+import { personCandidates } from '../../core/person-names.js';
+import { ChronologyDialog, PersonMatchDialog, StatusHistoryChainBadge } from './RecordReview.jsx';
+import { createMedicalWorkbook } from './medical-workbook.js';
 
 const MedicalApp = (function() {
             
@@ -289,42 +293,9 @@ const MedicalApp = (function() {
             return (options && options.toLower) ? str.toLowerCase() : str;
         };
 
-        const parseSafeDate = (dStr) => {
-            if (!dStr) return 0;
-            if (dStr instanceof Date) return dStr.getTime();
-            if (typeof dStr === 'number') return dStr;
-            let s = String(dStr).trim();
-            if (!s) return 0;
+        const parseSafeDate = parseMedicalDate;
 
-            // Розумне авто-виправлення одруківок року (наприклад, 62026-08-25 або 22026-08-25 -> 2026-08-25)
-            s = s.replace(/^[0-9]*(20\d{2}[-\.\/]\d{2}[-\.\/]\d{2})/, '$1');
-
-            if (/^\d{2}\.\d{2}\.\d{4}/.test(s)) {
-                const parts = s.split(/[\sT]+/);
-                const [d, m, y] = parts[0].split('.').map(Number);
-                const timePart = parts[1] || "00:00:00";
-                const [h, min, sec] = timePart.split(':').map(Number);
-                return new Date(y, m - 1, d, h || 0, min || 0, sec || 0).getTime();
-            }
-            if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
-                const parts = s.split(/[\sT]+/);
-                const [y, m, d] = parts[0].split('-').map(Number);
-                const timePart = parts[1] || "00:00:00";
-                const [h, min, sec] = timePart.split(':').map(Number);
-                return new Date(y, m - 1, d, h || 0, min || 0, sec || 0).getTime();
-            }
-            const t = new Date(s).getTime();
-            return isNaN(t) ? 0 : t;
-        };
-
-        const calculateWaitTimeUI = (dateStr) => {
-            const startMs = parseSafeDate(dateStr);
-            if (!startMs) return "Невідомо";
-            const diffMs = Date.now() - startMs;
-            if (diffMs < 0) return "Щойно";
-            const hours = Math.floor(diffMs / (1000 * 60 * 60));
-            return hours >= 24 ? `${Math.floor(hours / 24)}д ${hours % 24}г` : `${hours} год`;
-        };
+        const calculateWaitTimeUI = medicalWaitTime;
 
         const getBadgeColors = (lossType, severity) => {
             if (lossType === "Загибель (200)") return "bg-zinc-900 text-zinc-300 border-zinc-700";
@@ -355,16 +326,7 @@ const MedicalApp = (function() {
             } catch { return isoStr.replace('T',' ').substring(0,19); }
         };
         
-        const getInjStrUI = (inj) => {
-            if(!inj) return "";
-            const d = {amputation:'Амп.', rupture:'Розрив', shrapnel:'Уламк.', bullet:'Кульове', fracture:'Перелом', burn:'Опік', akbt:'АКБТ', contusion:'Забій'};
-            let p = [];
-            Object.entries(inj).forEach(([rId, a]) => {
-                let str = Object.keys(a).filter(k=>a[k]).map(k=>d[k]).join(', ');
-                if(str) p.push(`${BODY_REGIONS.find(r=>r.id===rId)?.name||rId}: ${str}`);
-            });
-            return p.join(' | ');
-        };
+        const getInjStrUI = (inj) => describeInjuries(inj, BODY_REGIONS);
 
         // --- УНІВЕРСАЛЬНІ UI КОМПОНЕНТИ ---
         const FilterSection = ({ title, isOpen, toggle, onSelectAll, onClearAll, children }) => (
@@ -502,10 +464,50 @@ const MedicalApp = (function() {
             return status;
         };
 
-        
+        function formatRankShortUI(rank) {
+            if (!rank || rank === 'Не вказано' || rank === 'Невідомо') return 'В/сл';
+            const r = rank.trim();
+            const map = {
+                'Старший солдат': 'Ст. солдат',
+                'Молодший сержант': 'Мол. сержант',
+                'Старший сержант': 'Ст. сержант',
+                'Головний сержант': 'Гол. сержант',
+                'Штаб-сержант': 'Шт.-серж.',
+                'Майстер-сержант': 'Майстер-серж.',
+                'Молодший лейтенант': 'Мол. лейтенант',
+                'Старший лейтенант': 'Ст. лейтенант'
+            };
+            return map[r] || r;
+        }
+
+        const copyToClipboardSafe = (text, onSuccess) => {
+            let copied = false;
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                copied = document.execCommand('copy');
+                document.body.removeChild(ta);
+            } catch (e) {
+                copied = false;
+            }
+            if (copied) {
+                if (onSuccess) onSuccess();
+            } else if (navigator?.clipboard?.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    if (onSuccess) onSuccess();
+                }).catch(() => {});
+            }
+        };
+
         const formatSoldierReportLine = (episode, soldier, index = null) => {
             const displayRank = episode.rank || soldier?.rank || '';
-            const cleanRank = (!displayRank || displayRank === 'Не вказано' || displayRank === 'Невідомо') ? 'В/сл' : displayRank;
+            const cleanRank = (!displayRank || displayRank === 'Не вказано' || displayRank === 'Невідомо') ? 'В/сл' : formatRankShortUI(displayRank);
             const sName = soldier?.name || 'Невідомо';
             const sCallsign = soldier?.callsign ? ` «${formatCallsignUI(soldier.callsign)}»` : '';
             const unitStr = episode.unit || soldier?.unit || 'Не вказано';
@@ -546,7 +548,7 @@ const MedicalApp = (function() {
             return `${numPrefix}${sName}${sCallsign} (${cleanRank}, ${unitStr})\n   • ${charStr}${injPart}${udpPart}${reportPart} | ${evacStr}\n   • Подія: ${dateStr}${causeStr} | Факт: ${factStr}${docStr}`;
         };
 
-        const EpisodeCard = React.memo(({ episode, soldier: baseSoldier, soldierEpisodes = [], onEdit, onNotify, viewMode = 'grid' }) => {
+        const EpisodeCard = React.memo(({ episode, soldier: baseSoldier, soldierEpisodes = [], onEdit, onNotify, viewMode = 'grid', onReview, clockTick }) => {
             const soldier = MedicalPersonnelDirectory.forEpisode(episode, baseSoldier);
             const [isCopied, setIsCopied] = React.useState(false);
             const badgeClass = getBadgeColors(episode.lossType, episode.severity);
@@ -592,38 +594,17 @@ const MedicalApp = (function() {
                 episode.severity === 'Легкий' ? 'bg-emerald-500' : 'bg-slate-700';
 
             const isRankMissing = !displayRank || displayRank === 'Не вказано' || displayRank === 'Невідомо';
-            const cleanRank = isRankMissing ? 'В/сл' : displayRank;
+            const cleanRank = isRankMissing ? 'В/сл' : formatRankShortUI(displayRank);
 
             const handleCopySummary = (e) => {
                 e.stopPropagation();
                 const epWithWait = { ...episode, waitStr: isWaitValid ? waitStr : '' };
                 const textToCopy = formatSoldierReportLine(epWithWait, soldier);
-                
-                const onDone = () => {
+                copyToClipboardSafe(textToCopy, () => {
                     setIsCopied(true);
                     setTimeout(() => setIsCopied(false), 2000);
                     if (onNotify) onNotify("Дані бійця скопійовано!", "success");
-                };
-
-                if (navigator?.clipboard?.writeText) {
-                    navigator.clipboard.writeText(textToCopy).then(onDone).catch(() => {
-                        copyFallback(textToCopy);
-                    });
-                } else {
-                    copyFallback(textToCopy);
-                }
-            };
-
-            const copyFallback = (str) => {
-                const ta = document.createElement('textarea');
-                ta.value = str;
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand('copy');
-                document.body.removeChild(ta);
-                setIsCopied(true);
-                setTimeout(() => setIsCopied(false), 2000);
-                if (onNotify) onNotify("Дані бійця скопійовано!", "success");
+                });
             };
 
             const renderEvacBadge = (widthClass = "w-48 xl:w-[200px]") => {
@@ -713,15 +694,7 @@ const MedicalApp = (function() {
                                         <Icon name="calendar" className="w-3 h-3 text-slate-500 shrink-0" />
                                         <span>{dateDisplay}</span>
                                     </span>
-                                    {soldierEpisodes && soldierEpisodes.length > 1 && (
-                                        <span 
-                                            className="text-[10px] font-mono font-bold bg-amber-950/70 border border-amber-500/40 text-amber-300 px-2 py-0.5 rounded-lg flex items-center gap-1 shrink-0 shadow-sm" 
-                                            title={`Ланцюжок статусів бійця (${soldierEpisodes.length} епізоди): ${soldierEpisodes.map(e => e.lossType.split(' ')[0]).join(' ➔ ')}`}
-                                        >
-                                            <Icon name="history" className="w-3 h-3 text-amber-400 shrink-0" />
-                                            <span>{soldierEpisodes.map(e => e.lossType.split(' ')[0]).join(' ➔ ')}</span>
-                                        </span>
-                                    )}
+                                    <StatusHistoryChainBadge episodes={soldierEpisodes} onReview={onReview} />
                                 </div>
                             </div>
                         </div>
@@ -874,15 +847,7 @@ const MedicalApp = (function() {
                                         <Icon name="calendar" className="w-3 h-3 text-slate-500 shrink-0" />
                                         <span>{dateDisplay}</span>
                                     </span>
-                                    {soldierEpisodes && soldierEpisodes.length > 1 && (
-                                        <span 
-                                            className="text-[10px] font-mono font-bold bg-amber-950/70 border border-amber-500/40 text-amber-300 px-2 py-0.5 rounded-lg flex items-center gap-1 shrink-0 shadow-sm" 
-                                            title={`Ланцюжок статусів бійця (${soldierEpisodes.length} епізоди): ${soldierEpisodes.map(e => e.lossType.split(' ')[0]).join(' ➔ ')}`}
-                                        >
-                                            <Icon name="history" className="w-3 h-3 text-amber-400 shrink-0" />
-                                            <span>{soldierEpisodes.map(e => e.lossType.split(' ')[0]).join(' ➔ ')}</span>
-                                        </span>
-                                    )}
+                                    <StatusHistoryChainBadge episodes={soldierEpisodes} onReview={onReview} />
                                 </div>
                             </div>
                         </div>
@@ -970,7 +935,7 @@ const MedicalApp = (function() {
             );
         });
 
-        const TriageCard = React.memo(({ ep, soldier: baseSoldier, soldierEpisodes = [], onQuickEvac, onEdit, onAlertMIA, onNotify, onCreate200FromWounds }) => {
+        const TriageCard = React.memo(({ ep, soldier: baseSoldier, soldierEpisodes = [], onQuickEvac, onEdit, onAlertMIA, onNotify, onCreate200FromWounds, onReview, clockTick }) => {
             const soldier = MedicalPersonnelDirectory.forEpisode(ep, baseSoldier);
             const [isCopied, setIsCopied] = React.useState(false);
             const waitStr = calculateWaitTimeUI(ep.date);
@@ -979,10 +944,23 @@ const MedicalApp = (function() {
             const displayUnit = ep.unit || soldier?.unit || '';
             const sName = soldier?.name || 'Невідомо';
             const sCallsign = soldier?.callsign || '';
-            const dateDisplay = formatEpisodeDateUI(ep.date);
 
             const isRankMissing = !displayRank || displayRank === 'Не вказано' || displayRank === 'Невідомо';
-            const cleanRank = isRankMissing ? 'В/сл' : displayRank;
+            const cleanRank = isRankMissing ? 'В/сл' : formatRankShortUI(displayRank);
+
+            // Форматування короткого ПІБ для диспетчерської консолі (Прізвище І. Б.)
+            const shortName = React.useMemo(() => {
+                if (!sName || sName === 'Невідомо') return sName;
+                const parts = sName.trim().split(/\s+/);
+                if (parts.length >= 2) {
+                    const surname = parts[0];
+                    const initials = parts.slice(1).map(p => p[0].toUpperCase() + '.').join(' ');
+                    return `${surname} ${initials}`;
+                }
+                return sName;
+            }, [sName]);
+
+            const statusHistoryBadge = <StatusHistoryChainBadge episodes={soldierEpisodes} onReview={onReview} />;
 
             const leftAccentColor = 
                 isAny200(ep.lossType) ? 'bg-zinc-500' :
@@ -1004,177 +982,152 @@ const MedicalApp = (function() {
                 e.stopPropagation();
                 const epWithWait = { ...ep, waitStr: waitStr !== 'Невідомо' ? waitStr : '' };
                 const textToCopy = formatSoldierReportLine(epWithWait, soldier);
-                
-                const onDone = () => {
+                copyToClipboardSafe(textToCopy, () => {
                     setIsCopied(true);
                     setTimeout(() => setIsCopied(false), 2000);
                     if (onNotify) onNotify("Дані бійця скопійовано!", "success");
-                };
-
-                if (navigator?.clipboard?.writeText) {
-                    navigator.clipboard.writeText(textToCopy).then(onDone).catch(() => {
-                        copyFallback(textToCopy);
-                    });
-                } else {
-                    copyFallback(textToCopy);
-                }
-            };
-
-            const copyFallback = (str) => {
-                const ta = document.createElement('textarea');
-                ta.value = str;
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand('copy');
-                document.body.removeChild(ta);
-                setIsCopied(true);
-                setTimeout(() => setIsCopied(false), 2000);
-                if (onNotify) onNotify("Дані бійця скопійовано!", "success");
+                });
             };
             
             return (
                 <div 
                     onClick={() => onEdit(ep)}
-                    className="bg-slate-900/95 border border-slate-800 hover:border-amber-500/50 hover:bg-slate-900 p-3.5 rounded-2xl shadow-md hover:shadow-xl hover:shadow-black/40 flex flex-col gap-2.5 relative overflow-hidden group transition-all cursor-pointer"
+                    className="bg-slate-900/95 border border-slate-800/90 hover:border-amber-500/60 hover:bg-slate-900 p-2.5 rounded-xl shadow-sm hover:shadow-md flex flex-col gap-1.5 relative overflow-hidden group transition-all cursor-pointer"
                     title="Клікніть для редагування запису"
                 >
-                    <div className={`absolute top-0 left-0 w-1.5 h-full ${leftAccentColor}`}></div>
+                    <div className={`absolute top-0 left-0 w-1 h-full ${leftAccentColor}`}></div>
                     
-                    {/* Верхній рядок: Звання, Позивний, ПІБ + Таймер очікування */}
-                    <div className="pl-2 flex justify-between items-start gap-2">
-                        <div className="min-w-0 flex-1 space-y-1">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-slate-300 text-[10px] font-semibold bg-slate-950 border border-slate-800 px-1.5 py-0.5 rounded tracking-wide uppercase">
-                                    {cleanRank}
+                    {/* Рядок 1: Позивний, ПІБ (скорочено), Звання, Підрозділ + Таймер */}
+                    <div className="pl-1.5 flex justify-between items-center gap-2 min-w-0">
+                        <div className="min-w-0 flex-1 flex items-center gap-1.5 overflow-hidden">
+                            {sCallsign ? (
+                                <span className="text-amber-400 text-xs font-mono font-extrabold bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded shadow-sm shrink-0">
+                                    «{formatCallsignUI(sCallsign)}»
                                 </span>
-                                {sCallsign && (
-                                    <span className="text-amber-400 text-xs font-mono font-bold bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded shadow-sm">
-                                        «{formatCallsignUI(sCallsign)}»
-                                    </span>
-                                )}
-                                <span className="text-slate-300 font-medium text-xs truncate max-w-[120px]" title={displayUnit}>
-                                    {displayUnit || 'Не вказано'}
-                                </span>
-                                {soldierEpisodes && soldierEpisodes.length > 1 && (
-                                    <span 
-                                        className="text-[9px] font-mono font-bold bg-amber-950/70 border border-amber-500/40 text-amber-300 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 shadow-sm" 
-                                        title={`Ланцюжок статусів бійця (${soldierEpisodes.length} епізоди): ${soldierEpisodes.map(e => e.lossType.split(' ')[0]).join(' ➔ ')}`}
-                                    >
-                                        <Icon name="history" className="w-2.5 h-2.5 text-amber-400 shrink-0" />
-                                        <span>{soldierEpisodes.map(e => e.lossType.split(' ')[0]).join(' ➔ ')}</span>
-                                    </span>
-                                )}
-                            </div>
-                            <div className="text-sm font-bold text-white group-hover:text-amber-300 tracking-tight leading-tight truncate transition-colors" title={sName}>
-                                {sName}
-                            </div>
+                            ) : null}
+                            <span className="text-sm font-bold text-white group-hover:text-amber-300 truncate min-w-[70px] shrink transition-colors" title={sName}>
+                                {shortName}
+                            </span>
+                            <span className="text-slate-400 text-[10px] font-semibold bg-slate-950 border border-slate-800/80 px-1.5 py-0.2 rounded shrink-0" title={displayRank}>
+                                {cleanRank}
+                            </span>
+                            <span className="text-slate-400 text-xs shrink-0 max-w-[80px] truncate" title={displayUnit}>
+                                {displayUnit || 'Не вказано'}
+                            </span>
                         </div>
 
                         {/* Таймер очікування */}
-                        <div className={`text-[11px] font-bold font-mono px-2 py-1 rounded-xl border shadow-inner flex items-center gap-1 shrink-0 ${timerBadgeColor}`}>
-                            <Icon name="clock" className="w-3 h-3 text-amber-400 shrink-0" />
+                        <div className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-lg border shadow-inner flex items-center gap-1 shrink-0 ${timerBadgeColor}`}>
+                            <Icon name="clock" className="w-2.5 h-2.5 text-amber-400 shrink-0" />
                             <span>{waitStr}</span>
                         </div>
                     </div>
 
-                    {/* Модульні плашки: Локація, Травми, Док */}
-                    <div className="pl-2 space-y-1.5">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                            <div className="flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 px-2 py-0.5 rounded-lg text-xs text-slate-300 shadow-inner">
-                                <Icon name="map-pin" className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                <span className="text-slate-400 font-semibold uppercase text-[10px] tracking-wider">Факт:</span>
-                                <span className="text-amber-200 font-medium truncate max-w-[130px]" title={ep.actualLoc}>{ep.actualLoc || "-"}</span>
-                            </div>
-                            {ep.docLoc && (
-                                <div className="flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 px-2 py-0.5 rounded-lg text-xs text-slate-300 shadow-inner">
-                                    <Icon name="file-text" className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                    <span className="text-slate-400 font-semibold uppercase text-[10px] tracking-wider">Док:</span>
-                                    <span className="text-slate-300 font-medium truncate max-w-[100px]" title={ep.docLoc}>{ep.docLoc}</span>
-                                </div>
+                    {/* Рядок 2: Травми або Характер втрати + Ланцюжок статусів */}
+                    <div className="pl-1.5 flex items-center justify-between gap-1.5 min-w-0">
+                        <div className="min-w-0 flex-1 truncate flex items-center gap-1">
+                            {isAny300(ep.lossType) ? (
+                                injStr ? (
+                                    <span className="text-red-300 font-medium text-[11px] truncate flex items-center gap-1 min-w-0" title={injStr}>
+                                        <Icon name="activity" className="w-3 h-3 text-red-400 shrink-0" />
+                                        <span className="truncate">{injStr}</span>
+                                    </span>
+                                ) : (
+                                    <span className="text-slate-400 text-[11px] truncate">{ep.lossType}</span>
+                                )
+                            ) : (
+                                <span className="text-zinc-300 font-semibold text-[11px] truncate flex items-center gap-1 min-w-0">
+                                    <Icon name="shield-alert" className="w-3 h-3 text-zinc-400 shrink-0" />
+                                    <span className="truncate">{ep.lossType}</span>
+                                </span>
+                            )}
+                        </div>
+                        {statusHistoryBadge}
+                    </div>
+
+                    {/* Рядок 3: Локація + Кнопки дій */}
+                    <div className="pl-1.5 flex justify-between items-center gap-2 pt-1 border-t border-slate-800/60 min-w-0">
+                        <div className="min-w-0 flex-1 flex items-center gap-1.5 text-xs overflow-hidden">
+                            <span className="text-amber-200 text-[11px] truncate flex items-center gap-1 shrink-0 max-w-[140px]" title={ep.actualLoc ? `Локація: ${ep.actualLoc}` : "Локація не вказана"}>
+                                <Icon name="map-pin" className="w-3 h-3 text-amber-400 shrink-0" />
+                                <span className="truncate">{ep.actualLoc || "-"}</span>
+                            </span>
+
+                            {ep.inUdp && (
+                                <span className="text-[9px] bg-red-950/70 text-red-300 border border-red-800/70 px-1 py-0.2 rounded font-semibold tracking-wide shrink-0">
+                                    УПД
+                                </span>
                             )}
                         </div>
 
-                        {isAny300(ep.lossType) ? (
-                            injStr && (
-                                <div className="w-fit inline-flex items-center gap-1.5 bg-red-950/30 border border-red-900/50 px-2 py-0.5 rounded-lg text-xs text-red-300 shadow-inner">
-                                    <Icon name="activity" className="w-3 h-3 text-red-400 shrink-0" />
-                                    <span className="font-bold text-red-400 text-[10px] uppercase tracking-wider shrink-0">Травми:</span>
-                                    <span className="text-red-200 font-medium text-[11px] truncate max-w-[190px]" title={injStr}>{injStr}</span>
-                                </div>
-                            )
-                        ) : (
-                            <div className="w-fit inline-flex items-center gap-1.5 bg-zinc-950/80 border border-zinc-800 px-2 py-0.5 rounded-lg text-xs font-bold text-zinc-300 uppercase tracking-wide shadow-inner">
-                                <Icon name="shield-alert" className="w-3 h-3 text-zinc-400 shrink-0" />
-                                <span>{ep.lossType}</span>
-                            </div>
-                        )}
-
-                        {ep.inUdp && (
-                            <div className="pt-0.5">
-                                <span className="text-[10px] bg-red-950/70 text-red-300 border border-red-800/70 px-2 py-0.5 rounded-md font-semibold tracking-wide inline-flex items-center gap-1">
-                                    <Icon name="zap" className="w-2.5 h-2.5 text-red-400" /> Під час УПД
-                                </span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Нижня панель дій */}
-                    <div className="pl-2 pt-1 border-t border-slate-800/70 flex items-center gap-1.5">
-                        {ep.lossType === 'Зниклий безвісті (ЗБВ)' ? (
-                            <button 
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); onAlertMIA(); }} 
-                                className="flex-1 py-1.5 px-2.5 bg-slate-950 hover:bg-red-950/80 hover:border-red-700/80 text-slate-300 hover:text-red-200 text-xs font-semibold rounded-xl border border-slate-800 transition-all flex justify-center items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
-                            >
-                                <Icon name="alert-triangle" className="w-3.5 h-3.5 text-red-400" /> 
-                                <span>Статус ЗБВ</span>
-                            </button>
-                        ) : (
-                            <>
+                        {/* Кнопки дій */}
+                        <div className="flex items-center gap-1 shrink-0">
+                            {ep.lossType === 'Зниклий безвісті (ЗБВ)' ? (
+                                <button 
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); onAlertMIA(); }} 
+                                    className="py-1 px-2 bg-slate-950 hover:bg-blue-950/80 hover:border-blue-700/80 text-blue-300 hover:text-white text-[11px] font-semibold rounded-lg border border-slate-800 transition-all flex items-center gap-1 cursor-pointer shadow-sm active:scale-95"
+                                >
+                                    <Icon name="alert-triangle" className="w-3 h-3 text-blue-400" /> 
+                                    <span>ЗБВ</span>
+                                </button>
+                            ) : isAny200(ep.lossType) ? (
                                 <button 
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); onQuickEvac(ep); }} 
-                                    className="flex-1 py-1.5 px-2.5 bg-slate-950 hover:bg-emerald-600 hover:border-emerald-500 text-slate-300 hover:text-white text-[11px] font-semibold rounded-xl border border-slate-800 transition-all flex justify-center items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 group/btn"
-                                    title="Позначити евакуйованим"
+                                    className="py-1 px-2 bg-slate-950 hover:bg-zinc-700 hover:border-zinc-500 text-slate-300 hover:text-white text-[11px] font-semibold rounded-lg border border-slate-800 transition-all flex items-center gap-1 cursor-pointer shadow-sm active:scale-95 group/btn"
+                                    title="Позначити тіло евакуйованим"
                                 >
-                                    <Icon name="check-circle" className="w-3 h-3 text-emerald-400 group-hover/btn:text-white transition-colors" /> 
-                                    <span>Евакуйовано</span>
+                                    <Icon name="check-circle" className="w-3 h-3 text-zinc-400 group-hover/btn:text-white transition-colors" /> 
+                                    <span>Тіло</span>
                                 </button>
-                                {isAny300(ep.lossType) && (
+                            ) : (
+                                <>
                                     <button 
                                         type="button"
-                                        onClick={(e) => { e.stopPropagation(); onCreate200FromWounds && onCreate200FromWounds(ep); }} 
-                                        className="flex-[0.8] py-1.5 px-2 bg-slate-950 hover:bg-zinc-800 hover:border-zinc-500 text-slate-400 hover:text-white text-[11px] font-semibold rounded-xl border border-slate-800 transition-all flex justify-center items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
-                                        title="Створити запис про смерть від ран (200)"
+                                        onClick={(e) => { e.stopPropagation(); onQuickEvac(ep); }} 
+                                        className="py-1 px-2.5 bg-emerald-950/60 hover:bg-emerald-600 hover:border-emerald-500 text-emerald-300 hover:text-white text-[11px] font-bold rounded-lg border border-emerald-800/80 transition-all flex items-center gap-1 cursor-pointer shadow-sm active:scale-95 group/btn"
+                                        title="Позначити бійця евакуйованим"
                                     >
-                                        <Icon name="skull" className="w-3 h-3 text-zinc-400" /> 
-                                        <span>200(пвр)</span>
+                                        <Icon name="check-circle" className="w-3 h-3 text-emerald-400 group-hover/btn:text-white transition-colors" /> 
+                                        <span>Евакуювати</span>
                                     </button>
-                                )}
-                            </>
-                        )}
-                        
-                        <button 
-                            type="button" 
-                            onClick={handleCopySummary}
-                            className={`w-8 h-8 rounded-xl border flex items-center justify-center transition shadow-sm cursor-pointer shrink-0 ${
-                                isCopied 
-                                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300' 
-                                    : 'bg-slate-950 hover:bg-slate-800 border-slate-800 text-slate-400 hover:text-slate-200'
-                            }`}
-                            title={isCopied ? "Скопійовано в буфер!" : "Скопіювати звіт по бійцю"}
-                        >
-                            <Icon name={isCopied ? "check" : "copy"} className="w-3.5 h-3.5" />
-                        </button>
+                                    {isAny300(ep.lossType) && (
+                                        <button 
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); onCreate200FromWounds && onCreate200FromWounds(ep); }} 
+                                            className="py-1 px-2 bg-slate-950 hover:bg-zinc-800 hover:border-zinc-500 text-slate-400 hover:text-white text-[11px] font-semibold rounded-lg border border-slate-800 transition-all flex items-center gap-1 cursor-pointer shadow-sm active:scale-95"
+                                            title="Створити запис про смерть від ран (200)"
+                                        >
+                                            <Icon name="skull" className="w-3 h-3 text-zinc-400" /> 
+                                            <span>200(пвр)</span>
+                                        </button>
+                                    )}
+                                </>
+                            )}
 
-                        <button 
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); onEdit(ep); }} 
-                            className="w-8 h-8 rounded-xl bg-slate-950 hover:bg-amber-500/20 text-slate-400 hover:text-amber-400 border border-slate-800 hover:border-amber-500/50 flex items-center justify-center transition shadow-sm cursor-pointer shrink-0" 
-                            title="Редагувати запис"
-                        >
-                            <Icon name="edit-3" className="w-3.5 h-3.5" />
-                        </button>
+                            <button 
+                                type="button" 
+                                onClick={handleCopySummary}
+                                className={`w-7 h-7 rounded-lg border flex items-center justify-center transition shadow-sm cursor-pointer shrink-0 ${
+                                    isCopied 
+                                        ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300' 
+                                        : 'bg-slate-950 hover:bg-slate-800 border-slate-800 text-slate-400 hover:text-slate-200'
+                                }`}
+                                title={isCopied ? "Скопійовано в буфер!" : "Скопіювати звіт"}
+                            >
+                                <Icon name={isCopied ? "check" : "copy"} className="w-3 h-3" />
+                            </button>
+
+                            <button 
+                                type="button" 
+                                onClick={(e) => { e.stopPropagation(); onEdit(ep); }} 
+                                className="w-7 h-7 rounded-lg bg-slate-950 hover:bg-amber-500/20 text-slate-400 hover:text-amber-400 border border-slate-800 hover:border-amber-500/50 flex items-center justify-center transition shadow-sm cursor-pointer shrink-0" 
+                                title="Редагувати запис"
+                            >
+                                <Icon name="edit-3" className="w-3 h-3" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             );
@@ -1185,6 +1138,32 @@ const MedicalApp = (function() {
             const [isLoading, setIsLoading] = useState(true);
             const [soldiers, setSoldiers] = useState([]);
             const [episodes, setEpisodes] = useState([]);
+            const [personMatches, setPersonMatches] = useState(null);
+            const [chronologyReview, setChronologyReview] = useState(null);
+            const dateIssues = useMemo(() => chronologyIssues(episodes), [episodes]);
+            const openChronology = (soldierId, draft = null) => {
+                const persisted = episodes.filter(ep => ep.soldierId === soldierId);
+                setChronologyReview({ soldierId, draftId: draft?.id, persisted, name: soldiers.find(s => s.id === soldierId)?.name || 'Перевірка записів', rows: [...persisted.filter(ep => ep.id !== draft?.id), ...(draft ? [draft] : [])] });
+            };
+            const checkChronology = draft => {
+                const rows = [...episodes.filter(ep => ep.soldierId === draft.soldierId && ep.id !== draft.id), draft];
+                if (!chronologyIssues(rows).length) return true;
+                openChronology(draft.soldierId, draft); return false;
+            };
+            const applyChronology = changes => {
+                const current = episodes.filter(ep => ep.soldierId === chronologyReview.soldierId);
+                if (JSON.stringify(current) !== JSON.stringify(chronologyReview.persisted)) throw new Error('Записи змінилися. Закрийте перевірку й відкрийте її знову.');
+                const proposed = chronologyReview.rows.map(ep => ({ ...ep, date: changes[ep.id] ?? ep.date }));
+                if (chronologyIssues(proposed).length) throw new Error('Спочатку усуньте суперечності дат.');
+                const persistedChanges = current.filter(ep => ep.id !== chronologyReview.draftId && changes[ep.id]);
+                if (persistedChanges.length) {
+                    saveHistory();
+                    setEpisodes(previous => previous.map(ep => persistedChanges.some(row => row.id === ep.id) ? { ...ep, date: changes[ep.id] } : ep));
+                    addLog('Виправлення дат', persistedChanges.map(ep => ep.lossType + ': ' + ep.date + ' → ' + changes[ep.id]).join('; '));
+                }
+                if (chronologyReview.draftId && changes[chronologyReview.draftId]) setEpisodeDate(changes[chronologyReview.draftId]);
+                setChronologyReview(null);
+            };
             const [logs, setLogs] = useState([]);
             const logsRef = useRef([]);
             useEffect(() => { logsRef.current = logs; }, [logs]);
@@ -1282,6 +1261,12 @@ const MedicalApp = (function() {
             }, []);
 
             const [activeTab, setActiveTab] = useState("list");
+            const [clockTick, setClockTick] = useState(0);
+            useEffect(() => {
+                if (!['list', 'triage'].includes(activeTab)) return;
+                const timer = setInterval(() => setClockTick(tick => tick + 1), 60000);
+                return () => clearInterval(timer);
+            }, [activeTab]);
             const [showOnlyLatest, setShowOnlyLatest] = useState(true);
             const [sortBy, setSortBy] = useState("date_desc"); // 'date_desc', 'date_asc', 'evac_desc', 'evac_asc', 'name_asc', 'name_desc', 'severity_desc'
 
@@ -1342,6 +1327,8 @@ const MedicalApp = (function() {
             };
 
             const [anShowLatest, setAnShowLatest] = useState(true);
+            const [groupAnalytics, setGroupAnalytics] = useState(false);
+            const lastActiveElementRef = useRef(null);
             const [anDateFrom, setAnDateFrom] = useState("");
             const [anDateTo, setAnDateTo] = useState("");
             const [anUdp, setAnUdp] = useState("all");
@@ -1562,6 +1549,40 @@ const MedicalApp = (function() {
                 return () => clearTimeout(timer);
             }, [soldiers, episodes, logs, settings, sessionPassword, backupPassword, isLoading]);
 
+            const hasOpenModal = isAddWoundedOpen || isEditOpen || isSettingsOpen || isBatchReplaceOpen || 
+                                 isBackupOpen || isClearDbConfirmOpen || isChangelogOpen || showAutoRestoreModal || !!chronologyReview || !!personMatches;
+
+            // Нативне блокування фонового скролу та відновлення фокусу (a11y)
+            useEffect(() => {
+                if (hasOpenModal) {
+                    if (!lastActiveElementRef.current && document.activeElement) {
+                        lastActiveElementRef.current = document.activeElement;
+                    }
+                    document.body.classList.add('modal-open');
+                } else {
+                    document.body.classList.remove('modal-open');
+                    if (lastActiveElementRef.current && typeof lastActiveElementRef.current.focus === 'function') {
+                        lastActiveElementRef.current.focus();
+                        lastActiveElementRef.current = null;
+                    }
+                }
+                return () => {
+                    document.body.classList.remove('modal-open');
+                };
+            }, [hasOpenModal]);
+
+            // Плавне перемикання вкладок за допомогою View Transitions API
+            const handleTabSwitch = useCallback((tab) => {
+                if (tab === activeTab) return;
+                if (document.startViewTransition) {
+                    document.startViewTransition(() => {
+                        startTransition(() => setActiveTab(tab));
+                    });
+                } else {
+                    startTransition(() => setActiveTab(tab));
+                }
+            }, [activeTab]);
+
             useEffect(() => {
                 const handleKeyDown = (e) => {
                     if (document.querySelector('[data-suite-module="med"]')?.dataset.suiteActive !== 'true') return;
@@ -1634,9 +1655,7 @@ const MedicalApp = (function() {
                 for (let i = 0; i < timeFilteredEpisodes.length; i++) {
                     const ep = timeFilteredEpisodes[i];
                     const existing = map.get(ep.soldierId);
-                    if (!existing || parseSafeDate(ep.date) > parseSafeDate(existing.date)) {
-                        map.set(ep.soldierId, ep);
-                    }
+                    map.set(ep.soldierId, pickMedicalEpisode(existing, ep));
                 }
                 return Array.from(map.values()).sort((a, b) => parseSafeDate(b.date) - parseSafeDate(a.date));
             }, [timeFilteredEpisodes]);
@@ -1655,9 +1674,7 @@ const MedicalApp = (function() {
                 for (let i = 0; i < episodes.length; i++) {
                     const ep = episodes[i];
                     const existing = map.get(ep.soldierId);
-                    if (!existing || parseSafeDate(ep.date) > parseSafeDate(existing.date)) {
-                        map.set(ep.soldierId, ep);
-                    }
+                    map.set(ep.soldierId, pickMedicalEpisode(existing, ep));
                 }
                 return Array.from(map.values()).sort((a, b) => parseSafeDate(b.date) - parseSafeDate(a.date));
             }, [episodes]);
@@ -1713,7 +1730,7 @@ const MedicalApp = (function() {
                         if (ep.actualLoc !== anSector && ep.docLoc !== anSector) return;
                     }
 
-                    const effType = ep.lossType === 'Бойове травмування (300)' ? 'Поранення (300)' : ep.lossType;
+                    const effType = groupAnalytics ? (ep.lossType === 'Зниклий безвісти (ЗБВ)' ? 'Загибель (200)' : ep.lossType === 'Бойове травмування (300)' ? 'Поранення (300)' : ep.lossType) : (ep.lossType === 'Бойове травмування (300)' ? 'Поранення (300)' : ep.lossType);
                     const is300 = isAny300(effType);
                     const is200 = isAny200(effType);
 
@@ -1776,7 +1793,7 @@ const MedicalApp = (function() {
                 }).length;
 
                 const globalWaiting200 = globalLatestEpisodes.filter(e => {
-                    const effType = e.lossType;
+                    const effType = groupAnalytics ? (e.lossType === 'Зниклий безвісти (ЗБВ)' ? 'Загибель (200)' : e.lossType) : e.lossType;
                     if (e.evacStatus !== "Не евакуйований" || !isAny200(effType)) return false;
                     if (anUdp !== "all" && ((anUdp === "yes" && !e.inUdp) || (anUdp === "no" && e.inUdp))) return false;
                     if (anSector !== "all" && e.actualLoc !== anSector && e.docLoc !== anSector) return false;
@@ -1784,6 +1801,7 @@ const MedicalApp = (function() {
                 }).length;
 
                 const globalWaitingMia = globalLatestEpisodes.filter(e => {
+                    if (groupAnalytics) return false;
                     if (e.evacStatus !== "Не евакуйований" || e.lossType !== 'Зниклий безвісти (ЗБВ)') return false;
                     if (anUdp !== "all" && ((anUdp === "yes" && !e.inUdp) || (anUdp === "no" && e.inUdp))) return false;
                     if (anSector !== "all" && e.actualLoc !== anSector && e.docLoc !== anSector) return false;
@@ -1802,7 +1820,7 @@ const MedicalApp = (function() {
                     globalWaiting300, globalWaiting200, globalWaitingMia, globalWaitingCritHeavy,
                     avgEvacTimeDays, evacSuccessRate
                 };
-            }, [episodes, globalLatestEpisodes, anDateFrom, anDateTo, anUdp, anSector, anShowLatest]);
+            }, [episodes, globalLatestEpisodes, anDateFrom, anDateTo, anUdp, anSector, anShowLatest, groupAnalytics]);
 
             const availableAnSectors = useMemo(() => {
                 const map = new Map();
@@ -1842,7 +1860,7 @@ const MedicalApp = (function() {
                 });
                 if (anShowLatest) {
                     const map = new Map();
-                    filtered.sort((a, b) => parseSafeDate(a.date) - parseSafeDate(b.date)).forEach(ep => map.set(ep.soldierId, ep));
+                    filtered.forEach(ep => map.set(ep.soldierId, pickMedicalEpisode(map.get(ep.soldierId), ep)));
                     filtered = Array.from(map.values()).sort((a, b) => parseSafeDate(b.date) - parseSafeDate(a.date));
                 }
                 return filtered;
@@ -1868,7 +1886,7 @@ const MedicalApp = (function() {
                 const aLocCauseCounts = {}; 
                 const activeCausesSet = new Set();
                 
-                const injuryStats = { 'Ампутація':0, 'Розрив':0, 'Уламкове':0, 'Кульове':0, 'Перелом':0, 'Опік':0, 'АКБТ':0, 'Забій':0 };
+                const injuryStats = Object.fromEntries([...new Set(Object.values(INJURY_GROUPS))].map(label => [label, 0]));
 
                 const evacDaysSum = { 'Критичний': 0, 'Важкий': 0, 'Середній': 0, 'Легкий': 0, '200 (Тіла)': 0 };
                 const evacDaysCount = { 'Критичний': 0, 'Важкий': 0, 'Середній': 0, 'Легкий': 0, '200 (Тіла)': 0 };
@@ -1876,7 +1894,11 @@ const MedicalApp = (function() {
                 let evac200 = 0, evac300 = 0, notEvac200 = 0, notEvac300 = 0;
 
                 anFiltered.forEach(d => {
-                    const effType = d.lossType;
+                    let effType = d.lossType;
+                    if (groupAnalytics) {
+                        if (effType === 'Зниклий безвісти (ЗБВ)') effType = 'Загибель (200)';
+                        if (effType === 'Бойове травмування (300)') effType = 'Поранення (300)';
+                    }
 
                     const isEp200 = isAny200(effType) || effType === 'Зниклий безвісти (ЗБВ)';
                     const isEp300 = isAny300(effType);
@@ -1889,21 +1911,9 @@ const MedicalApp = (function() {
                         if (isEp300) notEvac300++;
                     }
 
-                    const epTime = d.date ? (d.date.includes('T') ? d.date.split('T')[1] : d.date.split(' ')[1] || "00:00") : "00:00"; 
-                    const roundedHhMm = roundTime(epTime.substring(0, 5));
-                    
-                    let day = "";
-                    if (d.date) {
-                        if (d.date.includes('T')) {
-                            day = d.date.split('T')[0];
-                        } else if (d.date.includes('.')) {
-                            const parts = d.date.split(' ')[0].split('.');
-                            if (parts.length === 3) day = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-                        } else {
-                            day = d.date.split(' ')[0];
-                        }
-                    }
-                    if (!day) day = new Date().toLocaleDateString('en-CA');
+                    const localDate = localMedicalInput(d.date);
+                    const roundedHhMm = localDate ? roundTime(localDate.slice(11, 16)) : '';
+                    const day = localDate.slice(0, 10) || 'Некоректна дата';
                     if (!dGroups[day]) dGroups[day] = { '200': 0, '200 ПВР': 0, 'Неб. смерть': 0, 'Поранення': 0, 'Бойове': 0, 'Небойове': 0, 'ЗБВ': 0, 'СЗЧ': 0, 'Дезертирство': 0 };
 
                     let typeKey = '';
@@ -1950,18 +1960,7 @@ const MedicalApp = (function() {
                     aLocCauseCounts[loc][causeStr]++;
 
                     if (d.injuries) {
-                        let epInjs = { 'Ампутація':false, 'Розрив':false, 'Уламкове':false, 'Кульове':false, 'Перелом':false, 'Опік':false, 'АКБТ':false, 'Забій':false };
-                        Object.values(d.injuries).forEach(reg => {
-                            if(reg.amputation) epInjs['Ампутація'] = true;
-                            if(reg.rupture) epInjs['Розрив'] = true;
-                            if(reg.shrapnel) epInjs['Уламкове'] = true;
-                            if(reg.bullet) epInjs['Кульове'] = true;
-                            if(reg.fracture) epInjs['Перелом'] = true;
-                            if(reg.burn) epInjs['Опік'] = true;
-                            if(reg.akbt) epInjs['АКБТ'] = true;
-                            if(reg.contusion) epInjs['Забій'] = true;
-                        });
-                        Object.keys(epInjs).forEach(k => { if(epInjs[k]) injuryStats[k]++; });
+                        injuryGroups(d.injuries).forEach(label => { injuryStats[label] = (injuryStats[label] || 0) + 1; });
                     }
 
                     const epEvacStr = d.evacTime || d.evacDate || '';
@@ -1985,7 +1984,7 @@ const MedicalApp = (function() {
                     }
                 });
 
-                const activeDates = Object.keys(dGroups).sort();
+                const activeDates = Object.keys(dGroups).filter(day => /^\d{4}-\d{2}-\d{2}$/.test(day)).sort();
                 if (activeDates.length > 0) {
                     // Визначаємо початок і кінець в мілісекундах (в UTC для уникнення зсувів часового поясу)
                     const startMs = new Date(activeDates[0] + "T00:00:00Z").getTime();
@@ -2062,7 +2061,7 @@ const MedicalApp = (function() {
                     evacStatusData,
                     causeColors
                 };
-            }, [anFilteredEpisodes, soldiers]);
+            }, [anFilteredEpisodes, soldiers, groupAnalytics]);
 
             const soldierHistory = useMemo(() => {
                 if (!selectedSoldierId) return [];
@@ -2173,7 +2172,7 @@ const MedicalApp = (function() {
                     if (!ep.soldierId || !soldierIdMap.has(ep.soldierId)) {
                         orphansCount++;
                         const sInfo = ep.soldierName || ep.callsign || 'Без імені';
-                        const dInfo = ep.date ? ep.date.slice(0, 10) : 'без дати';
+                        const dInfo = localMedicalInput(ep.date).slice(0, 10) || 'без коректної дати';
                         const tInfo = ep.lossType || 'тип не вказано';
                         issues.push({
                             id: ep.id,
@@ -2436,7 +2435,7 @@ const MedicalApp = (function() {
                         return `
                             <tr ${rowBg} class="reg-row" data-evac="${evacVal}" data-dead="${isDead ? '1':'0'}" data-wound="${isWounded ? '1':'0'}" data-sev="${ep.severity || ''}" data-mia="${isMia ? '1':'0'}" data-awol="${isAw ? '1':'0'}" data-cause="${causeClean}" data-unit="${unitClean}">
                                 <td class="row-num" style="text-align:center; font-family:'JetBrains Mono',monospace; font-size:8pt;">${idx + 1}</td>
-                                <td style="font-family:'JetBrains Mono',monospace; font-size:8pt; white-space:nowrap;">${ep.date.replace('T', ' ')}</td>
+                                <td style="font-family:'JetBrains Mono',monospace; font-size:8pt; white-space:nowrap;">${localMedicalInput(ep.date).replace('T', ' ') || 'Некоректна дата'}</td>
                                 <td style="font-size:8pt;">${s.rank || '—'}</td>
                                 <td style="font-weight:bold; font-size:8.5pt;">${s.name || '—'}</td>
                                 <td style="font-family:'JetBrains Mono',monospace; font-size:8pt; color:#b45309;">${s.callsign ? `«${formatCallsignUI(s.callsign)}»` : '—'}</td>
@@ -2785,9 +2784,9 @@ const MedicalApp = (function() {
                     <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:5px 12px; text-align:center; min-width: 140px;">
                         <div style="font-size:7.5pt; font-weight:700; color:#475569; text-transform:uppercase;">200-х всього очікують</div>
                         <div style="font-size:16pt; font-weight:800; color:#334155; line-height:1.1;">${evacStats.globalWaiting200}</div>
-                        <div style="font-size:7.5pt; color:#64748b;">тіл на позиціях</div>
+                        <div style="font-size:7.5pt; color:#64748b;">${groupAnalytics ? 'тіл та ЗБВ' : 'тіл на позиціях'}</div>
                     </div>
-                    ${countMIA > 0 ? `
+                    ${!groupAnalytics && countMIA > 0 ? `
                     <div style="background:#ffffff; border:1px solid #93c5fd; border-radius:6px; padding:5px 12px; text-align:center; min-width: 130px;">
                         <div style="font-size:7.5pt; font-weight:700; color:#2563eb; text-transform:uppercase;">Зниклі безвісти</div>
                         <div style="font-size:16pt; font-weight:800; color:#1d4ed8; line-height:1.1;">${countMIA}</div>
@@ -3101,7 +3100,7 @@ const MedicalApp = (function() {
                 };
                 
                 anFilteredEpisodes.forEach(ep => {
-                    const effType = ep.lossType;
+                    const effType = groupAnalytics ? (ep.lossType === 'Зниклий безвісти (ЗБВ)' ? 'Загибель (200)' : ep.lossType === 'Бойове травмування (300)' ? 'Поранення (300)' : ep.lossType) : ep.lossType;
                     
                     const isDead = isAny200(effType);
                     const isMia = effType === 'Зниклий безвісти (ЗБВ)';
@@ -3166,7 +3165,7 @@ const MedicalApp = (function() {
                         if (ep.actualLoc !== anSector && ep.docLoc !== anSector) return;
                     }
 
-                    const effType = ep.lossType === 'Бойове травмування (300)' ? 'Поранення (300)' : ep.lossType;
+                    const effType = groupAnalytics ? (ep.lossType === 'Зниклий безвісти (ЗБВ)' ? 'Загибель (200)' : ep.lossType === 'Бойове травмування (300)' ? 'Поранення (300)' : ep.lossType) : (ep.lossType === 'Бойове травмування (300)' ? 'Поранення (300)' : ep.lossType);
                     const isWounded = isAny300(effType);
                     const isDead = isAny200(effType);
                     const isMia = effType === 'Зниклий безвісти (ЗБВ)';
@@ -3224,7 +3223,11 @@ const MedicalApp = (function() {
                     report += `\n`;
                 }
                 
-                report += `\nЗниклі безвісти – ${miaEps.length}${getCallsigns(miaEps)}\n\n`;
+                if (!groupAnalytics) {
+                    report += `\nЗниклі безвісти – ${miaEps.length}${getCallsigns(miaEps)}\n\n`;
+                } else {
+                    report += `\n`;
+                }
                 
                 report += `Поранено – ${woundedEps.length}${getCallsigns(woundedEps)}`;
                 if (woundedEps.length > 0) {
@@ -3257,7 +3260,7 @@ const MedicalApp = (function() {
                 const activeCritCount = globalNotEvacWoundedEps.filter(e => e.severity === 'Критичний' || e.severity === 'Важкий').length;
                 report += `    • Поранених – ${actualEvacWoundedEps.length} в/сл, залишається неевакуйованих поранених – ${globalNotEvacWoundedEps.length} в/сл. (з них ${activeCritCount} в/сл. потребують першочергової евакуації)\n`;
                 report += `    • Тіла – ${actualEvacDeadEps.length}${getCallsigns(actualEvacDeadEps)}, залишається неевакуйованих тіл – ${globalNotEvacDeadEps.length}${getCallsigns(globalNotEvacDeadEps)}.\n`;
-                if (globalNotEvacMiaEps.length > 0) {
+                if (!groupAnalytics && globalNotEvacMiaEps.length > 0) {
                     report += `    • Зниклі безвісти (місцезнаходження не встановлено) – ${globalNotEvacMiaEps.length}${getCallsigns(globalNotEvacMiaEps)}.\n`;
                 }
 
@@ -3270,105 +3273,22 @@ const MedicalApp = (function() {
             };
 
             const handleExportAnalyticsExcel = async () => {
-                if (typeof ExcelJS === 'undefined') {
-                    triggerNotification("Бібліотека ExcelJS ще не завантажилась. Перевірте з'єднання з Інтернетом.", "error");
-                    return;
-                }
-                const workbook = new ExcelJS.Workbook();
-                workbook.creator = 'MedTactical';
-                workbook.lastModifiedBy = 'System';
-                workbook.created = new Date();
-                
-                const sheet1 = workbook.addWorksheet('Загальна статистика');
-                sheet1.columns = [
-                    { header: 'Всього епізодів', key: 'total', width: 20 },
-                    { header: 'Бойові (200)', key: 'c200', width: 15 },
-                    { header: '200 (ПВР)', key: 'c200pvr', width: 15 },
-                    { header: 'Небойові (200)', key: 'c200nc', width: 15 },
-                    { header: 'Поранення (300)', key: 'cWound', width: 20 },
-                    { header: 'Бойові травми', key: 'cCombat', width: 15 },
-                    { header: 'Небойові травми', key: 'cNonCombat', width: 20 },
-                    { header: 'ЗБВ', key: 'cMia', width: 10 },
-                    { header: 'СЗЧ', key: 'cAwol', width: 10 },
-                    { header: 'Дезертирство', key: 'cDesert', width: 15 }
-                ];
-                sheet1.getRow(1).font = { bold: true };
-                sheet1.addRow({
-                    total: chartData.totalEpisodes, c200: chartData.types.c200, c200pvr: chartData.types.c200pvr, c200nc: chartData.types.c200nc,
-                    cWound: chartData.types.cWound, cCombat: chartData.types.cCombat, cNonCombat: chartData.types.cNonCombat,
-                    cMia: chartData.types.cMia, cAwol: chartData.types.cAwol, cDesert: chartData.types.cDesert
-                });
-
-                const sheet2 = workbook.addWorksheet('Дані для графіків');
-                sheet2.columns = [
-                    { header: 'Тип втрати', key: 'tL', width: 20 }, { header: 'К-сть', key: 'tC', width: 10 }, { header: '', key: 's1', width: 5 },
-                    { header: 'Підрозділ', key: 'uL', width: 25 }, { header: 'К-сть', key: 'uC', width: 10 }, { header: '', key: 's2', width: 5 },
-                    { header: 'Причина', key: 'cL', width: 25 }, { header: 'К-сть', key: 'cC', width: 10 }, { header: '', key: 's3', width: 5 },
-                    { header: 'Час доби', key: 'timeL', width: 15 }, { header: 'К-сть', key: 'timeC', width: 10 }
-                ];
-                sheet2.getRow(1).font = { bold: true };
-
-                const tL = ['Бойові (200)', '200 (ПВР)', 'Небойові (200)', 'Бойові (300)', 'Небойові (300)', 'Поранення', 'ЗБВ', 'СЗЧ', 'Дезертирство'];
-                const tC = [chartData.types.c200, chartData.types.c200pvr, chartData.types.c200nc, chartData.types.cCombat, chartData.types.cNonCombat, chartData.types.cWound, chartData.types.cMia, chartData.types.cAwol, chartData.types.cDesert];
-                const uL = chartData.units.labels || [];
-                const cL = chartData.reasons.labels || [];
-                const timeL = chartData.time.labels || [];
-
-                const sumStats = obj => obj ? (obj['200']||0) + (obj['200 ПВР']||0) + (obj['Неб. смерть']||0) + (obj['Поранення']||0) + (obj['Бойове']||0) + (obj['Небойове']||0) + (obj['ЗБВ']||0) + (obj['СЗЧ']||0) + (obj['Дезертирство']||0) : '';
-                const maxR = Math.max(tL.length, uL.length, cL.length, timeL.length);
-                for (let i = 0; i < maxR; i++) {
-                    const u = uL[i], c = cL[i], t = timeL[i];
-                    sheet2.addRow({
-                        tL: tL[i] || '', tC: tC[i] !== undefined ? tC[i] : '',
-                        uL: u || '', uC: u ? sumStats(chartData.units.data[u]) : '',
-                        cL: c || '', cC: c ? sumStats(chartData.reasons.data[c]) : '',
-                        timeL: t || '', timeC: t ? sumStats(chartData.time.timeMap[t]) : ''
+                try {
+                    const workbook = createMedicalWorkbook(ExcelJS, {
+                        episodes: anFilteredEpisodes,
+                        allEpisodes: episodes,
+                        selection: { dateFrom: anDateFrom, dateTo: anDateTo, udp: anUdp, sector: anSector, showLatest: anShowLatest },
+                        personFor: ep => MedicalPersonnelDirectory.forEpisode(ep, soldiersMap.get(ep.soldierId)),
+                        regions: BODY_REGIONS,
+                        filters: 'Період: ' + (anDateFrom || 'початок') + ' — ' + (anDateTo || 'кінець') + '; УПД: ' + anUdp + '; місце: ' + anSector + '; лише останній стан: ' + (anShowLatest ? 'так' : 'ні')
                     });
-                }
-
-                const sheet3 = workbook.addWorksheet('Детальний реєстр');
-                sheet3.columns = [
-                    { header: 'Дата/Час', key: 'date', width: 15 },
-                    { header: 'Звання', key: 'rank', width: 15 },
-                    { header: 'ПІБ', key: 'name', width: 25 },
-                    { header: 'Позивний', key: 'callsign', width: 15 },
-                    { header: 'Підрозділ', key: 'unit', width: 20 },
-                    { header: 'Тип втрати', key: 'lossType', width: 20 },
-                    { header: 'Важкість', key: 'severity', width: 15 },
-                    { header: 'Причина', key: 'cause', width: 20 },
-                    { header: 'Фактичне місце', key: 'loc', width: 25 },
-                    { header: 'Евакуація / СЗЧ', key: 'status', width: 20 },
-                    { header: 'Зброя', key: 'weapon', width: 15 },
-                    { header: 'Рапорт', key: 'report', width: 20 },
-                    { header: 'Травми', key: 'inj', width: 35 }
-                ];
-                sheet3.getRow(1).font = { bold: true };
-
-                anFilteredEpisodes.forEach(ep => {
-                    const s = MedicalPersonnelDirectory.forEpisode(ep, soldiers.find(x => x.id === ep.soldierId)) || {};
-                    sheet3.addRow({
-                        date: ep.date.replace('T', ' '),
-                        rank: s.rank || '',
-                        name: s.name || '',
-                        callsign: s.callsign ? formatCallsignUI(s.callsign) : '',
-                        unit: s.unit || '',
-                        lossType: ep.lossType || '',
-                        severity: ep.severity || '',
-                        cause: ep.cause || '',
-                        loc: ep.actualLoc || '',
-                        status: isAwol(ep.lossType) ? (ep.awolStatus || '') : (ep.evacStatus || ''),
-                        weapon: ep.weaponStatus || '-',
-                        report: ep.hasReport ? `Складено (${ep.reportDate || "-"})` : "Ні",
-                        inj: getInjStrUI(ep.injuries)
-                    });
-                });
-
-                const buffer = await workbook.xlsx.writeBuffer();
-                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.download = `Analytics_Report_${new Date().toLocaleDateString('en-CA')}.xlsx`;
-                link.click();
+                    const buffer = await workbook.xlsx.writeBuffer();
+                    const url = URL.createObjectURL(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+                    const link = document.createElement('a'); link.href = url;
+                    link.download = 'Analytics_Report_' + window.SuiteDates.localISO() + '.xlsx';
+                    document.body.appendChild(link); link.click(); link.remove();
+                    setTimeout(() => URL.revokeObjectURL(url), 30000);
+                } catch (error) { triggerNotification('Не вдалося сформувати Excel: ' + error.message, 'error'); }
             };
 
             const toggleFilterItem = (list, setList, item) => {
@@ -3460,7 +3380,7 @@ const MedicalApp = (function() {
                     const matchReport = filterReport === "all" ? true : (filterReport === "yes" ? episode.hasReport : !episode.hasReport);
                     const matchInjury = filterInjuries.length === 0 || (
                         isAny300(episode.lossType) && filterInjuries.some(injKey => 
-                            episode.injuries && Object.values(episode.injuries).some(region => region[injKey])
+                            episode.injuries && Object.values(episode.injuries).some(region => region && (region[injKey] || (injKey === 'amputation' && (region.amp_hand || region.amp_foot || region.amp_fingers))))
                         )
                     );
 
@@ -3603,11 +3523,7 @@ const MedicalApp = (function() {
                 });
             };
 
-            const hasAnyInjury = (regionId) => {
-                const reg = injuries && injuries[regionId];
-                if (!reg) return false;
-                return reg.amputation || reg.rupture || reg.shrapnel || reg.bullet || reg.fracture || reg.burn || reg.akbt || reg.contusion;
-            };
+            const hasAnyInjury = (regionId) => Object.values(injuries?.[regionId] || {}).some(Boolean);
 
             const handleSaveWounded = (e) => {
                 e.preventDefault();
@@ -3620,21 +3536,12 @@ const MedicalApp = (function() {
                 let finalSoldierId = selectedSoldierId;
                 if (rosterCandidates.length) return triggerNotification('Уточніть відповідність старій медичній картці або підтвердьте, що це інша особа.', 'error');
 
+                if (!parseSafeDate(episodeDate)) return triggerNotification('Некоректна дата події.', 'error');
                 if (!finalSoldierId && !forceNewPerson) {
-                    const exactMatches = soldiers.filter(s => {
-                        const nameMatches = MedicalPersonnelDirectory.norm(s.name) === MedicalPersonnelDirectory.norm(newSoldierName);
-                        if (!nameMatches) return false;
-                        if (newSoldierCallsign.trim()) {
-                            return MedicalPersonnelDirectory.norm(s.callsign) === MedicalPersonnelDirectory.norm(newSoldierCallsign);
-                        }
-                        return true;
-                    });
-                    if (exactMatches.length > 1) return triggerNotification('Є кілька карток із такими даними. Оберіть потрібну зі списку збігів.', 'error');
-                    if (exactMatches.length === 1) finalSoldierId = exactMatches[0].id;
+                    const candidates = personCandidates({ name: newSoldierName, callsign: newSoldierCallsign, unit: newSoldierUnit }, soldiers, personnelDirectory.entries);
+                    if (candidates.length) { setPersonMatches(candidates); return; }
                 }
-
-                const existingEpisodes = episodes.filter(ep => ep.soldierId === finalSoldierId).sort((a,b) => new Date(b.date) - new Date(a.date));
-                if (existingEpisodes.length > 0 && isAny200(existingEpisodes[0].lossType)) return triggerNotification('Боєць зафіксований як 200. Нових подій додавати не можна.', 'error');
+                if (!checkChronology({ id: '__draft', soldierId: finalSoldierId || '__new', date: episodeDate, lossType })) return;
                 if (!newSoldierName.trim() || !newSoldierUnit) return triggerNotification('ПІБ та Підрозділ є обов’язковими.', 'error');
                 saveHistory();
 
@@ -3698,7 +3605,7 @@ const MedicalApp = (function() {
                 setNewSoldierCallsign(soldier?.callsign || "");
                 setNewSoldierRank(episode.rank || soldier?.rank || "");
                 setNewSoldierUnit(episode.unit || soldier?.unit || "");
-                setEpisodeDate(episode.date);
+                setEpisodeDate(localMedicalInput(episode.date));
                 setLossType(episode.lossType || "");
                 setCause(episode.cause || "");
                 setSeverity(episode.severity || "");
@@ -3710,8 +3617,7 @@ const MedicalApp = (function() {
                 setEvacStatus(episode.evacStatus || "Не евакуйований");
                 setAwolStatus(episode.awolStatus || "В розшуку");
                 
-                let evT = episode.evacTime || "";
-                if (evT.length > 10) evT = evT.split('T')[0];
+                const evT = localMedicalInput(episode.evacTime).slice(0, 10);
                 setEvacDate(evT);
                 
                 setHasReport(episode.hasReport || false);
@@ -3741,6 +3647,8 @@ const MedicalApp = (function() {
                 if(isAny300(lossType) && !severity) return triggerNotification("Оберіть важкість", "error");
                 if (!newSoldierUnit || !newSoldierName.trim()) return triggerNotification("ПІБ та Підрозділ є обов'язковими", "error");
 
+                if (!parseSafeDate(episodeDate)) return triggerNotification('Некоректна дата події.', 'error');
+                if (!checkChronology({ ...currentEpisode, date: episodeDate, lossType })) return;
                 saveHistory();
 
                 const original = episodes.find(ep => ep.id === currentEpisode.id);
@@ -3804,7 +3712,7 @@ const MedicalApp = (function() {
                     const rawJson = JSON.stringify({ soldiers, episodes, logs, settings });
                     const encrypted = CryptoJS.AES.encrypt(rawJson, backupPassword).toString();
                     const link = document.createElement('a');
-                    link.download = `med_backup_${new Date().toISOString().slice(0,10)}.enc`;
+                    link.download = `med_backup_${window.SuiteDates.localISO()}.enc`;
                     link.href = URL.createObjectURL(new Blob([encrypted], { type: 'text/plain' }));
                     link.click();
                     addLog("Експорт", "Створено шифрований бекап бази");
@@ -4418,6 +4326,7 @@ const MedicalApp = (function() {
                     onEdit={handleStartEdit} 
                     onAlertMIA={handleAlertMIA}
                     onCreate200FromWounds={createDeadFromWoundsRecord}
+                    onReview={() => openChronology(ep.soldierId)} clockTick={clockTick}
                 />
             );
 
@@ -4436,6 +4345,12 @@ const MedicalApp = (function() {
 
             return (
                 <div id="med-app" className="min-h-full min-w-0 flex flex-col p-3 sm:p-6 w-full space-y-5">
+                    {personMatches && <PersonMatchDialog candidates={personMatches} onClose={() => setPersonMatches(null)} onChoose={person => { selectExistingSoldier(person); setPersonMatches(null); }} onSeparate={() => { setForceNewPerson(true); setPersonMatches(null); }} />}
+                    {chronologyReview && <ChronologyDialog review={chronologyReview} onApply={applyChronology} onClose={() => setChronologyReview(null)} />}
+                    {!!dateIssues.length && <div role="alert" className="bg-rose-950 border border-rose-700 text-rose-200 rounded-xl p-3 text-sm">
+                        Виявлено {dateIssues.length} суперечностей дат. Статус загибелі не замінюється пізнішим пораненням.
+                        <div className="flex flex-wrap gap-2 mt-2">{[...new Set(dateIssues.map(issue => issue.episode.soldierId))].map(id => <button key={id} type="button" className="underline" onClick={() => openChronology(id)}>Перевірити: {soldiersMap.get(id)?.name || id}</button>)}</div>
+                    </div>}
                     
                     {/* Single Unified Modern Command Header */}
                     <header className="bg-slate-900/95 border border-slate-800/90 rounded-2xl p-3 sm:p-3.5 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3.5 shadow-2xl backdrop-blur-md">
@@ -4455,7 +4370,7 @@ const MedicalApp = (function() {
                                     className="text-[11px] bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 font-mono font-bold px-2 py-0.5 rounded-md transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm" 
                                     title="Історія оновлень"
                                 >
-                                    ⚡ v3.6.0
+                                    ⚡ v3.6.3
                                 </button>
                                 <button
                                     onClick={() => setIsBackupOpen(true)}
@@ -4476,7 +4391,7 @@ const MedicalApp = (function() {
                         <div className="flex items-center gap-1 bg-slate-950/90 border border-slate-800/90 p-1.5 rounded-xl shadow-inner overflow-x-auto self-start xl:self-center">
                             {/* Вкладка: Журнал */}
                             <button 
-                                onClick={() => startTransition(() => setActiveTab("list"))} 
+                                onClick={() => handleTabSwitch("list")} 
                                 className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 text-xs font-semibold cursor-pointer select-none ${
                                     activeTab === "list" 
                                         ? "bg-slate-800 text-white border border-slate-700 shadow-sm" 
@@ -4492,7 +4407,7 @@ const MedicalApp = (function() {
 
                             {/* Вкладка: Черга евакуації */}
                             <button 
-                                onClick={() => startTransition(() => setActiveTab("triage"))} 
+                                onClick={() => handleTabSwitch("triage")} 
                                 className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 text-xs font-semibold cursor-pointer select-none ${
                                     activeTab === "triage" 
                                         ? "bg-slate-800 text-amber-300 border border-amber-500/50 shadow-sm" 
@@ -4524,7 +4439,7 @@ const MedicalApp = (function() {
 
                             {/* Вкладка: Аналітика */}
                             <button 
-                                onClick={() => startTransition(() => setActiveTab("analytics"))} 
+                                onClick={() => handleTabSwitch("analytics")} 
                                 className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 text-xs font-semibold cursor-pointer select-none ${
                                     activeTab === "analytics" 
                                         ? "bg-slate-800 text-cyan-300 border border-cyan-500/50 shadow-sm" 
@@ -4537,7 +4452,7 @@ const MedicalApp = (function() {
 
                             {/* Вкладка: Лог */}
                             <button 
-                                onClick={() => startTransition(() => setActiveTab("logs"))} 
+                                onClick={() => handleTabSwitch("logs")} 
                                 className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 text-xs font-semibold cursor-pointer select-none ${
                                     activeTab === "logs" 
                                         ? "bg-slate-800 text-indigo-300 border border-indigo-500/50 shadow-sm" 
@@ -4572,7 +4487,7 @@ const MedicalApp = (function() {
                                     <button 
                                         onClick={handleExportAnalyticsExcel} 
                                         className="px-3 py-2 bg-emerald-950/80 hover:bg-emerald-900/90 text-emerald-300 font-semibold border border-emerald-700/60 rounded-xl transition-all flex items-center gap-1.5 text-xs shadow-sm hover:shadow-emerald-950/50 active:scale-95 cursor-pointer" 
-                                        title="Експорт в Excel з діаграмами"
+                                        title="Експорт аналітики: 6 аркушів Excel"
                                     >
                                         <Icon name="table" className="w-3.5 h-3.5 text-emerald-400" /> 
                                         <span>Експорт (Excel)</span>
@@ -4905,11 +4820,7 @@ const MedicalApp = (function() {
                                                                 )}
                                                             </div>
                                                             <div className="grid grid-cols-2 gap-1.5 max-h-28 overflow-y-auto bg-slate-950 p-2 rounded-xl border border-slate-800/80">
-                                                                {[
-                                                                    {k:'amputation', l:'Ампутація'}, {k:'rupture', l:'Розрив'}, {k:'shrapnel', l:'Уламкове'}, 
-                                                                    {k:'bullet', l:'Кульове'}, {k:'fracture', l:'Перелом'}, {k:'burn', l:'Опік'}, 
-                                                                    {k:'akbt', l:'АКБТ'}, {k:'contusion', l:'Забій'}
-                                                                ].map(item => (
+                                                                {Object.entries(INJURY_LABELS).map(([k, l]) => ({ k, l })).map(item => (
                                                                     <label key={item.k} className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white cursor-pointer select-none">
                                                                         <input type="checkbox" checked={filterInjuries.includes(item.k)} onChange={() => toggleFilterItem(filterInjuries, setFilterInjuries, item.k)} className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0 w-3.5 h-3.5 shrink-0"/>
                                                                         <span className="whitespace-nowrap">{item.l}</span>
@@ -5155,7 +5066,7 @@ const MedicalApp = (function() {
                                                     soldierEpisodes={episodesBySoldier.get(episode.soldierId) || []}
                                                     onEdit={handleStartEdit}
                                                     onNotify={triggerNotification}
-                                                    viewMode="list"
+                                                    viewMode="list" onReview={() => openChronology(episode.soldierId)} clockTick={clockTick}
                                                 />
                                             ))}
                                         </div>
@@ -5578,6 +5489,11 @@ const MedicalApp = (function() {
                                             <span className="font-medium text-[11px]">Тільки актуальні</span>
                                         </label>
 
+                                        <label className="flex items-center gap-1.5 cursor-pointer bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-800 text-slate-300 hover:text-white text-xs select-none" title="Об'єднати групи: 200+ЗБВ та Поранення+Бойові травми">
+                                            <input type="checkbox" checked={groupAnalytics} onChange={(e) => setGroupAnalytics(e.target.checked)} className="rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer shrink-0"/>
+                                            <span className="font-medium text-[11px]">Об'єднати групи</span>
+                                        </label>
+
                                     </div>
 
                                     <button 
@@ -5675,7 +5591,7 @@ const MedicalApp = (function() {
                                                     <div className="font-bold text-white text-sm whitespace-nowrap mb-0.5">300: <span className="text-red-400 text-lg">{evacStats.globalWaiting300}</span> <span className="text-[9px] text-tactical-500 font-normal">({evacStats.globalWaitingCritHeavy} важкі)</span></div>
                                                     <div className="font-bold text-white text-sm whitespace-nowrap flex items-center justify-end gap-2">
                                                         <span>200: <span className="text-tactical-300 text-lg">{evacStats.globalWaiting200}</span></span>
-                                                        {evacStats.globalWaitingMia > 0 && (
+                                                        {!groupAnalytics && evacStats.globalWaitingMia > 0 && (
                                                             <span className="text-blue-400 font-semibold text-xs ml-1">/ ЗБВ: <span className="text-blue-300 text-base font-bold">{evacStats.globalWaitingMia}</span></span>
                                                         )}
                                                     </div>
@@ -6088,7 +6004,7 @@ const MedicalApp = (function() {
                                                         <div key={h.id} className="bg-slate-900/80 hover:bg-slate-900 border border-slate-800/80 hover:border-amber-500/40 p-2.5 rounded-xl text-xs flex justify-between items-start gap-2 transition cursor-pointer group" title="Натисніть для переходу до запису" onClick={() => handleStartEdit(h)}>
                                                             <div>
                                                                 <div className="text-white font-bold group-hover:text-amber-300 transition-colors">{h.lossType}</div>
-                                                                <div className="text-[10px] text-slate-400 font-mono mt-0.5">{h.date.replace('T', ' ')}</div>
+                                                                <div className="text-[10px] text-slate-400 font-mono mt-0.5">{localMedicalInput(h.date).replace('T', ' ') || 'Некоректна дата'}</div>
                                                             </div>
                                                             <div className="text-right font-mono">
                                                                 {isAny300(h.lossType) && <div className="text-[10px] text-amber-400 font-bold">{h.severity || 'Невідомо'}</div>}
@@ -6103,7 +6019,7 @@ const MedicalApp = (function() {
                                         <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
                                             <div>
                                                 <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Тип події</label>
-                                                <select value={lossType} onChange={(e) => {
+                                                <select aria-label="Тип медичного запису" value={lossType} onChange={(e) => {
                                                     const newType = e.target.value;
                                                     if (isEditOpen && currentEpisode) {
                                                         const oldType = currentEpisode.lossType;
@@ -6128,7 +6044,7 @@ const MedicalApp = (function() {
                                             {isAny300(lossType) && (
                                                 <div>
                                                     <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Важкість ураження</label>
-                                                    <select value={severity} onChange={(e) => setSeverity(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer">
+                                                    <select aria-label="Важкість у медичному записі" value={severity} onChange={(e) => setSeverity(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer">
                                                         <option value="">-- Оберіть важкість --</option>
                                                         <option value="Легкий">Легкий</option>
                                                         <option value="Середній">Середній</option>
@@ -6140,7 +6056,7 @@ const MedicalApp = (function() {
 
                                             <div>
                                                 <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Причина події</label>
-                                                <select value={cause} onChange={(e) => setCause(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer">
+                                                <select aria-label="Причина медичного запису" value={cause} onChange={(e) => setCause(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer">
                                                     <option value="">-- Оберіть причину --</option>
                                                     {dictionaryOptions('causes', settings.causes, cause).map(c => <option key={c} value={c}>{c}</option>)}
                                                 </select>
@@ -6153,7 +6069,7 @@ const MedicalApp = (function() {
                                         <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
                                             <div>
                                                 <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Час події</label>
-                                                <input type="datetime-local" value={episodeDate} onChange={(e) => setEpisodeDate(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none transition" />
+                                                <input aria-label="Дата й час медичного запису" type="datetime-local" value={episodeDate} onChange={(e) => setEpisodeDate(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none transition" />
                                             </div>
                                             
                                             <label className={`flex items-center gap-2.5 text-xs font-bold p-3 rounded-xl border cursor-pointer select-none transition ${inUdp ? 'bg-red-950/60 border-red-800/80 text-red-300 shadow-sm' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'}`}>
@@ -7443,10 +7359,52 @@ const MedicalApp = (function() {
                                     </button>
                                 </div>
                                 <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs sm:text-sm">
-                                    {/* 09.09.2026 */}
+                                    {/* 29.09.2026 */}
                                     <div className="relative pl-5 border-l-2 border-amber-500 space-y-2">
                                         <div className="flex items-center justify-between">
-                                            <span className="font-bold text-amber-400 font-mono text-sm">⚡ v3.6.0 (Штабний Диспетчер, автозапуск та автономний фоновий захист бази)</span>
+                                            <span className="font-bold text-amber-400 font-mono text-sm">⚡ v3.6.3 (Пріоритет 200, захист від аномалій хронології та розумна дедуплікація бійців)</span>
+                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">29.09.2026</span>
+                                        </div>
+                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
+                                            <li><strong className="text-white">Термінальний пріоритет статусу «Загибель (200)»:</strong> Усунуто перезапис статусу загибелі пізнішими або повторними епізодами 300/ЗБВ. Функція <code>pickLatestEpisode</code> та розрахунки статусів бійця тепер гарантовано закріплюють статус 200, виключаючи загиблих з активної черги тріажу.</li>
+                                            <li><strong className="text-white">Сквозні ланцюжки статусів та детекція аномалій (StatusHistoryChainBadge):</strong> Інтегровано бейдж історії статусів у картки, таблиці та тріаж з автоматичним виявленням неможливих часових інверсій (пульсуючий бейдж <code>⚠️ Загибель ➔ Поранення ПОМИЛКА ДАТ</code> з детальною підказкою).</li>
+                                            <li><strong className="text-white">Валідація хронології при збереженні епізодів:</strong> Блокування помилкового додавання поранень після зафіксованої дати загибелі та захист від внесення дати 200, яка передує існуючим пораненням, із наочним попереджувальним банером у модалці.</li>
+                                            <li><strong className="text-white">Розумний захист від дублювання бійців:</strong> Автоматичне зіставлення при додаванні нових поранених — нормалізація військових гомогліфів, прив'язка за прізвищем та позивним або за прізвищем та ім'ям без по батькові для запобігання створенню клонів.</li>
+                                        </ul>
+                                    </div>
+
+                                    {/* 26.09.2026 */}
+                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-bold text-slate-300 font-mono text-sm">⚡ v3.6.2 (3-рядкові картки тріажу, повні поранення без обрізань, травми ока & чистий UI)</span>
+                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">26.09.2026</span>
+                                        </div>
+                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
+                                            <li><strong className="text-white">Новий просторий 3-рядковий формат карток тріажу (~92px):</strong> Повний огляд даних бійця без обрізань. Рядок 1: позивний, скорочене військове звання (Ст. солдат, Мол. сержант), підрозділ, скорочене ПІБ («ПРІЗВИЩЕ І. Б.» з гарантованою мінімальною шириною від витіснення) та живий таймер. Рядок 2: повноширинний детальний опис поранень та ланцюжок статусів (Поранення ➔ Загибель) праворуч. Рядок 3: локація, УПД та кнопки дій.</li>
+                                            <li><strong className="text-white">Повне відображення специфічних уражень:</strong> Виправлено розпізнавання та показ травм ока («Травма ока»), синдрому роздавлювання (краш-синдром), ЧМТ, ампутацій, баротравм, гемо/пневмотораксу в деталях картки, фільтрах та статистиці.</li>
+                                            <li><strong className="text-white">Оптимізація інтерфейсу тріажу:</strong> Прибрано надлишкові діаграми для забезпечення максимальної чистоти інтерфейсу та миттєвого рендерингу на планшетах.</li>
+                                        </ul>
+                                    </div>
+
+                                    {/* 18.09.2026 */}
+                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-bold text-slate-300 font-mono text-sm">⚡ v3.6.1 (Патч стабільності експорту, таймерів тріажу та дат Excel)</span>
+                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">18.09.2026</span>
+                                        </div>
+                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
+                                            <li><strong className="text-white">Захист експорту Excel:</strong> Безпечна обробка дат у звітах для запобігання падіння застосунку на методі .replace('T', ' ').</li>
+                                            <li><strong className="text-white">Підтримка числових дат Excel:</strong> Виправлено конвертацію серійних числових дат Excel (45xxx) у parseSafeDate без зсуву на 1970 рік.</li>
+                                            <li><strong className="text-white">Точний лічильник «золотої години» тріажу:</strong> Відображення часу очікування евакуації з хвилинною точністю (45 хв, 1г 30хв) та щохвилинним автооновленням живих таймерів.</li>
+                                            <li><strong className="text-white">Оптимізація рендерингу карток:</strong> Мемоізація обробників (useCallback) для активації React.memo та оптимізація оновлення графіків ChartComponent.</li>
+                                            <li><strong className="text-white">Безпека пам'яті:</strong> Додано безпечне відкладене звільнення тимчасових URL-об'єктів (setTimeout 1000мс) при вивантаженні Excel та бекапів.</li>
+                                        </ul>
+                                    </div>
+
+                                    {/* 09.09.2026 */}
+                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-bold text-slate-300 font-mono text-sm">⚡ v3.6.0 (Штабний Диспетчер, автозапуск та автономний фоновий захист бази)</span>
                                             <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">09.09.2026</span>
                                         </div>
                                         <ul className="space-y-1.5 text-slate-300 list-disc list-inside">

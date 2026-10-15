@@ -3,7 +3,8 @@ const { webcrypto } = require('node:crypto');
 const { readSource } = require('./source.cjs');
 const { createHarness } = require('./suite-backup-unit.cjs');
 const D = new Function('crypto', readSource('core/documents.js') + '\nreturn DocumentJournal;')(webcrypto);
-const medical = new Function('localforage', 'localStorage', readSource('core/medical-totals.js') + '\nreturn MedicalDailyTotals;')({}, {});
+const localMedicalInput = new Function(readSource('core/medical-records.js').replace(/^export /gm, '') + '\nreturn localMedicalInput;')();
+const medical = new Function('localforage', 'localStorage', 'localMedicalInput', readSource('core/medical-totals.js') + '\nreturn MedicalDailyTotals;')({}, {}, localMedicalInput);
 
 (async () => {
     const password = 'synthetic-test-password';

@@ -29,7 +29,19 @@ import { localforage } from './vendor.js';
         })();
         window.SuiteDates = {
             localISO(date = new Date()) {
+                if (isNaN(date.getTime())) return '';
                 return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            },
+            fileTimestamp(date = new Date()) {
+                const day = this.localISO(date);
+                if (!day) return '';
+                const time = [date.getHours(), date.getMinutes(), date.getSeconds()].map(value => String(value).padStart(2, '0')).join('-');
+                return `${day}_${time}-${String(date.getMilliseconds()).padStart(3, '0')}`;
+            },
+            localDateTime(value) {
+                if (!value) return 'дата невідома';
+                const date = new Date(value);
+                return isNaN(date.getTime()) ? 'дата невідома' : date.toLocaleString('uk-UA');
             },
             recent(days, now = new Date()) {
                 const from = new Date(now);

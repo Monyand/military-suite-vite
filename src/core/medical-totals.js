@@ -1,4 +1,5 @@
 import { localforage } from './vendor.js';
+import { localMedicalInput } from './medical-records.js';
 
 const MedicalDailyTotals = (() => {
             const fields = new Map([
@@ -9,22 +10,8 @@ const MedicalDailyTotals = (() => {
                 ['бойове травмування', 'count300'],
                 ['зниклий безвісти (збв)', 'countZBV']
             ]);
-            const dateKey = value => {
-                if (typeof value !== 'string') return '';
-                const text = value.trim();
-                let parts = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s]|$)/);
-                let year, month, day;
-                if (parts) [, year, month, day] = parts;
-                else {
-                    parts = text.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:[T\s]|$)/);
-                    if (!parts) return '';
-                    [, day, month, year] = parts;
-                }
-                const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
-                if (date.getUTCFullYear() !== Number(year) || date.getUTCMonth() + 1 !== Number(month) || date.getUTCDate() !== Number(day)) return '';
-                // Keep the episode's documented calendar date, not the evacuation date.
-                return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            };
+            // Same local episode date as the medical UI; never use evacuation date.
+            const dateKey = value => localMedicalInput(value).slice(0, 10);
             const aggregate = episodes => {
                 if (!Array.isArray(episodes)) throw new Error('Медична база має некоректний формат списку епізодів.');
                 const daily = {}, seen = new Set();
