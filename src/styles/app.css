@@ -97,6 +97,37 @@ body, html { margin: 0; padding: 0; height: 100%; }
         .modal-scroll-container {
             overscroll-behavior: contain;
         }
+
+        /* Keyboard Accessibility & Focus-Visible */
+        button:focus-visible,
+        a:focus-visible,
+        select:focus-visible {
+            outline: 2px solid #f59e0b;
+            outline-offset: 2px;
+        }
+
+        input[type="file"]::file-selector-button {
+            border: none; background: #334155; color: #f8fafc; padding: 6px 12px;
+            border-radius: 6px; cursor: pointer; margin-right: 10px; font-size: 12px;
+            font-weight: bold; transition: background 0.2s;
+        }
+        input[type="file"]::file-selector-button:hover { background: #475569; }
+
+        input[type="date"],
+        input[type="datetime-local"] {
+            color-scheme: dark;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            filter: invert(0.8) sepia(100%) saturate(300%) hue-rotate(5deg);
+            opacity: 0.9;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator:hover,
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
         @media print {
             body, #root { height: auto !important; overflow: visible !important; min-height: auto !important; background-color: white !important; }
             @page { margin: 10mm; size: A4; }

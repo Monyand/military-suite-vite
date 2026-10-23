@@ -4370,7 +4370,7 @@ const MedicalApp = (function() {
                                     className="text-[11px] bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 font-mono font-bold px-2 py-0.5 rounded-md transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm" 
                                     title="Історія оновлень"
                                 >
-                                    ⚡ v3.6.3
+                                    ⚡ v3.6.4
                                 </button>
                                 <button
                                     onClick={() => setIsBackupOpen(true)}
@@ -4612,8 +4612,7 @@ const MedicalApp = (function() {
                                                                 type="date" 
                                                                 value={listDateFrom} 
                                                                 onChange={(e) => { setListDateFrom(e.target.value); setDatePreset('custom'); }} 
-                                                                onClick={(e) => { try { e.target.showPicker(); } catch(err){} }}
-                                                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-amber-500 outline-none font-mono cursor-pointer" 
+                                                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-amber-500 outline-none font-mono" 
                                                             />
                                                         </div>
                                                         <div>
@@ -4622,8 +4621,7 @@ const MedicalApp = (function() {
                                                                 type="date" 
                                                                 value={listDateTo} 
                                                                 onChange={(e) => { setListDateTo(e.target.value); setDatePreset('custom'); }} 
-                                                                onClick={(e) => { try { e.target.showPicker(); } catch(err){} }}
-                                                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-amber-500 outline-none font-mono cursor-pointer" 
+                                                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-amber-500 outline-none font-mono" 
                                                             />
                                                         </div>
                                                     </div>
@@ -5417,8 +5415,7 @@ const MedicalApp = (function() {
                                                                         type="date" 
                                                                         value={anDateFrom} 
                                                                         onChange={(e) => { setAnDateFrom(e.target.value); setAnDatePreset('custom'); }} 
-                                                                        onClick={(e) => { try { e.target.showPicker(); } catch(err){} }}
-                                                                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-cyan-500 outline-none font-mono cursor-pointer" 
+                                                                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-cyan-500 outline-none font-mono" 
                                                                     />
                                                                 </div>
                                                                 <div>
@@ -5427,8 +5424,7 @@ const MedicalApp = (function() {
                                                                         type="date" 
                                                                         value={anDateTo} 
                                                                         onChange={(e) => { setAnDateTo(e.target.value); setAnDatePreset('custom'); }} 
-                                                                        onClick={(e) => { try { e.target.showPicker(); } catch(err){} }}
-                                                                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-cyan-500 outline-none font-mono cursor-pointer" 
+                                                                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-cyan-500 outline-none font-mono" 
                                                                     />
                                                                 </div>
                                                             </div>
@@ -7359,10 +7355,23 @@ const MedicalApp = (function() {
                                     </button>
                                 </div>
                                 <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs sm:text-sm">
-                                    {/* 29.09.2026 */}
+                                    {/* 15.10.2026 */}
                                     <div className="relative pl-5 border-l-2 border-amber-500 space-y-2">
                                         <div className="flex items-center justify-between">
-                                            <span className="font-bold text-amber-400 font-mono text-sm">⚡ v3.6.3 (Пріоритет 200, захист від аномалій хронології та розумна дедуплікація бійців)</span>
+                                            <span className="font-bold text-amber-400 font-mono text-sm">⚡ v3.6.4 (Відновлення ручного введення дати/часу та оптимізація фокусу полів)</span>
+                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">15.10.2026</span>
+                                        </div>
+                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
+                                            <li><strong className="text-white">Відновлення ручного введення дати та часу з клавіатури:</strong> Усунуто блокуючий виклик <code>showPicker()</code> з обробника <code>onClick</code> на полях <code>type="datetime-local"</code> та <code>type="date"</code> (модальне вікно створення/редагування події, дата евакуації, дата повернення, дата рапорту, фільтри періоду в шапці та аналітиці). Тепер можна вільно клікати по числах та редагувати значення з клавіатури або стрілками.</li>
+                                            <li><strong className="text-white">Оптимізація стилів фокусу (:focus-visible):</strong> Прибрано подвійні рамки навколо заокруглених текстових полів введення, зберігши гармонійне підсвічування рамок кольором теми.</li>
+                                            <li><strong className="text-white">Повна підтримка Dark Mode для datetime-local:</strong> Поля вибору дати й часу гармонійно інтегровані в темну тему зі стилізованою іконкою виклику календаря.</li>
+                                        </ul>
+                                    </div>
+
+                                    {/* 29.09.2026 */}
+                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-bold text-slate-300 font-mono text-sm">⚡ v3.6.3 (Пріоритет 200, захист від аномалій хронології та розумна дедуплікація бійців)</span>
                                             <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">29.09.2026</span>
                                         </div>
                                         <ul className="space-y-1.5 text-slate-300 list-disc list-inside">

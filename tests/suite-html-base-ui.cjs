@@ -13,7 +13,7 @@ const { chromium } = require('playwright');
     await context.route('**/*', route => {
       const url = route.request().url();
       if (/^https?:/.test(url) && new URL(url).origin !== origin) {
-        if (!url.startsWith('http://127.0.0.1:8765/')) external.push(url);
+        if (!url.startsWith('http://127.0.0.1:8765/') && !url.startsWith('http://127.0.0.1:8780/')) external.push(url);
         return route.abort();
       }
       return route.continue();

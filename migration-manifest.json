@@ -36,10 +36,10 @@
       "previousSha256": "868ecd653e3eae9de2955df8192a14e8635b75414e4d1e4b14691584d9f0f140"
     },
     "modules/medical/MedicalApp.jsx": {
-      "date": "2026-10-15",
-      "reason": "Preserve user edits; medical workbook integration, local timestamps, chronology inspection and series charts.",
-      "sha256": "fb8b0474317b26afb1811d14fe33d7cc5bf04aa750369cbabe1d06c0ffcceb12",
-      "previousSha256": "be76eebe39a8eadfe7761503b5eb31f6799e54abc514943d7465bb4dbcadfdfa"
+      "date": "2026-10-23",
+      "reason": "Sync with Облік втрат.html v3.6.4: restore manual keyboard date/time entry, focus-visible and dark mode datetime-local styles.",
+      "sha256": "42b6d6570d3733f2073369e636514b4f6b21f2f4b967f2f00674ece8e333bb41",
+      "previousSha256": "fb8b0474317b26afb1811d14fe33d7cc5bf04aa750369cbabe1d06c0ffcceb12"
     },
     "modules/events/EventsApp.jsx": {
       "date": "2026-10-15",
@@ -48,15 +48,16 @@
       "previousSha256": "5069d16642926e5567da2b372c276630688994514b602e7c9f12ce02a5d3a632"
     },
     "app/App.jsx": {
-      "date": "2026-10-15",
-      "reason": "Restore counts and integrity inspection; PBD export/import controls and localized date formatting.",
-      "sha256": "5212d554993bec96695bf6bbb277419ed35a0c65c926ee8931d46bafcbbd4ff2",
-      "previousSha256": "34d3d860d4804338ff8cbbd5be47e031a1ecd383f27be41d09e674397e122905"
+      "date": "2026-10-23",
+      "reason": "Persist active module tab in localStorage across page reloads; restore counts and integrity inspection; PBD export/import controls and localized date formatting.",
+      "sha256": "02543277a1471fd30d83a958e33fc51cc60c53ad3831f1ecca8cb03d23bd90ff",
+      "previousSha256": "5212d554993bec96695bf6bbb277419ed35a0c65c926ee8931d46bafcbbd4ff2"
     },
     "modules/personnel/personnel.js": {
-      "date": "2026-09-20",
-      "reason": "Shared unit/rank spelling suggestions in personnel forms with HTML escaping and current-value preservation. Positions, rotations, state and assignments unchanged.",
-      "sha256": "c880e606b27215cd4284a5304ab53ccf63d995a866cb213e84eb11c8ff979176"
+      "date": "2026-10-23",
+      "reason": "Sync with v8 Такт-Облік.html (v1.6.0): Triple-tier persistence (IndexedDB TacticalTaktDB_v1, Dispatcher disk sync, auto-hydrate), safe loader, retreat logic and standardized modal z-index.",
+      "sha256": "3b2a3136349a89de5db10a204c8d2d04e631163f99bc665fa16f38f53fa3328c",
+      "previousSha256": "c880e606b27215cd4284a5304ab53ccf63d995a866cb213e84eb11c8ff979176"
     },
     "core/medical-totals.js": {
       "date": "2026-10-15",

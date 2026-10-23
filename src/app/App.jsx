@@ -5,8 +5,28 @@ import { SharedDictionariesPanel } from './SharedDictionariesPanel.jsx';
 import { IntegrityPanel } from './IntegrityPanel.jsx';
 import { inspectIntegrity } from '../core/integrity.js';
 
+const VALID_APPS = ['enemy', 'med', 'tactical', 'tasks', 'ovt', 'positions'];
+const getInitialApp = () => {
+    try {
+        const saved = localStorage.getItem('suite_active_app');
+        if (VALID_APPS.includes(saved)) return saved;
+    } catch {}
+    return 'enemy';
+};
+
 const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
-            const [activeApp, setActiveApp] = useState('enemy');
+            const [activeApp, setActiveApp] = useState(getInitialApp);
+            const switchApp = app => {
+                if (restoreStarted || !VALID_APPS.includes(app)) return;
+                setActiveApp(app);
+                try {
+                    if (window.SuiteRuntime?.setLocalItem) {
+                        window.SuiteRuntime.setLocalItem('suite_active_app', app);
+                    } else {
+                        localStorage.setItem('suite_active_app', app);
+                    }
+                } catch {}
+            };
             const [backupMode, setBackupMode] = useState(null);
             const [dictionariesOpen, setDictionariesOpen] = useState(false);
             const [backupPassword, setBackupPassword] = useState('');
@@ -110,7 +130,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
             const EnemyApp = EventsApp;
             const MedApp = MedicalApp;
             const openIntegrityRecord = issue => {
-                ReactDOM.flushSync(() => { setActiveApp(issue.module); setIntegrityOpen(false); });
+                ReactDOM.flushSync(() => { switchApp(issue.module); setIntegrityOpen(false); });
                 window.dispatchEvent(new CustomEvent('suite-review-record', { detail: issue }));
             };
 
@@ -120,12 +140,12 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                             <div className="font-bold text-amber-500 tracking-wider hidden xl:block shrink-0">MILITARY SUITE</div>
                             <div className="flex bg-slate-950 rounded-lg overflow-x-auto whitespace-nowrap border border-slate-700 p-1 gap-1 min-w-0">
-                                <button disabled={restoreStarted} onClick={() => setActiveApp('enemy')} className={`px-4 py-1 text-sm font-bold rounded-md transition-all ${activeApp==='enemy'?'bg-amber-600 text-white':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Втрати Противника</button>
-                                <button disabled={restoreStarted} onClick={() => setActiveApp('med')} className={`px-4 py-1 text-sm font-bold rounded-md transition-all ${activeApp==='med'?'bg-rose-600 text-white':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Медична Евакуація</button>
-                                <button disabled={restoreStarted} onClick={() => setActiveApp('tactical')} className={`px-4 py-1 text-sm font-bold rounded-md transition-all ${activeApp==='tactical'?'bg-indigo-600 text-white':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Журнал О/С</button>
-                                <button disabled={restoreStarted} onClick={() => setActiveApp('tasks')} className={`px-4 py-1 text-sm font-bold rounded-md transition-all ${activeApp==='tasks'?'bg-teal-600 text-white':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Завдання</button>
-                                <button disabled={restoreStarted} onClick={() => setActiveApp('ovt')} className={`px-4 py-1 text-sm font-bold rounded-md transition-all ${activeApp==='ovt'?'bg-amber-700 text-white':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Втрати ОВТ</button>
-                                <button disabled={restoreStarted} onClick={() => setActiveApp('positions')} className={`px-4 py-1 text-sm font-bold rounded-md transition-all ${activeApp==='positions'?'bg-emerald-600 text-white':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Статус позицій</button>
+                                <button disabled={restoreStarted} onClick={() => switchApp('enemy')} className={`px-4 py-1 text-sm font-bold rounded-md transition-all ${activeApp==='enemy'?'bg-amber-600 text-white':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Втрати Противника</button>
+                                <button disabled={restoreStarted} onClick={() => switchApp('med')} className={`px-4 py-1 text-sm font-bold rounded-md transition-all ${activeApp==='med'?'bg-rose-600 text-white':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Медична Евакуація</button>
+                                <button disabled={restoreStarted} onClick={() => switchApp('tactical')} className={`px-4 py-1 text-sm font-bold rounded-md transition-all ${activeApp==='tactical'?'bg-indigo-600 text-white':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Журнал О/С</button>
+                                <button disabled={restoreStarted} onClick={() => switchApp('tasks')} className={`px-4 py-1 text-sm font-bold rounded-md transition-all ${activeApp==='tasks'?'bg-teal-600 text-white':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Завдання</button>
+                                <button disabled={restoreStarted} onClick={() => switchApp('ovt')} className={`px-4 py-1 text-sm font-bold rounded-md transition-all ${activeApp==='ovt'?'bg-amber-700 text-white':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Втрати ОВТ</button>
+                                <button disabled={restoreStarted} onClick={() => switchApp('positions')} className={`px-4 py-1 text-sm font-bold rounded-md transition-all ${activeApp==='positions'?'bg-emerald-600 text-white':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Статус позицій</button>
                             </div>
                         </div>
                         <div className="flex gap-2 shrink-0 ml-2">

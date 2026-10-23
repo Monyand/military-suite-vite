@@ -19,7 +19,7 @@ const { chromium } = require('playwright');
       const request = route.request();
       if (request.url() === url || /^(data:|blob:)/.test(request.url())) return route.continue();
       // The existing optional local-disk helper is not needed for browser storage.
-      if (!request.url().startsWith('http://127.0.0.1:8765/')) dependencies.push(request.url());
+      if (!request.url().startsWith('http://127.0.0.1:8765/') && !request.url().startsWith('http://127.0.0.1:8780/')) dependencies.push(request.url());
       return route.abort();
     });
     const page = await context.newPage();

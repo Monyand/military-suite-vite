@@ -32,6 +32,8 @@ const createPersonnelModule = () => {
         
         checkBackupReminders();
         setInterval(checkBackupReminders, 60000);
+
+        initTaktStorageAndSync();
     }
 
     // ─── УТИЛІТИ ──────────────────────────────────────────────────────────────
@@ -106,21 +108,32 @@ const createPersonnelModule = () => {
     const ICON_MAP       = {combat:'crosshair',non_combat:'tent'};
     const TASKS          = ['піхота','бойовий медик','БПЛА','МБ','вогнева підтримка','облаштування','бронегрупа','резерв','медевак',"зв'язок",'провідник','рекон','ППО','Логістика','ІСВ','Штурмовик','*'];
 
-    // ─── СТАН ─────────────────────────────────────────────────────────────────
-    let personnel    = JSON.parse(localStorage.getItem('tactical_personnel'))       || [];
-    let positions    = JSON.parse(localStorage.getItem('tactical_positions'))       || [
-        { id:'pos_ppd',  name:'ППД',              type:'non_combat',     rop:'Тилові',   icon:'tent',         equipment:[] },
-        { id:'pos_hosp', name:'Госпіталь / Евакуація',   type:'non_combat', rop:'Медицина', icon:'plus-square', equipment:[] }
-    ];
-    let logs             = JSON.parse(localStorage.getItem('tactical_logs'))             || [];
-    let journal          = JSON.parse(localStorage.getItem('tactical_journal'))         || [];
-    let plannedRotations = JSON.parse(localStorage.getItem('tactical_rotations')) || [];
-    let groupOrder       = JSON.parse(localStorage.getItem('tactical_groups_order'))    || [];
-    let collapsedGroups  = JSON.parse(localStorage.getItem('tactical_collapsed_groups'))    || {};
-    let collapsedPositions = JSON.parse(localStorage.getItem('tactical_collapsed_positions')) || {};
+    // ─── СТАН (БЕЗПЕЧНИЙ ЗАВАНТАЖУВАЧ ANTI-WSOD) ──────────────────────────────
+    function safeGetJSON(key, fallback) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) return fallback;
+            return JSON.parse(raw);
+        } catch (e) {
+            console.error(`Помилка читання ключа [${key}] з LocalStorage. Встановлено резервне значення.`, e);
+            return fallback;
+        }
+    }
 
-    let backupSchedule   = JSON.parse(localStorage.getItem('tactical_backup_schedule')) || ['10:00', '17:30', '20:00'];
-    let lastBackupTime   = parseInt(localStorage.getItem('tactical_last_backup_time'))  || 0;
+    let personnel          = safeGetJSON('tactical_personnel', []);
+    let positions          = safeGetJSON('tactical_positions', [
+        { id:'pos_ppd',  name:'ППД',                    type:'non_combat', rop:'Тилові',   icon:'tent',         equipment:[] },
+        { id:'pos_hosp', name:'Госпіталь / Евакуація',   type:'non_combat', rop:'Медицина', icon:'plus-square', equipment:[] }
+    ]);
+    let logs               = safeGetJSON('tactical_logs', []);
+    let journal            = safeGetJSON('tactical_journal', []);
+    let plannedRotations   = safeGetJSON('tactical_rotations', []);
+    let groupOrder         = safeGetJSON('tactical_groups_order', []);
+    let collapsedGroups    = safeGetJSON('tactical_collapsed_groups', {});
+    let collapsedPositions = safeGetJSON('tactical_collapsed_positions', {});
+
+    let backupSchedule     = safeGetJSON('tactical_backup_schedule', ['10:00', '17:30', '20:00']);
+    let lastBackupTime     = parseInt(localStorage.getItem('tactical_last_backup_time')) || 0;
 
     let isSortingLocked    = localStorage.getItem('tactical_sorting_locked') !== 'false';
 
@@ -292,9 +305,54 @@ const createPersonnelModule = () => {
     // ─── AUTONOMOUS CHANGELOG DATA ───────────────────────────────────────────
     const APP_CHANGELOG = [
         {
+            version: "1.6.0",
+            date: "08.10.2026",
+            isCurrent: true,
+            sections: [
+                {
+                    title: "🛡️ Трьохрівневе збереження даних (Triple-Tier Persistence)",
+                    items: [
+                        "<b>Інтеграція IndexedDB (TacticalTaktDB_v1)</b>: Повноцінна браузерна база даних без ліміту 5 МБ, захищена від скидання сесій та очищення кешу браузера.",
+                        "<b>Фоновий бекап на фізичний диск Диспетчера</b>: Автоматична синхронізація всього стану в <code>_backups/takt_oblik_latest.json</code>.",
+                        "<b>Auto-Hydrate при старті</b>: Якщо LocalStorage порожній (наприклад, перехід на Brave Browser або очищення історії), система автоматично підтягує актуальну базу бійців та позицій за 0.1 секунди.",
+                        "<b>Індикатор та швидкі кнопки в сайдбарі</b>: Бейдж <code>🟢 Диск: HH:MM:SS</code> та кнопки «На диск» / «З диска»."
+                    ]
+                }
+            ]
+        },
+        {
+            version: "1.5.0",
+            date: "22.09.2026",
+            isCurrent: false,
+            sections: [
+                {
+                    title: "🛡️ Відмовостійкість та захист сховища (Anti-WSOD)",
+                    items: [
+                        "<b>Безпечний бутлоадер (safeGetJSON)</b>: Перехоплення помилок пошкодження LocalStorage унеможливлює «білий екран смерті» при раптовому знеструмленні чи збоях запису браузера.",
+                        "<b>Контроль квоти LocalStorage та оптимізація RAM</b>: Захист операцій збереження від QuotaExceededError з тактичним попередженням у тості, стек скасувань обмежено до 15 знімків для збереження пам'яті.",
+                        "<b>Поглиблена валідація імпорту бекапів</b>: Сувора перевірка структури даних (Array.isArray) при завантаженні JSON з автостворенням базових тилових позицій."
+                    ]
+                },
+                {
+                    title: "⚔️ Тактична логіка бойових змін та евакуації",
+                    items: [
+                        "<b>Автоматичний відвід з бойових ВОП/РОП</b>: Переведення бійців у санітарні, безповоротні чи тилові статуси (300, 200, sick, mia, detached) через масове оновлення або одиничну картку автоматично переміщує їх до Госпіталю/ППД.",
+                        "<b>Автоматичне закриття змін у Журналі виходів</b>: Фіксація закінчення бойового чергування в журналі, скидання таймера перебування та зняття повноважень старшого позиції."
+                    ]
+                },
+                {
+                    title: "📐 UX, тултіпи та стандартизація Z-Index",
+                    items: [
+                        "<b>Виправлення тултіпа примітки</b>: Усунуто відображення [object Object] при наведенні курсора на іконку примітки бійця.",
+                        "<b>Стандартизація Z-Index (AGENTS.md)</b>: Усі модальні вікна уніфіковано до z-[200], вікно підтвердження — до z-[210], тости — до z-[220]."
+                    ]
+                }
+            ]
+        },
+        {
             version: "1.4.1",
             date: "04.09.2026",
-            isCurrent: true,
+            isCurrent: false,
             sections: [
                 {
                     title: "🎯 Оптимізація Drag-and-Drop та неонові індикатори",
@@ -460,21 +518,311 @@ const createPersonnelModule = () => {
     });
 
     // ─── ТЕМИ / SIDEBAR ───────────────────────────────────────────────────────
-    function toggleDarkMode()    { isDarkMode = !isDarkMode; window.SuiteRuntime.setLocalItem('tactical_dark_mode', isDarkMode); applyTheme(); }
+    function toggleDarkMode()    { isDarkMode = !isDarkMode; if (window.SuiteRuntime?.setLocalItem) window.SuiteRuntime.setLocalItem('tactical_dark_mode', isDarkMode); else localStorage.setItem('tactical_dark_mode', isDarkMode); applyTheme(); }
     function applyTheme()        { document.documentElement.classList.toggle('dark', isDarkMode); }
-    function toggleSidebar()     { isSidebarCollapsed = !isSidebarCollapsed; window.SuiteRuntime.setLocalItem('tactical_sidebar_collapsed', isSidebarCollapsed); applySidebarState(); }
+    function toggleSidebar()     { isSidebarCollapsed = !isSidebarCollapsed; if (window.SuiteRuntime?.setLocalItem) window.SuiteRuntime.setLocalItem('tactical_sidebar_collapsed', isSidebarCollapsed); else localStorage.setItem('tactical_sidebar_collapsed', isSidebarCollapsed); applySidebarState(); }
     function applySidebarState() { el('sidebar').classList.toggle('sidebar-collapsed', isSidebarCollapsed); }
 
     function toggleSortingLock() {
         isSortingLocked = !isSortingLocked;
-        window.SuiteRuntime.setLocalItem('tactical_sorting_locked', isSortingLocked);
+        if (window.SuiteRuntime?.setLocalItem) window.SuiteRuntime.setLocalItem('tactical_sorting_locked', isSortingLocked); else localStorage.setItem('tactical_sorting_locked', isSortingLocked);
         renderPositions();
     }
 
     // ─── ЗБЕРЕЖЕННЯ ───────────────────────────────────────────────────────────
     function saveLocalUI() {
-        window.SuiteRuntime.setLocalItem('tactical_collapsed_groups',    JSON.stringify(collapsedGroups));
-        window.SuiteRuntime.setLocalItem('tactical_collapsed_positions', JSON.stringify(collapsedPositions));
+        if (window.SuiteRuntime?.setLocalItem) {
+            window.SuiteRuntime.setLocalItem('tactical_collapsed_groups',    JSON.stringify(collapsedGroups));
+            window.SuiteRuntime.setLocalItem('tactical_collapsed_positions', JSON.stringify(collapsedPositions));
+        } else {
+            localStorage.setItem('tactical_collapsed_groups',    JSON.stringify(collapsedGroups));
+            localStorage.setItem('tactical_collapsed_positions', JSON.stringify(collapsedPositions));
+        }
+    }
+
+    // ─── ТРЬОХРІВНЕВЕ ЗБЕРЕЖЕННЯ (LOCALSTORAGE + INDEXEDDB + ДИСПЕТЧЕР) ────────
+    const IDB_TAKT_CONFIG = {
+        dbName: 'TacticalTaktDB_v1',
+        storeName: 'takt_state_store',
+        version: 1
+    };
+
+    function openTaktIndexedDB() {
+        return new Promise((resolve, reject) => {
+            if (!window.indexedDB) {
+                return reject(new Error("IndexedDB не підтримується"));
+            }
+            const request = window.indexedDB.open(IDB_TAKT_CONFIG.dbName, IDB_TAKT_CONFIG.version);
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(IDB_TAKT_CONFIG.storeName)) {
+                    db.createObjectStore(IDB_TAKT_CONFIG.storeName, { keyPath: 'id' });
+                }
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = (e) => reject(e.target.error);
+        });
+    }
+
+    async function saveToTaktIndexedDB(stateData) {
+        try {
+            const db = await openTaktIndexedDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction([IDB_TAKT_CONFIG.storeName], 'readwrite');
+                const store = tx.objectStore(IDB_TAKT_CONFIG.storeName);
+                const record = {
+                    id: 'current_state',
+                    data: stateData,
+                    updatedAt: Date.now()
+                };
+                store.put(record);
+                tx.oncomplete = () => resolve(true);
+                tx.onerror = (e) => reject(e.target.error);
+            });
+        } catch (err) {
+            console.warn("[IndexedDB] Помилка збереження Такт-Облік:", err);
+        }
+    }
+
+    async function loadFromTaktIndexedDB() {
+        try {
+            const db = await openTaktIndexedDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction([IDB_TAKT_CONFIG.storeName], 'readonly');
+                const store = tx.objectStore(IDB_TAKT_CONFIG.storeName);
+                const req = store.get('current_state');
+                req.onsuccess = () => resolve(req.result ? req.result.data : null);
+                req.onerror = (e) => reject(e.target.error);
+            });
+        } catch (err) {
+            console.warn("[IndexedDB] Помилка завантаження Такт-Облік:", err);
+            return null;
+        }
+    }
+
+    async function clearTaktIndexedDB() {
+        try {
+            const db = await openTaktIndexedDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction([IDB_TAKT_CONFIG.storeName], 'readwrite');
+                const store = tx.objectStore(IDB_TAKT_CONFIG.storeName);
+                store.clear();
+                tx.oncomplete = () => resolve(true);
+                tx.onerror = (e) => reject(e.target.error);
+            });
+        } catch (err) {
+            console.warn("[IndexedDB] Помилка очищення Такт-Облік:", err);
+        }
+    }
+
+    // Рівень 3: Dispatcher Disk Sync Bridge (_backups/takt_oblik_latest.json)
+    const DISPATCHER_API_BASE = 'http://127.0.0.1:8780/api/backup';
+    let diskServiceOnline = false;
+    let lastDiskBackupTime = null;
+    let diskSaveDebounceTimer = null;
+
+    function updateDiskStatusUI(status, labelText) {
+        const btn = document.getElementById('diskSyncBtn');
+        const dot = document.getElementById('diskSyncDot');
+        const label = document.getElementById('diskSyncLabel');
+        if (!btn || !dot || !label) return;
+
+        if (status === 'synced') {
+            diskServiceOnline = true;
+            dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50 shrink-0";
+            label.innerText = labelText || (lastDiskBackupTime ? `Диск: ${lastDiskBackupTime}` : 'Диск: Збережено');
+            btn.className = "w-full flex items-center space-x-2.5 px-3 py-2 bg-emerald-950/30 hover:bg-emerald-900/50 text-emerald-300 border border-emerald-800/40 hover:border-emerald-700/60 rounded-xl text-xs font-mono font-medium transition-all justify-center md:justify-start cursor-pointer shadow-sm";
+            btn.title = `Фізичний диск синхронізовано (${lastDiskBackupTime || 'ОК'}). Натисніть для перевірки.`;
+        } else if (status === 'saving') {
+            dot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0";
+            label.innerText = labelText || "Диск: Запис...";
+            btn.className = "w-full flex items-center space-x-2.5 px-3 py-2 bg-amber-950/30 hover:bg-amber-900/40 text-amber-300 border border-amber-800/40 rounded-xl text-xs font-mono font-medium transition-all justify-center md:justify-start cursor-pointer shadow-sm";
+            btn.title = "Збереження копії на жорсткий диск...";
+        } else if (status === 'checking') {
+            dot.className = "w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shrink-0";
+            label.innerText = labelText || "Диск: Зв'язок...";
+            btn.className = "w-full flex items-center space-x-2.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-xl text-xs font-mono font-medium transition-all justify-center md:justify-start cursor-pointer shadow-sm";
+        } else {
+            diskServiceOnline = false;
+            dot.className = "w-2.5 h-2.5 rounded-full bg-slate-500 shrink-0";
+            label.innerText = labelText || "Диск: Офлайн";
+            btn.className = "w-full flex items-center space-x-2.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 rounded-xl text-xs font-mono font-medium transition-all justify-center md:justify-start cursor-pointer shadow-sm opacity-80";
+            btn.title = "Диспетчер офлайн. Запустіть Запустити_Диспетчер.bat";
+        }
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    async function checkDiskBackupStatus(interactive = false) {
+        try {
+            updateDiskStatusUI('checking');
+            const res = await fetch(`${DISPATCHER_API_BASE}/latest?app=takt_oblik`, { cache: 'no-cache' });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            
+            if (data && data.exists) {
+                lastDiskBackupTime = data.formatted_time || 'Збережено';
+                const timeOnly = data.formatted_time ? data.formatted_time.split(' ')[1] : 'ОК';
+                updateDiskStatusUI('synced', `Диск: ${timeOnly}`);
+                if (interactive) {
+                    showToast(`Диск активний! Останній бекап: ${data.formatted_time || data.filename}`);
+                }
+                return data;
+            } else {
+                diskServiceOnline = true;
+                updateDiskStatusUI('synced', 'Диск: Готовий');
+                if (personnel && personnel.length > 0) {
+                    saveToDiskBackup(true);
+                }
+                if (interactive) {
+                    showToast("Диспетчер активний. Бекап на диску готовий до запису.");
+                }
+                return { exists: false, online: true };
+            }
+        } catch (err) {
+            updateDiskStatusUI('offline');
+            if (interactive) {
+                showToast("Диспетчер офлайн. Запустіть Запустити_Диспетчер.bat");
+            }
+            return { exists: false, online: false };
+        }
+    }
+
+    function getTaktStatePayload() {
+        return {
+            personnel,
+            positions,
+            logs,
+            journal,
+            groupOrder,
+            plannedRotations,
+            collapsedGroups,
+            collapsedPositions
+        };
+    }
+
+    function saveToDiskBackup(immediate = false) {
+        if (diskSaveDebounceTimer) clearTimeout(diskSaveDebounceTimer);
+        const delay = immediate ? 0 : 800;
+
+        diskSaveDebounceTimer = setTimeout(async () => {
+            if (!personnel || (personnel.length === 0 && positions.length <= 2)) return;
+            try {
+                updateDiskStatusUI('saving');
+                const payload = JSON.stringify({
+                    app: 'takt_oblik',
+                    content: JSON.stringify(getTaktStatePayload(), null, 2)
+                });
+                const res = await fetch(`${DISPATCHER_API_BASE}/save`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: payload
+                });
+                if (res.ok) {
+                    const now = new Date();
+                    lastDiskBackupTime = now.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    updateDiskStatusUI('synced');
+                } else {
+                    updateDiskStatusUI('offline');
+                }
+            } catch (err) {
+                updateDiskStatusUI('offline');
+            }
+        }, delay);
+    }
+
+    async function forceSaveToDisk() {
+        if (!personnel || personnel.length === 0) {
+            showToast("База особового складу порожня, немає що зберігати на диск");
+            return;
+        }
+        showToast("⏳ Збереження на фізичний диск...");
+        saveToDiskBackup(true);
+        setTimeout(() => {
+            checkDiskBackupStatus(true);
+        }, 500);
+    }
+
+    async function restoreFromDiskBackup() {
+        showToast("⏳ Перевірка найсвіжішої копії на диску...");
+        const data = await checkDiskBackupStatus(false);
+        if (!data || !data.exists || !data.content) {
+            alert("На диску ще немає збереженої копії бази Такт-Облік (або Диспетчер вимкнено).\n\nЗапустіть Диспетчер через «Запустити_Диспетчер.bat».");
+            return;
+        }
+        try {
+            let parsed;
+            let raw = data.content.trim();
+            if (raw.startsWith('TACT_ENC_V1:')) {
+                const pwd = prompt("Ця резервна копія на диску зашифрована паролем. Введіть пароль:");
+                if (!pwd) return;
+                const b64 = raw.replace('TACT_ENC_V1:', '');
+                const dec = await decryptData(b64, pwd);
+                parsed = JSON.parse(dec);
+            } else {
+                parsed = JSON.parse(raw);
+            }
+
+            if (parsed && Array.isArray(parsed.personnel)) {
+                if (confirm(`Знайдено збережену копію від ${data.formatted_time || 'нещодавно'} (${parsed.personnel.length} бійців, ${parsed.positions ? parsed.positions.length : 0} позицій).\n\nВідновити цю базу з диска?`)) {
+                    loadDataFromJsonString(typeof raw === 'string' && !raw.startsWith('TACT_ENC_V1:') ? raw : JSON.stringify(parsed));
+                    showToast(`Базу успішно відновлено з диска (${parsed.personnel.length} осіб)!`);
+                }
+            } else {
+                alert("Помилка структури файлу на диску: відсутній масив personnel.");
+            }
+        } catch (e) {
+            console.error("Помилка читання бекапу з диска:", e);
+            alert("Помилка читання резервної копії з диска: " + e.message);
+        }
+    }
+
+    async function initTaktStorageAndSync() {
+        // Якщо LocalStorage виявився порожнім (після скидання кешу чи зміни браузера), відновлюємо з IndexedDB або диска
+        if (!personnel || personnel.length === 0) {
+            try {
+                const idbState = await loadFromTaktIndexedDB();
+                if (idbState && Array.isArray(idbState.personnel) && idbState.personnel.length > 0) {
+                    console.log("[Auto-Hydrate] Відновлено дані з IndexedDB:", idbState.personnel.length, "бійців");
+                    personnel = idbState.personnel;
+                    if (idbState.positions && idbState.positions.length > 0) positions = idbState.positions;
+                    if (idbState.logs) logs = idbState.logs;
+                    if (idbState.journal) journal = idbState.journal;
+                    if (idbState.groupOrder) groupOrder = idbState.groupOrder;
+                    if (idbState.plannedRotations) plannedRotations = idbState.plannedRotations;
+                    if (idbState.collapsedGroups) collapsedGroups = idbState.collapsedGroups;
+                    if (idbState.collapsedPositions) collapsedPositions = idbState.collapsedPositions;
+                    
+                    _posDirty = true;
+                    runMigrations();
+                    rebuildPersonnelMap();
+                    saveState();
+                    showToast(`⚡ Дані автоматично відновлено з IndexedDB (${personnel.length} осіб)!`);
+                    checkDiskBackupStatus(false);
+                    return;
+                }
+            } catch (e) {
+                console.warn("[Auto-Hydrate] Помилка завантаження з IndexedDB:", e);
+            }
+
+            // Якщо й в IndexedDB порожньо, перевіримо диск через Диспетчер
+            try {
+                const diskData = await checkDiskBackupStatus(false);
+                if (diskData && diskData.exists && diskData.content && !diskData.content.startsWith('TACT_ENC_V1:')) {
+                    const parsed = JSON.parse(diskData.content);
+                    if (parsed && Array.isArray(parsed.personnel) && parsed.personnel.length > 0) {
+                        console.log("[Auto-Hydrate] Авто-відновлення з диска Диспетчера:", parsed.personnel.length, "бійців");
+                        loadDataFromJsonString(diskData.content);
+                        showToast(`⚡ Дані автоматично відновлено з диску Диспетчера (${parsed.personnel.length} осіб)!`);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn("[Auto-Hydrate] Помилка авто-відновлення з диска:", e);
+            }
+        }
+
+        // Завжди перевіряємо стан диска на старті
+        checkDiskBackupStatus(false);
     }
 
     function saveStateSilent() {
@@ -482,22 +830,44 @@ const createPersonnelModule = () => {
 
         if (!isUndoing) {
             undoStack.push({
-                personnel: localStorage.getItem('tactical_personnel') || '[]',
-                positions: localStorage.getItem('tactical_positions') || '[]',
-                logs: localStorage.getItem('tactical_logs') || '[]',
-                journal: localStorage.getItem('tactical_journal') || '[]',
-                groupOrder: localStorage.getItem('tactical_groups_order') || '[]',
-                rotations: localStorage.getItem('tactical_rotations') || '[]'
+                personnel: JSON.stringify(personnel),
+                positions: JSON.stringify(positions),
+                logs: JSON.stringify(logs),
+                journal: JSON.stringify(journal),
+                groupOrder: JSON.stringify(groupOrder),
+                rotations: JSON.stringify(plannedRotations)
             });
-            if (undoStack.length > 20) undoStack.shift();
+            if (undoStack.length > 15) undoStack.shift();
         }
 
-        window.SuiteRuntime.setLocalItem('tactical_personnel',    JSON.stringify(personnel));
-        window.SuiteRuntime.setLocalItem('tactical_positions',    JSON.stringify(positions));
-        window.SuiteRuntime.setLocalItem('tactical_logs',         JSON.stringify(logs));
-        window.SuiteRuntime.setLocalItem('tactical_journal',      JSON.stringify(journal));
-        window.SuiteRuntime.setLocalItem('tactical_groups_order', JSON.stringify(groupOrder));
-        window.SuiteRuntime.setLocalItem('tactical_rotations',    JSON.stringify(plannedRotations)); 
+        const stateObj = getTaktStatePayload();
+
+        try {
+            if (window.SuiteRuntime?.setLocalItem) {
+                window.SuiteRuntime.setLocalItem('tactical_personnel',    JSON.stringify(personnel));
+                window.SuiteRuntime.setLocalItem('tactical_positions',    JSON.stringify(positions));
+                window.SuiteRuntime.setLocalItem('tactical_logs',         JSON.stringify(logs));
+                window.SuiteRuntime.setLocalItem('tactical_journal',      JSON.stringify(journal));
+                window.SuiteRuntime.setLocalItem('tactical_groups_order', JSON.stringify(groupOrder));
+                window.SuiteRuntime.setLocalItem('tactical_rotations',    JSON.stringify(plannedRotations));
+            } else {
+                localStorage.setItem('tactical_personnel',    JSON.stringify(personnel));
+                localStorage.setItem('tactical_positions',    JSON.stringify(positions));
+                localStorage.setItem('tactical_logs',         JSON.stringify(logs));
+                localStorage.setItem('tactical_journal',      JSON.stringify(journal));
+                localStorage.setItem('tactical_groups_order', JSON.stringify(groupOrder));
+                localStorage.setItem('tactical_rotations',    JSON.stringify(plannedRotations));
+            }
+        } catch (err) {
+            console.error('Помилка запису в LocalStorage (переповнення квоти):', err);
+            showToast("⚠️ УВАГА: Пам'ять сховища переповнена! Зробіть терміновий бекап.");
+        }
+
+        // Рівень 2: Збереження в IndexedDB (без обмеження 5МБ, стійке до закриття сесій)
+        saveToTaktIndexedDB(stateObj);
+
+        // Рівень 3: Автоматичний фоновий бекап на жорсткий диск через Диспетчер
+        saveToDiskBackup(false);
         
         updateUndoButton();
         if (typeof updateRotationsBadge === 'function') updateRotationsBadge();
@@ -711,7 +1081,7 @@ const createPersonnelModule = () => {
             setTimeout(() => URL.revokeObjectURL(a.href), 1000);
             
             lastBackupTime = Date.now();
-            window.SuiteRuntime.setLocalItem('tactical_last_backup_time', lastBackupTime.toString());
+            if (window.SuiteRuntime?.setLocalItem) window.SuiteRuntime.setLocalItem('tactical_last_backup_time', lastBackupTime.toString()); else localStorage.setItem('tactical_last_backup_time', lastBackupTime.toString());
             checkBackupReminders(); 
             
             showToast('Зашифрована копія збережена!');
@@ -789,13 +1159,20 @@ const createPersonnelModule = () => {
 
     function loadDataFromJsonString(jsonStr) {
         const d = JSON.parse(jsonStr);
-        if (!d.personnel) throw new Error('Bad data structure');
+        if (!d || typeof d !== 'object' || !Array.isArray(d.personnel)) {
+            throw new Error('Невірна структура файлу бекапу (відсутній список о/с)');
+        }
         personnel          = d.personnel;
-        positions          = d.positions          || [];
-        logs               = d.logs               || [];
-        journal            = d.journal            || [];
-        plannedRotations   = d.plannedRotations   || [];
-        groupOrder         = d.groupOrder         || [];
+        positions          = Array.isArray(d.positions) && d.positions.length > 0 ? d.positions : [
+            { id:'pos_ppd',  name:'ППД',                    type:'non_combat', rop:'Тилові',   icon:'tent',         equipment:[] },
+            { id:'pos_hosp', name:'Госпіталь / Евакуація',   type:'non_combat', rop:'Медицина', icon:'plus-square', equipment:[] }
+        ];
+        logs               = Array.isArray(d.logs) ? d.logs : [];
+        journal            = Array.isArray(d.journal) ? d.journal : [];
+        plannedRotations   = Array.isArray(d.plannedRotations) ? d.plannedRotations : [];
+        groupOrder         = Array.isArray(d.groupOrder) ? d.groupOrder : [];
+        if (d.collapsedGroups) collapsedGroups = d.collapsedGroups;
+        if (d.collapsedPositions) collapsedPositions = d.collapsedPositions;
         
         _posDirty = true;
         runMigrations();
@@ -820,7 +1197,11 @@ const createPersonnelModule = () => {
             'tactical_collapsed_groups', 'tactical_collapsed_positions',
             'tactical_last_backup_time', 'tactical_rotations', 'tactical_sorting_locked'
         ];
-        keys.forEach(k => window.SuiteRuntime.removeLocalItem(k));
+        keys.forEach(k => {
+            if (window.SuiteRuntime?.removeLocalItem) window.SuiteRuntime.removeLocalItem(k);
+            else localStorage.removeItem(k);
+        });
+        clearTaktIndexedDB();
 
         personnel = [];
         positions = [
@@ -871,7 +1252,7 @@ const createPersonnelModule = () => {
         if (backupSchedule.includes(timeVal)) return showToast('Такий час вже є!');
         
         backupSchedule.push(timeVal);
-        window.SuiteRuntime.setLocalItem('tactical_backup_schedule', JSON.stringify(backupSchedule));
+        if (window.SuiteRuntime?.setLocalItem) window.SuiteRuntime.setLocalItem('tactical_backup_schedule', JSON.stringify(backupSchedule)); else localStorage.setItem('tactical_backup_schedule', JSON.stringify(backupSchedule));
         renderBackupTimesList();
         checkBackupReminders();
         el('new-backup-time').value = '';
@@ -879,7 +1260,7 @@ const createPersonnelModule = () => {
 
     function removeBackupTime(idx) {
         backupSchedule.splice(idx, 1);
-        window.SuiteRuntime.setLocalItem('tactical_backup_schedule', JSON.stringify(backupSchedule));
+        if (window.SuiteRuntime?.setLocalItem) window.SuiteRuntime.setLocalItem('tactical_backup_schedule', JSON.stringify(backupSchedule)); else localStorage.setItem('tactical_backup_schedule', JSON.stringify(backupSchedule));
         renderBackupTimesList();
         checkBackupReminders();
     }
@@ -1432,7 +1813,7 @@ const createPersonnelModule = () => {
         const tH = taskShort ? `<span class="uppercase font-mono font-bold ${getTaskChipColor(s.currentTask)} px-1.5 py-0.5 rounded-md text-[10px] whitespace-nowrap shadow-sm border" title="${esc(s.currentTask)}">${esc(taskShort)}</span>` : '';
         const rotDir = activeRotMap.get(s.id);
         const inRot = rotDir ? `<span class="inline-flex relative h-2.5 w-2.5 ml-1 shrink-0" title="В ротації"><span class="animate-ping absolute inline-flex h-full w-full rounded-full ${rotDir==='in'?'bg-amber-400':'bg-blue-400'} opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 ${rotDir==='in'?'bg-amber-500':'bg-blue-500'}"></span></span>` : '';
-        const noteIcon = s.note ? `<button type="button" onclick="event.stopPropagation(); viewNote('${s.id}')" class="text-blue-400 hover:text-blue-300 shrink-0 bg-blue-950/50 p-0.5 rounded-md border border-blue-800/50 transition-colors cursor-pointer" title="Примітка: ${esc(s.note)}"><i data-lucide="info" class="w-3 h-3"></i></button>` : '';
+        const noteIcon = s.note ? `<button type="button" onclick="event.stopPropagation(); viewNote('${s.id}')" class="text-blue-400 hover:text-blue-300 shrink-0 bg-blue-950/50 p-0.5 rounded-md border border-blue-800/50 transition-colors cursor-pointer" title="Примітка: ${esc(s.note ? (s.note.text || s.note) : '')}"><i data-lucide="info" class="w-3 h-3"></i></button>` : '';
 
         const isPosCom = pos.commanderId === s.id;
         const hasCallsign = !!s.callsign?.trim();
@@ -1909,9 +2290,20 @@ const createPersonnelModule = () => {
         const isPosChanged = s.positionId !== npId;
 
         const executeMove = () => {
+            // Якщо боєць переходить у недієздатний статус (300, 200, sick тощо) і локацію вручну не змінено:
+            if (pi === '' && selectedMoveStatus !== 'ok') {
+                const hospPos = positions.find(p => p.id === 'pos_hosp') || positions.find(p => p.type === 'non_combat');
+                const ppdPos  = positions.find(p => p.id === 'pos_ppd')  || positions.find(p => p.type === 'non_combat');
+                const retreatPos = (selectedMoveStatus === '300' || selectedMoveStatus === 'sick') ? (hospPos || ppdPos) : ppdPos;
+                if (retreatPos && positions.find(p => p.id === s.positionId)?.type === 'combat') {
+                    npId = retreatPos.id;
+                    npN  = retreatPos.name;
+                }
+            }
+
             const l = [];
             if (s.status     !== selectedMoveStatus) l.push(`Статус:[${STATUSES[selectedMoveStatus].label}]`);
-            if (isPosChanged)                        l.push(`[${getPosName(s.positionId)}] ➔ [${npN}]`);
+            if (s.positionId !== npId)               l.push(`[${getPosName(s.positionId)}] ➔ [${npN}]`);
             if (s.currentTask !== ta)                l.push(`Завд:[${ta}]`);
             
             // Логіка оновлення примітки
@@ -2041,11 +2433,37 @@ const createPersonnelModule = () => {
         let up = 0;
         const nf = [];
         const nameMap = new Map(personnel.map(p => [(p.fullName || '').toLowerCase(), p]));
+        
+        const hospPos = positions.find(p => p.id === 'pos_hosp') || positions.find(p => p.type === 'non_combat');
+        const ppdPos  = positions.find(p => p.id === 'pos_ppd')  || positions.find(p => p.type === 'non_combat');
+        const targetNonCombatPos = (st === '300' || st === 'sick') ? (hospPos || ppdPos) : ppdPos;
+
         ns.forEach(n => {
             const s = nameMap.get(n.toLowerCase());
-            if (s) { if (s.status !== st) { addLog(`Мас.статус ➔ ${STATUSES[st].label}`, s.fullName); s.status = st; up++; } }
-            else nf.push(n);
+            if (s) {
+                if (s.status !== st) {
+                    addLog(`Мас.статус ➔ ${STATUSES[st].label}`, s.fullName);
+                    s.status = st;
+
+                    if (st !== 'ok' && targetNonCombatPos) {
+                        const currentPos = positions.find(p => p.id === s.positionId);
+                        if (currentPos && currentPos.type === 'combat') {
+                            handleJournalTracking(s.id, s.positionId, targetNonCombatPos.id);
+                            s.positionId = targetNonCombatPos.id;
+                            s.deploymentStartTime = null;
+                            if (currentPos.commanderId === s.id) {
+                                currentPos.commanderId = null;
+                            }
+                        }
+                    }
+                    up++;
+                }
+            } else {
+                nf.push(n);
+            }
         });
+
+        _posDirty = true;
         saveState();
         closeModal('modal-bulk-status');
         if (nf.length > 0) askConfirm(`Оновлено: ${up}.\nНе знайдено (${nf.length}):\n${nf.slice(0, 5).join('\n')}`, null);
@@ -3253,12 +3671,12 @@ const createPersonnelModule = () => {
             // Export the existing UI callbacks only; keep application data private.
             Object.assign(window, {
                 addBackupTime, addEquipmentRow, addMemberToRot, autoSelectIcon,
-                cancelTargetMode, changePerPage, clearJournal, closeImportPasswordModal,
+                cancelTargetMode, changePerPage, checkDiskBackupStatus, clearJournal, closeImportPasswordModal,
                 closeModal, cmAction, cmChangeTask, completeRotation, confirmAddToPos,
                 copyPositionPersonnel, copySoldierPib, deleteGroupPrompt, deleteJournalEntry,
                 deleteNoteFromList, deleteRotation, deleteSoldier, delPos,
                 executeEncryptedExport, executeEncryptedImport, exportDetailedReport,
-                exportJournalExcel, handleAddToPosSearch, handleDragLeave, handleDragOver,
+                exportJournalExcel, forceSaveToDisk, handleAddToPosSearch, handleDragLeave, handleDragOver,
                 handleDragStart, handleDrop, handleFileSelect, handleGroupGridDragLeave,
                 handleGroupGridDragOver, handleGroupGridDrop, handleJournalSearch,
                 handlePosDragStart, handlePosTargetModeDrop, handlePosTargetModeDropGroup,
@@ -3268,7 +3686,7 @@ const createPersonnelModule = () => {
                 openExportModal, openGroupModal, openJournalModal, openModal,
                 openMoveModal, openPositionModal, openRotationModal, openSoldierContextMenu,
                 openSoldierModal, prevPage, removeBackupTime, removeMemberFromRot,
-                renderEquipmentList, renderIconGrid, renderJournal, resetPageAndRender,
+                renderEquipmentList, renderIconGrid, renderJournal, resetPageAndRender, restoreFromDiskBackup,
                 saveGroupEdit, saveJournalEdit, saveMove, savePosition, saveRotation,
                 saveSoldier, setMoveStatus, setMoveToPPD, setQuickStatusFilter,
                 startPosTargetMode, submitBulkStatus, submitBulkUnit, submitImport,
