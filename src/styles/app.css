@@ -63,6 +63,16 @@ body, html { margin: 0; padding: 0; height: 100%; }
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeIn 0.4s ease-out forwards; }
         
+        /* Елементи журналу о/с, що перемикаються через .hidden і мають flex-розмітку */
+        #toast:not(.hidden),
+        #target-mode-banner:not(.hidden),
+        #tab-personnel:not(.hidden),
+        #tab-rotations:not(.hidden),
+        #tab-journal:not(.hidden),
+        #soldier-context-menu:not(.hidden) {
+            display: flex;
+        }
+        
         /* Тактичний ховер-ефект на картках */
         .tactical-card {
             transition: all 0.2s ease-in-out;
