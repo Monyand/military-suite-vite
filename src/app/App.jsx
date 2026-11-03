@@ -139,15 +139,25 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
 
             useEffect(() => {
                 const handleGlobalKey = (e) => {
-                    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                    const isK = e.code === 'KeyK' || e.key?.toLowerCase() === 'k' || e.key?.toLowerCase() === 'л';
+                    if ((e.ctrlKey || e.metaKey) && isK) {
                         e.preventDefault();
+                        e.stopPropagation();
                         if (!restoreStarted && !backupBusy) {
                             setSearchOpen(prev => !prev);
                         }
+                        return;
+                    }
+                    const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName) || e.target?.isContentEditable;
+                    if (!isInput && e.key === '/') {
+                        e.preventDefault();
+                        if (!restoreStarted && !backupBusy) {
+                            setSearchOpen(true);
+                        }
                     }
                 };
-                window.addEventListener('keydown', handleGlobalKey);
-                return () => window.removeEventListener('keydown', handleGlobalKey);
+                window.addEventListener('keydown', handleGlobalKey, true);
+                return () => window.removeEventListener('keydown', handleGlobalKey, true);
             }, [restoreStarted, backupBusy]);
 
             const handleSearchNavigate = (record) => {
