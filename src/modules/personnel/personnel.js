@@ -2185,7 +2185,8 @@ const createPersonnelModule = () => {
         } else {
             el('soldier-modal-title').innerText = 'Додати бійця';
             el('s-rank').value = 'Солдат';
-            el('s-pos-input').value = positions.length ? positions[0].name : '';
+            const defPos = positions.find(p => p.id === 'pos_ppd') || positions.find(p => (p.name || '').toUpperCase().includes('ППД')) || positions.find(p => p.type === 'non_combat') || positions[0];
+            el('s-pos-input').value = defPos ? defPos.name : (positions.length ? positions[0].name : '');
             if (el('s-status')) el('s-status').value = 'ok';
             el('s-init-block').style.display = 'grid';
             el('s-delete-btn').style.display = 'none';
@@ -2758,6 +2759,12 @@ const createPersonnelModule = () => {
         const t = val('import-text').trim(); if (!t) return;
         let a = 0;
         const now = Date.now();
+        const ppdPos = positions.find(p => p.id === 'pos_ppd') 
+            || positions.find(p => (p.name || '').toUpperCase().includes('ППД')) 
+            || positions.find(p => p.type === 'non_combat') 
+            || positions[0];
+        const defaultImportPosId = ppdPos ? ppdPos.id : 'pos_ppd';
+
         t.split('\n').forEach((l, i) => {
             const sep = l.includes('\t') ? '\t' : l.includes(';') ? ';' : ',';
             const c   = l.split(sep).map(x => x.replace(/"/g, '').trim());
@@ -2778,7 +2785,7 @@ const createPersonnelModule = () => {
                     const nd = {
                         id: `s_${now}_${i}`,
                         fullName: fullName, callsign: callsign, rank: r, unit: unit,
-                        status: 'ok', positionId: positions[0]?.id || 'pos_ppd',
+                        status: 'ok', positionId: defaultImportPosId,
                         currentTask: 'піхота', deploymentStartTime: null
                     };
                     personnel.push(nd);

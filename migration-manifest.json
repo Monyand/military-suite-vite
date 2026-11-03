@@ -37,9 +37,9 @@
     },
     "modules/medical/MedicalApp.jsx": {
       "date": "2026-11-03",
-      "reason": "Separate casualties/losses and AWOL/SZCh into dedicated tabs ('Втрати о/с' and 'Облік СЗЧ'); add '4 МР', '5 МР', and '6 МР' to DEFAULT_UNITS.",
-      "sha256": "f818170a1bb1a2325a892899ade90f08be90fac34bbac7ce46350e7d71e84410",
-      "previousSha256": "808fcc701e89421f3f8280b7e7d2bbf9cdab51764f71c382657a0527175fa531"
+      "reason": "Separate casualties/losses and AWOL/SZCh into dedicated tabs ('Втрати о/с' and 'Облік СЗЧ'); add battalion units to DEFAULT_UNITS.",
+      "sha256": "d3bcd9f4a2fe9c66363137bb654a2a26e8859b823026f4e797d1815efb36120b",
+      "previousSha256": "47b32e09e054b21013ff06429f6e47dc3514ced5e79957186ebb3836d35d0b42"
     },
     "modules/events/EventsApp.jsx": {
       "date": "2026-11-03",
@@ -54,10 +54,10 @@
       "previousSha256": "05c93fd062fbdb1ae0cbb60270d01b4ae70ad878f3b83ab9f2ee1e70f6c8508d"
     },
     "modules/personnel/personnel.js": {
-      "date": "2026-10-23",
-      "reason": "Sync with v8 Такт-Облік.html (v1.6.0): Triple-tier persistence (IndexedDB TacticalTaktDB_v1, Dispatcher disk sync, auto-hydrate), safe loader, retreat logic and standardized modal z-index.",
-      "sha256": "3b2a3136349a89de5db10a204c8d2d04e631163f99bc665fa16f38f53fa3328c",
-      "previousSha256": "c880e606b27215cd4284a5304ab53ccf63d995a866cb213e84eb11c8ff979176"
+      "date": "2026-11-03",
+      "reason": "Assign imported and newly created personnel to PPD/non-combat base position instead of positions[0].",
+      "sha256": "d31a6a7c4afec3405de8bdc9682a50067a66b73247c0e08d7f8bb8e08d6e76f1",
+      "previousSha256": "3b2a3136349a89de5db10a204c8d2d04e631163f99bc665fa16f38f53fa3328c"
     },
     "core/medical-totals.js": {
       "date": "2026-10-15",
