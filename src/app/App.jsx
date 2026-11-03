@@ -3,6 +3,7 @@ import { SuiteBackup } from '../core/backup.js';
 import { ReactDOM } from '../core/vendor.js';
 import { SharedDictionariesPanel } from './SharedDictionariesPanel.jsx';
 import { IntegrityPanel } from './IntegrityPanel.jsx';
+import { GlobalSearchModal } from './GlobalSearchModal.jsx';
 import { inspectIntegrity } from '../core/integrity.js';
 
 const VALID_APPS = ['enemy', 'med', 'tactical', 'tasks', 'ovt', 'positions'];
@@ -29,6 +30,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
             };
             const [backupMode, setBackupMode] = useState(null);
             const [dictionariesOpen, setDictionariesOpen] = useState(false);
+            const [searchOpen, setSearchOpen] = useState(false);
             const [backupPassword, setBackupPassword] = useState('');
             const [backupConfirm, setBackupConfirm] = useState('');
             const [backupSource, setBackupSource] = useState(null);
@@ -134,6 +136,37 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                 window.addEventListener('suite-switch-tab', handleSwitchTab);
                 return () => window.removeEventListener('suite-switch-tab', handleSwitchTab);
             }, [restoreStarted]);
+
+            useEffect(() => {
+                const handleGlobalKey = (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                        e.preventDefault();
+                        if (!restoreStarted && !backupBusy) {
+                            setSearchOpen(prev => !prev);
+                        }
+                    }
+                };
+                window.addEventListener('keydown', handleGlobalKey);
+                return () => window.removeEventListener('keydown', handleGlobalKey);
+            }, [restoreStarted, backupBusy]);
+
+            const handleSearchNavigate = (record) => {
+                if (!record) return;
+                const { module, id } = record;
+                ReactDOM.flushSync(() => {
+                    switchApp(module);
+                    setSearchOpen(false);
+                });
+                if (module === 'tactical') {
+                    setTimeout(() => {
+                        if (typeof window.openSoldierModal === 'function') {
+                            window.openSoldierModal(id);
+                        }
+                    }, 120);
+                } else {
+                    window.dispatchEvent(new CustomEvent('suite-review-record', { detail: { module, recordId: String(id) } }));
+                }
+            };
             
             const EnemyApp = EventsApp;
             const MedApp = MedicalApp;
@@ -154,7 +187,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                                 </div>
                                 <div className="flex items-baseline gap-1.5 hidden xl:flex">
                                     <span className="font-black text-amber-400 tracking-wider text-sm">MILITARY SUITE</span>
-                                    <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-500/15 text-amber-300 font-bold border border-amber-500/30">C2</span>
+                                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-extrabold border border-amber-500/40" title="ОЧ / S-3 — Оперативна частина">S3 · ОЧ</span>
                                 </div>
                             </div>
 
@@ -290,6 +323,21 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                                 <span className="lg:hidden hidden sm:inline">Довідники</span>
                             </button>
 
+                            <button 
+                                type="button"
+                                aria-label="Наскрізний пошук" 
+                                title="Наскрізний пошук по всіх базах (Ctrl+K)"
+                                disabled={restoreStarted} 
+                                onClick={() => setSearchOpen(true)} 
+                                className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-amber-100 border border-amber-500/40 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+                            >
+                                <svg className="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                </svg>
+                                <span className="hidden xl:inline">Пошук</span>
+                                <kbd className="hidden 2xl:inline text-[9px] font-mono bg-slate-900 border border-slate-700 rounded px-1 text-slate-400">Ctrl K</kbd>
+                            </button>
+
                             <div className="h-4 w-[1px] bg-slate-800 hidden sm:block mx-0.5" aria-hidden="true" />
 
                             <button 
@@ -328,6 +376,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                     </div>
                     {dictionariesOpen && <SharedDictionariesPanel onClose={() => setDictionariesOpen(false)} onSuspend={() => ReactDOM.flushSync(() => setRestoreStarted(true))} />}
                     {integrityOpen && <IntegrityPanel onClose={() => setIntegrityOpen(false)} onOpen={openIntegrityRecord} />}
+                    {searchOpen && <GlobalSearchModal onClose={() => setSearchOpen(false)} onNavigate={handleSearchNavigate} />}
                     {backupMode && <div className="fixed inset-0 z-[20000] bg-black/80 flex items-center justify-center p-4">
                         <section role="dialog" aria-modal="true" aria-labelledby="suite-backup-title" className="bg-slate-900 text-slate-200 border border-slate-600 rounded-2xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto space-y-4">
                             <h2 id="suite-backup-title" className="text-xl font-bold">{backupMode === 'export' ? 'Єдиний зашифрований бекап' : 'Відновлення єдиного бекапу'}</h2>
