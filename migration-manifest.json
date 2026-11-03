@@ -50,7 +50,7 @@
     "app/App.jsx": {
       "date": "2026-11-03",
       "reason": "Display top medical tab as 'Наші втрати о/с' while preserving 'Медична Евакуація' accessible name; S3/ОЧ tactical header with universal Ctrl+K search across all modules.",
-      "sha256": "8c1e2955dce56f5abad6085979771d982033dda22fa18450018cfc8ba974b9c2",
+      "sha256": "d19041f6038bd7015e3a5743f3d229af677e5c9514a1a0ed5145431239fa1e0e",
       "previousSha256": "87237d1466cadb1240f323b21129131523286a83d48357a5a4ff720096dbac9a"
     },
     "modules/personnel/personnel.js": {

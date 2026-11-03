@@ -185,7 +185,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                                         <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
                                     </svg>
                                 </div>
-                                <div className="flex items-baseline gap-1.5 hidden xl:flex">
+                                <div className="hidden xl:flex items-baseline gap-1.5">
                                     <span className="font-black text-amber-400 tracking-wider text-sm">MILITARY SUITE</span>
                                     <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-extrabold border border-amber-500/40" title="ОЧ / S-3 — Оперативна частина">S3 · ОЧ</span>
                                 </div>
@@ -320,7 +320,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                                     <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
                                 </svg>
                                 <span className="hidden lg:inline">Спільні довідники</span>
-                                <span className="lg:hidden hidden sm:inline">Довідники</span>
+                                <span className="hidden sm:inline lg:hidden">Довідники</span>
                             </button>
 
                             <button 
@@ -350,7 +350,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                                 </svg>
                                 <span className="hidden lg:inline">Створити Єдиний Бекап</span>
-                                <span className="lg:hidden hidden sm:inline">Бекап</span>
+                                <span className="hidden sm:inline lg:hidden">Бекап</span>
                             </button>
 
                             <button 
@@ -363,7 +363,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                                 </svg>
                                 <span className="hidden lg:inline">Відновити бекап</span>
-                                <span className="lg:hidden hidden sm:inline">Відновити</span>
+                                <span className="hidden sm:inline lg:hidden">Відновити</span>
                             </button>
                         </div>
                     </div>
