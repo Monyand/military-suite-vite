@@ -658,7 +658,7 @@ const EventsApp = (function() {
 
                 return (
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full w-full max-w-[1920px] shadow-2xl flex flex-col max-h-[90vh]">
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-[1920px] shadow-2xl flex flex-col max-h-[90vh]">
                             <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-900/50 rounded-t-2xl sticky top-0 z-10">
                                 <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
                                     <Icon name={eventToEdit ? "edit" : "plus-circle"} className="w-5 h-5 text-amber-500" />
@@ -717,7 +717,7 @@ const EventsApp = (function() {
                                                 </div>
                                             )}
                                             <div className={isAssault ? "md:col-span-2 lg:col-span-2" : ""}>
-                                                <label className="block text-xs font-semibold text-slate-400 mb-1 flex items-center justify-between">
+                                                <label className="text-xs font-semibold text-slate-400 mb-1 flex items-center justify-between">
                                                     <span>Час закінчення</span>
                                                     {isAssault && !formData.actionDetails.endTime && <span className="text-[10px] text-red-400 font-bold animate-pulse">Обов'язково для закриття ШД</span>}
                                                 </label>
@@ -806,7 +806,7 @@ const EventsApp = (function() {
                                                             <input type="text" placeholder="Позивний / Підрозділ" value={loss.inflicter} onChange={e => updateEnemyLoss(loss.id, 'inflicter', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:border-red-500" />
                                                         </div>
                                                         <div>
-                                                            <label className="block text-[10px] font-semibold text-amber-400 mb-1 uppercase flex items-center gap-1">
+                                                            <label className="text-[10px] font-semibold text-amber-400 mb-1 uppercase flex items-center gap-1">
                                                                 <Icon name="clock" className="w-3 h-3 text-amber-400" /> Час ураження
                                                             </label>
                                                             <input type="time" value={loss.time || ''} onChange={e => updateEnemyLoss(loss.id, 'time', e.target.value)} className="w-full bg-slate-900 border border-amber-500/50 rounded-lg px-3 py-1.5 text-sm text-amber-200 focus:border-amber-400" />
@@ -957,7 +957,7 @@ const EventsApp = (function() {
                 
                 return (
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-                        <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full w-full max-w-5xl shadow-2xl flex flex-col max-h-[90vh]">
+                        <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-5xl shadow-2xl flex flex-col max-h-[90vh]">
                             <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-800/50 rounded-t-2xl sticky top-0 z-10">
                                 <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
                                     <Icon name="file-text" className="w-5 h-5 text-blue-400" />
@@ -3062,11 +3062,41 @@ const EventsApp = (function() {
             };
 
         const SettingsView = () => {
-                const { dailyFriendlyLosses, events, personnel, replaceDocumentData, requestPassword, saveSettings, setViewingEvent, settings, showToast } = React.useContext(EnemyAppContext);
+                const { dailyFriendlyLosses, events, personnel, replaceDocumentData, requestPassword, saveEvents, savePersonnel, saveSettings, setDeletedRecord, setViewingEvent, settings, showToast } = React.useContext(EnemyAppContext);
                 const [newWeapon, setNewWeapon] = useState('');
                 const [newPosition, setNewPosition] = useState('');
+                const [isClearDbConfirmOpen, setIsClearDbConfirmOpen] = useState(false);
+                const [clearEventsOption, setClearEventsOption] = useState(true);
+                const [clearPersonnelOption, setClearPersonnelOption] = useState(true);
+                const [isClearing, setIsClearing] = useState(false);
                 const fileRef = useRef(null);
                 const backupTextEncoder = new TextEncoder();
+
+                const handleClearDatabase = async () => {
+                    if (!clearEventsOption && !clearPersonnelOption) {
+                        showToast('Оберіть принаймні одну категорію для очищення');
+                        return;
+                    }
+                    setIsClearing(true);
+                    try {
+                        const previous = { events, settings, dailyFriendlyLosses, personnel };
+                        await window.SuiteRuntime.setItem('document_before_restore_v1', previous);
+                        if (clearEventsOption) {
+                            await saveEvents([]);
+                        }
+                        if (clearPersonnelOption) {
+                            await savePersonnel([]);
+                        }
+                        if (setDeletedRecord) setDeletedRecord(null);
+                        setIsClearDbConfirmOpen(false);
+                        showToast('Базу успішно очищено. Створено копію для повернення.');
+                    } catch (e) {
+                        console.error('Помилка очищення бази', e);
+                        showToast('Не вдалося очистити базу даних');
+                    } finally {
+                        setIsClearing(false);
+                    }
+                };
 
                 const bytesToBase64 = (bytes) => {
                     let binary = '';
@@ -3248,6 +3278,97 @@ const EventsApp = (function() {
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Небезпечна зона / Очищення */}
+                            <div className="bg-slate-900 border border-red-950/80 rounded-2xl p-5">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div className="space-y-0.5">
+                                        <div className="text-xs font-bold text-red-400 uppercase flex items-center gap-1.5">
+                                            <Icon name="alert-triangle" className="w-4 h-4 text-red-400" />
+                                            <span>Небезпечна зона</span>
+                                        </div>
+                                        <p className="text-xs text-slate-400">
+                                            Повне очищення збережених даних вкладки (зараз у базі: {events.length} подій, {personnel.length} в/сл противника)
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsClearDbConfirmOpen(true)}
+                                        className="px-4 py-2 bg-red-950/80 hover:bg-red-900 border border-red-800 text-red-300 hover:text-white font-bold rounded-xl text-xs transition cursor-pointer shrink-0 shadow-sm flex items-center gap-1.5"
+                                    >
+                                        <Icon name="trash-2" className="w-4 h-4" />
+                                        Очистити базу
+                                    </button>
+                                </div>
+                            </div>
+
+                            {isClearDbConfirmOpen && (
+                                <div onClick={(e) => { if (e.target === e.currentTarget && !isClearing) setIsClearDbConfirmOpen(false); }} className="fixed inset-0 z-[210] bg-black/90 flex items-center justify-center p-4">
+                                    <div className="bg-slate-900 border border-red-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl p-6 space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center shrink-0">
+                                                <Icon name="alert-octagon" className="w-6 h-6 text-red-500" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-white text-base">Очищення бази «Втрати Противника»</h3>
+                                                <p className="text-xs text-slate-400">Оберіть які саме дані потрібно видалити</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 space-y-3">
+                                            <label className="flex items-start gap-2.5 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={clearEventsOption}
+                                                    onChange={e => setClearEventsOption(e.target.checked)}
+                                                    className="w-4 h-4 mt-0.5 rounded bg-slate-900 border-slate-700 text-red-600 focus:ring-0"
+                                                />
+                                                <div className="text-xs">
+                                                    <div className="font-semibold text-slate-200">Видалити всі події та втрати ворога</div>
+                                                    <div className="text-slate-400">Стрічка подій ({events.length} записів)</div>
+                                                </div>
+                                            </label>
+
+                                            <label className="flex items-start gap-2.5 cursor-pointer border-t border-slate-800/80 pt-2.5">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={clearPersonnelOption}
+                                                    onChange={e => setClearPersonnelOption(e.target.checked)}
+                                                    className="w-4 h-4 mt-0.5 rounded bg-slate-900 border-slate-700 text-red-600 focus:ring-0"
+                                                />
+                                                <div className="text-xs">
+                                                    <div className="font-semibold text-slate-200">Видалити базу особового складу противника</div>
+                                                    <div className="text-slate-400">Реєстр в/сл противника ({personnel.length} записів)</div>
+                                                </div>
+                                            </label>
+                                        </div>
+
+                                        <p className="text-xs text-amber-300/90 bg-amber-950/30 border border-amber-900/40 rounded-lg p-2.5 leading-relaxed">
+                                            Перед очищенням автоматично зберігається копія попереднього стану. За потреби дані можна буде повернути кнопкою «Повернути дані до попереднього відновлення».
+                                        </p>
+
+                                        <div className="flex gap-3 justify-end pt-2">
+                                            <button
+                                                type="button"
+                                                disabled={isClearing}
+                                                onClick={() => setIsClearDbConfirmOpen(false)}
+                                                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition cursor-pointer"
+                                            >
+                                                Скасувати
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={isClearing || (!clearEventsOption && !clearPersonnelOption)}
+                                                onClick={handleClearDatabase}
+                                                className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:hover:bg-red-600 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-red-900 cursor-pointer"
+                                            >
+                                                {isClearing ? 'Очищення…' : 'Так, очистити'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="text-xs text-slate-500 leading-relaxed">
                                 Клавіші: <span className="text-slate-300">N</span> нова подія · <span className="text-slate-300">1–4</span> вкладки · <span className="text-slate-300">Esc</span> закрити вікно.
                             </div>
@@ -3428,6 +3549,9 @@ const EventsApp = (function() {
 
             const saveEvents = async (newEvents) => {
                 await window.SuiteRuntime.setItem('enemy_events_v2', newEvents);
+                if (newEvents.length === 0) {
+                    await window.SuiteRuntime.setItem('enemy_events_v1', []);
+                }
                 setEvents(newEvents);
             };
 
@@ -3561,11 +3685,11 @@ const EventsApp = (function() {
             if (isLoading) return <div className="flex-1 flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full"></div></div>;
 
             return (
-                <EnemyAppContext.Provider value={{ allPOWs, dailyFriendlyLosses, deleteEvent, events, medicalSync, replaceDocumentData, requestPassword, saveSettings, setEditingEvent, setIsFormOpen, setViewingEvent, setAssaultReportEvent, settings, showToast, personnel, savePersonnel }}>
+                <EnemyAppContext.Provider value={{ allPOWs, dailyFriendlyLosses, deleteEvent, events, medicalSync, replaceDocumentData, requestPassword, saveEvents, savePersonnel, saveSettings, setDeletedRecord, setEditingEvent, setIsFormOpen, setViewingEvent, setAssaultReportEvent, settings, showToast, personnel }}>
                 <div className="flex flex-col h-full">
                     {/* Header Nav */}
                     <header className="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 shrink-0 print:hidden">
-                        <div className="w-full max-w-[2400px] px-2 lg:px-4 mx-auto px-4 h-16 flex items-center justify-between">
+                        <div className="w-full max-w-[2400px] px-2 lg:px-4 mx-auto h-16 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-red-600 flex items-center justify-center shadow-lg">
                                     <Icon name="crosshair" className="w-5 h-5 text-white" />

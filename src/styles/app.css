@@ -138,6 +138,46 @@ body, html { margin: 0; padding: 0; height: 100%; }
             opacity: 1;
             transform: scale(1.1);
         }
+
+        /* Плаваюча кнопка повернення нагору */
+        #btn-scroll-top {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #38bdf8;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 100;
+        }
+        #btn-scroll-top:hover {
+            background: #1e293b;
+            border-color: #38bdf8;
+            color: #ffffff;
+            transform: translateY(6px);
+        }
+        #btn-scroll-top:active {
+            transform: translateY(10px) scale(0.95);
+        }
+        #btn-scroll-top.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
         @media print {
             body, #root { height: auto !important; overflow: visible !important; min-height: auto !important; background-color: white !important; }
             @page { margin: 10mm; size: A4; }

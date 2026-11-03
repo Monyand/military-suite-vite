@@ -12,7 +12,10 @@ const { createHarness } = require('./suite-backup-unit.cjs');
         const page = await context.newPage();
         page.setDefaultTimeout(20000);
         const errors = []; page.on('pageerror', error => errors.push(error.message));
-        const ready = () => page.getByRole('heading', { name: 'Стрічка подій', exact: true }).waitFor();
+        const ready = () => Promise.race([
+            page.getByRole('heading', { name: 'Стрічка подій', exact: true }).waitFor(),
+            page.getByRole('button', { name: 'Створити Єдиний Бекап', exact: true }).waitFor()
+        ]);
         const top = name => page.getByRole('button', { name, exact: true }).first().click();
         await page.goto(process.env.SUITE_TEST_URL || 'http://127.0.0.1:5173'); await ready();
         await top('Медична Евакуація'); await page.getByRole('button', { name: 'Створити запис', exact: true }).waitFor();
@@ -26,7 +29,7 @@ const { createHarness } = require('./suite-backup-unit.cjs');
             await localforage.setItem('med_episodes_v3', [{ id: 'dict-ep', soldierId: medical.id, date: '2026-01-02T11:00', lossType: 'Поранення (300)', severity: 'Легкий', cause: 'Інше', injuries: {}, evacStatus: 'Евакуйований', rank: medical.rank, unit: medical.unit, personnelSnapshot: { ...medical }, actualLoc: 'Лісосмуга Тест', docLoc: 'Архів Тест', notes: 'тест-старий не замінювати в коментарях' }]);
             const settings = await localforage.getItem('med_settings_v3');
             await localforage.setItem('med_settings_v3', { ...settings, units: [...settings.units, person.unit], sectors: ['Старе некласифіковане місце'] });
-            await localforage.setItem('document_journal_v1', { version: 1, tasks: [], ovt: [], positions: [{ id: 'dict-doc', date: '2026-01-01', name: 'Архів Тест', status: 'виставлена', category: 'Інші', docNumber: 'ТЕСТ-1', details: '', reportedInPbd: false }], settings: {} });
+            await localforage.setItem('document_journal_v1', { version: 1, schemaRevision: 1, tasks: [], ovt: [], positions: [{ id: 'dict-doc', date: '2026-01-01', name: 'Архів Тест', status: 'виставлена', category: 'Інші', docNumber: 'ТЕСТ-1', details: '', reportedInPbd: false }], settings: {} });
         });
         await page.reload(); await ready();
         await top('Медична Евакуація');
@@ -90,7 +93,7 @@ const { createHarness } = require('./suite-backup-unit.cjs');
         await restore.getByRole('button', { name: 'Попередній стан', exact: true }).click();
         await restore.getByLabel('Пароль єдиного бекапу', { exact: true }).fill(password);
         await restore.getByRole('button', { name: 'Перевірити файл', exact: true }).click();
-        await restore.getByRole('checkbox').check();
+        await restore.getByRole('checkbox', { name: 'Я закрив інші вкладки та підтверджую заміну поточних даних', exact: true }).check();
         await restore.getByRole('button', { name: 'Відновити всі дані', exact: true }).click();
         await restore.getByRole('alert').filter({ hasText: 'Відновлення завершено' }).waitFor();
         assert.deepEqual(await page.evaluate(() => localforage.getItem('med_soldiers_v3')), before.people);

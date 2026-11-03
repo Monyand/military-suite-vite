@@ -39,7 +39,7 @@ const { D } = require('./suite-document-journal.cjs');
         await dictionaries.getByRole('button', { name: /^Підрозділи/ }).click();
         await dictionaries.getByRole('button', { name: /^Шаблони ОВТ/ }).click();
         assert.equal(await dictionaries.getByLabel('Шаблони: Завдання').inputValue(), 'підвозу матеріалів');
-        for (const [title, value] of Object.entries({ 'Завдання': 'підвозу матеріалів', 'Тип транспорту': 'вантажний автомобіль\nтанк', 'Наслідок · ЗНИЩЕНО': 'був повністю знищений', 'Наслідок · ПОШКОДЖЕНО': 'був пошкоджений' })) {
+        for (const [title, value] of Object.entries({ 'Завдання': 'підвозу матеріалів', 'Тип транспорту / техніки': 'вантажний автомобіль\nтанк', 'Наслідок · ЗНИЩЕНО': 'був повністю знищений', 'Наслідок · ПОШКОДЖЕНО': 'був пошкоджений' })) {
             await dictionaries.getByLabel('Шаблони: ' + title, { exact: true }).fill(value);
             await dictionaries.getByRole('button', { name: 'Додати: ' + title, exact: true }).click();
         }

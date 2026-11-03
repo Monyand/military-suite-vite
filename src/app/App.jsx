@@ -126,6 +126,14 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                     tacContainer.style.display = 'none';
                 }
             }, [activeApp, backupMode, dictionariesOpen, restoreStarted]);
+
+            useEffect(() => {
+                const handleSwitchTab = (e) => {
+                    if (e.detail && VALID_APPS.includes(e.detail)) switchApp(e.detail);
+                };
+                window.addEventListener('suite-switch-tab', handleSwitchTab);
+                return () => window.removeEventListener('suite-switch-tab', handleSwitchTab);
+            }, [restoreStarted]);
             
             const EnemyApp = EventsApp;
             const MedApp = MedicalApp;

@@ -30,28 +30,28 @@
       "previousSha256": "8736014f5a5ff35055fcb2b42151c681e30b7669bc8af619a6bc6d7f32c0071d"
     },
     "modules/documents/DocumentsApp.jsx": {
-      "date": "2026-10-15",
-      "reason": "Fix batch comparison, category learning, pagination, local ISO export filename and memoized documentary filtering.",
-      "sha256": "9fd9303e0db60d5a4d802933489df25d94052b083d90d1e56798c8890a475dfd",
-      "previousSha256": "868ecd653e3eae9de2955df8192a14e8635b75414e4d1e4b14691584d9f0f140"
+      "date": "2026-10-28",
+      "reason": "Fix batch comparison, category learning, pagination, local ISO export filename, memoized documentary filtering and restore OVT nomenclature settings button.",
+      "sha256": "43ad94b45e9a76896a0ff272fd820ffa9bee341ca88cb43a7e0a060985860770",
+      "previousSha256": "9fd9303e0db60d5a4d802933489df25d94052b083d90d1e56798c8890a475dfd"
     },
     "modules/medical/MedicalApp.jsx": {
-      "date": "2026-10-23",
-      "reason": "Sync with Облік втрат.html v3.6.4: restore manual keyboard date/time entry, focus-visible and dark mode datetime-local styles.",
-      "sha256": "42b6d6570d3733f2073369e636514b4f6b21f2f4b967f2f00674ece8e333bb41",
-      "previousSha256": "fb8b0474317b26afb1811d14fe33d7cc5bf04aa750369cbabe1d06c0ffcceb12"
+      "date": "2026-10-28",
+      "reason": "Sync with Облік втрат.html v3.6.5: Direct transition to HUB, analytics tab bar stabilization, scroll-to-top ergonomics, calm status indicators.",
+      "sha256": "a3c4398f80fdf56c34237c882662734c6d5f39898f80d733315ff8e9c5833f87",
+      "previousSha256": "42b6d6570d3733f2073369e636514b4f6b21f2f4b967f2f00674ece8e333bb41"
     },
     "modules/events/EventsApp.jsx": {
-      "date": "2026-10-15",
-      "reason": "Preserve user edits; use local date helpers for events and export filenames; integrity navigation.",
-      "sha256": "b888d1702410d73d562dcbcf9daf336bdea301335314f64f36c060dfc5ab87ba",
-      "previousSha256": "5069d16642926e5567da2b372c276630688994514b602e7c9f12ce02a5d3a632"
+      "date": "2026-11-03",
+      "reason": "Add Danger Zone database clearing for enemy events and personnel records with rollback snapshot.",
+      "sha256": "432b734cb6d533f820c30650cb0dbbf2e71494dd5be9fa4464043b53affb10f1",
+      "previousSha256": "b888d1702410d73d562dcbcf9daf336bdea301335314f64f36c060dfc5ab87ba"
     },
     "app/App.jsx": {
-      "date": "2026-10-23",
-      "reason": "Persist active module tab in localStorage across page reloads; restore counts and integrity inspection; PBD export/import controls and localized date formatting.",
-      "sha256": "02543277a1471fd30d83a958e33fc51cc60c53ad3831f1ecca8cb03d23bd90ff",
-      "previousSha256": "5212d554993bec96695bf6bbb277419ed35a0c65c926ee8931d46bafcbbd4ff2"
+      "date": "2026-10-28",
+      "reason": "Support cross-module suite-switch-tab event for seamless HUB navigation; persist active module tab in localStorage across page reloads; PBD export/import controls.",
+      "sha256": "05c93fd062fbdb1ae0cbb60270d01b4ae70ad878f3b83ab9f2ee1e70f6c8508d",
+      "previousSha256": "02543277a1471fd30d83a958e33fc51cc60c53ad3831f1ecca8cb03d23bd90ff"
     },
     "modules/personnel/personnel.js": {
       "date": "2026-10-23",

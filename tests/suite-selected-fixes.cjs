@@ -16,7 +16,10 @@ const { createHarness } = require('./suite-backup-unit.cjs');
         await page.clock.setFixedTime(new Date('2026-09-15T21:30:00Z'));
         const errors = [];
         page.on('pageerror', error => { errors.push(error.message); console.error('PAGE ERROR:', error.message); });
-        const ready = () => page.getByRole('heading', { name: 'Стрічка подій', exact: true }).waitFor({ timeout: 45000 });
+        const ready = () => Promise.race([
+            page.getByRole('heading', { name: 'Стрічка подій', exact: true }).waitFor({ timeout: 45000 }),
+            page.locator('#document-journal').waitFor({ timeout: 45000 })
+        ]);
         const top = name => page.getByRole('button', { name, exact: true }).first().click();
         await page.goto((process.env.SUITE_TEST_URL || 'http://127.0.0.1:5173'), { waitUntil: 'domcontentloaded', timeout: 60000 });
         await ready();
@@ -61,7 +64,7 @@ const { createHarness } = require('./suite-backup-unit.cjs');
         await top('Втрати Противника');
         const enemy = page.locator('[data-suite-module=enemy]');
         await enemy.getByRole('button', { name: 'Додати подію', exact: true }).click();
-        const draft = enemy.getByPlaceholder('Додаткова інформація...', { exact: true });
+        const draft = enemy.getByPlaceholder('Додаткова інформація...', { exact: true }).last();
         await draft.fill('Синтетична незбережена чернетка');
         await draft.evaluate(el => { window.draftNode = el; el.focus(); el.setSelectionRange(4, 9); });
         await page.evaluate(async () => {
@@ -85,7 +88,7 @@ const { createHarness } = require('./suite-backup-unit.cjs');
             await dialog.getByLabel('Пароль єдиного бекапу', { exact: true }).fill(password);
             await dialog.getByRole('button', { name: 'Перевірити файл', exact: true }).click();
             await dialog.getByText(/Файл перевірено/).waitFor();
-            await dialog.getByRole('checkbox').check();
+            await dialog.getByRole('checkbox', { name: 'Я закрив інші вкладки та підтверджую заміну поточних даних', exact: true }).check();
             return dialog;
         };
         const dialog = await prepareRestore();
@@ -125,7 +128,7 @@ const { createHarness } = require('./suite-backup-unit.cjs');
         console.log('PASS: failed restore rolls back and remains suspended until reload; no JavaScript errors');
 
         const h = createHarness();
-        const record = { id: 'synthetic-document', reportedInPbd: true };
+        const record = { id: 'synthetic-document', date: '2026-09-28', task: 'Синтетичне завдання', status: 'Виконано', comment: '', reportedInPbd: true };
         const journal = { version: 1, settings: {}, tasks: [record], ovt: [], positions: [] };
         h.persistent.set('document_journal_v1', journal);
         const older = await h.api.collect(); older.localforage.document_journal_v1.tasks[0].reportedInPbd = false;

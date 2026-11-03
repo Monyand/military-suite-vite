@@ -3637,6 +3637,32 @@ const MedicalApp = (function() {
                 window.addEventListener('suite-review-record', openReviewed);
                 return () => window.removeEventListener('suite-review-record', openReviewed);
             }, [episodes, soldiers]);
+
+            useEffect(() => {
+                const handleScroll = () => {
+                    const btn = document.getElementById('btn-scroll-top');
+                    if (!btn) return;
+                    const container = document.querySelector('[data-suite-module="med"]');
+                    const scrollTop = (container && container.scrollTop) || window.scrollY || 0;
+                    if (scrollTop > 300) {
+                        btn.classList.add('visible');
+                    } else {
+                        btn.classList.remove('visible');
+                    }
+                };
+                const container = document.querySelector('[data-suite-module="med"]');
+                window.addEventListener('scroll', handleScroll, { passive: true });
+                if (container) {
+                    container.addEventListener('scroll', handleScroll, { passive: true });
+                }
+                return () => {
+                    window.removeEventListener('scroll', handleScroll);
+                    if (container) {
+                        container.removeEventListener('scroll', handleScroll);
+                    }
+                };
+            }, []);
+
             const handleUpdateWounded = (e) => {
                 e.preventDefault();
                 if (!currentEpisode) return;
@@ -4355,8 +4381,19 @@ const MedicalApp = (function() {
                     {/* Single Unified Modern Command Header */}
                     <header className="bg-slate-900/95 border border-slate-800/90 rounded-2xl p-3 sm:p-3.5 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3.5 shadow-2xl backdrop-blur-md">
                         
-                        {/* 1. Ліва частина: Логотип + Бренд + Версія */}
+                        {/* 1. Ліва частина: HUB + Логотип + Бренд + Версія */}
                         <div className="flex items-center gap-3 shrink-0">
+                            <a 
+                                href="index.html" 
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    window.dispatchEvent(new CustomEvent('suite-switch-tab', { detail: 'enemy' }));
+                                }}
+                                className="px-2.5 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 rounded-xl transition-all text-xs font-semibold flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0" 
+                                title="Повернутися до Єдиного Центру Управління (HUB)"
+                            >
+                                <span>🏠 HUB</span>
+                            </a>
                             <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 shadow-inner shrink-0">
                                 <Icon name="shield-alert" className="w-5 h-5" />
                             </div>
@@ -4370,7 +4407,7 @@ const MedicalApp = (function() {
                                     className="text-[11px] bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 font-mono font-bold px-2 py-0.5 rounded-md transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm" 
                                     title="Історія оновлень"
                                 >
-                                    ⚡ v3.6.4
+                                    ⚡ v3.6.5
                                 </button>
                                 <button
                                     onClick={() => setIsBackupOpen(true)}
@@ -4381,14 +4418,14 @@ const MedicalApp = (function() {
                                     }`}
                                     title={diskServiceOnline ? `Служба бекапу активна на диску (_backups). ${lastDiskSaveTime ? 'Збережено: ' + lastDiskSaveTime : 'Готова'}` : 'Служба бекапу недоступна'}
                                 >
-                                    <span className={`w-1.5 h-1.5 rounded-full ${diskServiceOnline ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`}></span>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${diskServiceOnline ? 'bg-emerald-400' : 'bg-slate-500'}`}></span>
                                     <span>{diskServiceOnline ? (lastDiskSaveTime ? `Диск: ${lastDiskSaveTime}` : 'Диск: OK') : 'Диск: Офлайн'}</span>
                                 </button>
                             </div>
                         </div>
 
                         {/* 2. Центральна частина: Преміальний Segmented Tabs Bar */}
-                        <div className="flex items-center gap-1 bg-slate-950/90 border border-slate-800/90 p-1.5 rounded-xl shadow-inner overflow-x-auto self-start xl:self-center">
+                        <div className="flex items-center gap-1 bg-slate-950/90 border border-slate-800/90 p-1.5 rounded-xl shadow-inner shrink-0 self-start xl:self-center">
                             {/* Вкладка: Журнал */}
                             <button 
                                 onClick={() => handleTabSwitch("list")} 
@@ -4419,7 +4456,7 @@ const MedicalApp = (function() {
                                 <div className="flex items-center gap-1 font-mono text-[10px]">
                                     {(triageCounts.crit + triageCounts.heavy + triageCounts.med + triageCounts.light) > 0 && (
                                         <span className="bg-amber-950/80 text-amber-300 border border-amber-800/80 px-1.5 py-0.2 rounded font-bold flex items-center gap-1 shadow-sm">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
                                             {triageCounts.crit + triageCounts.heavy + triageCounts.med + triageCounts.light} 300
                                         </span>
                                     )}
@@ -4466,36 +4503,6 @@ const MedicalApp = (function() {
 
                         {/* 3. Права частина: Уніфіковані тактичні кнопки дій */}
                         <div className="flex items-center gap-2 flex-wrap">
-                            {activeTab === "analytics" && (
-                                <>
-                                    <button 
-                                        onClick={handleOpenPrintableReport} 
-                                        className="px-3 py-2 bg-purple-950/80 hover:bg-purple-900/90 text-purple-300 font-semibold border border-purple-700/60 rounded-xl transition-all flex items-center gap-1.5 text-xs shadow-sm hover:shadow-purple-950/50 active:scale-95 cursor-pointer" 
-                                        title="Згенерувати офіційне бойове донесення у форматі A4 для друку або збереження в PDF"
-                                    >
-                                        <Icon name="printer" className="w-3.5 h-3.5 text-purple-400" /> 
-                                        <span>Доповідь (A4 / PDF)</span>
-                                    </button>
-                                    <button 
-                                        onClick={handleExportAnalyticsText} 
-                                        className="px-3 py-2 bg-blue-950/80 hover:bg-blue-900/90 text-blue-300 font-semibold border border-blue-700/60 rounded-xl transition-all flex items-center gap-1.5 text-xs shadow-sm hover:shadow-blue-950/50 active:scale-95 cursor-pointer" 
-                                        title="Згенерувати текстовий звіт в буфер обміну"
-                                    >
-                                        <Icon name="file-text" className="w-3.5 h-3.5 text-blue-400" /> 
-                                        <span>Звіт (Текст)</span>
-                                    </button>
-                                    <button 
-                                        onClick={handleExportAnalyticsExcel} 
-                                        className="px-3 py-2 bg-emerald-950/80 hover:bg-emerald-900/90 text-emerald-300 font-semibold border border-emerald-700/60 rounded-xl transition-all flex items-center gap-1.5 text-xs shadow-sm hover:shadow-emerald-950/50 active:scale-95 cursor-pointer" 
-                                        title="Експорт аналітики: 6 аркушів Excel"
-                                    >
-                                        <Icon name="table" className="w-3.5 h-3.5 text-emerald-400" /> 
-                                        <span>Експорт (Excel)</span>
-                                    </button>
-                                </>
-                            )}
-                            
-                            {/* Головна дія */}
                             <button 
                                 onClick={() => handleOpenAddWounded(null)} 
                                 className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-md hover:shadow-emerald-900/40 border border-emerald-500/40 transition-all flex items-center gap-1.5 text-xs cursor-pointer active:scale-95"
@@ -5489,7 +5496,36 @@ const MedicalApp = (function() {
                                             <input type="checkbox" checked={groupAnalytics} onChange={(e) => setGroupAnalytics(e.target.checked)} className="rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer shrink-0"/>
                                             <span className="font-medium text-[11px]">Об'єднати групи</span>
                                         </label>
+                                    </div>
 
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <button 
+                                            type="button"
+                                            onClick={handleOpenPrintableReport} 
+                                            className="px-3 py-1.5 bg-purple-950/80 hover:bg-purple-900/90 text-purple-300 font-semibold border border-purple-700/60 rounded-xl transition-all flex items-center gap-1.5 text-xs shadow-sm hover:shadow-purple-950/50 active:scale-95 cursor-pointer select-none" 
+                                            title="Згенерувати офіційне бойове донесення у форматі A4 для друку або збереження в PDF"
+                                        >
+                                            <Icon name="printer" className="w-3.5 h-3.5 text-purple-400" /> 
+                                            <span>Доповідь (A4 / PDF)</span>
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            onClick={handleExportAnalyticsText} 
+                                            className="px-3 py-1.5 bg-blue-950/80 hover:bg-blue-900/90 text-blue-300 font-semibold border border-blue-700/60 rounded-xl transition-all flex items-center gap-1.5 text-xs shadow-sm hover:shadow-blue-950/50 active:scale-95 cursor-pointer select-none" 
+                                            title="Згенерувати текстовий звіт в буфер обміну"
+                                        >
+                                            <Icon name="file-text" className="w-3.5 h-3.5 text-blue-400" /> 
+                                            <span>Звіт (Текст)</span>
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            onClick={handleExportAnalyticsExcel} 
+                                            className="px-3 py-1.5 bg-emerald-950/80 hover:bg-emerald-900/90 text-emerald-300 font-semibold border border-emerald-700/60 rounded-xl transition-all flex items-center gap-1.5 text-xs shadow-sm hover:shadow-emerald-950/50 active:scale-95 cursor-pointer select-none" 
+                                            title="Експорт аналітики: 6 аркушів Excel"
+                                        >
+                                            <Icon name="table" className="w-3.5 h-3.5 text-emerald-400" /> 
+                                            <span>Експорт (Excel)</span>
+                                        </button>
                                     </div>
 
                                     <button 
@@ -6155,7 +6191,7 @@ const MedicalApp = (function() {
                                                         <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none transition" />
                                                     </div>
                                                     <div>
-                                                        <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5 flex items-center gap-1.5">
+                                                        <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider mb-1.5 flex items-center gap-1.5">
                                                             <Icon name="crosshair" className="w-3.5 h-3.5 text-amber-400" />
                                                             <span>Статус зброї</span>
                                                         </label>
@@ -6724,7 +6760,7 @@ const MedicalApp = (function() {
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 {/* Стара назва */}
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block flex items-center justify-between">
+                                                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
                                                         <span>Стара назва (Що замінити)</span>
                                                         <span className="text-[10px] text-amber-400 font-mono font-normal">У базі: {batchAvailableOldValues.length}</span>
                                                     </label>
@@ -6753,7 +6789,7 @@ const MedicalApp = (function() {
 
                                                 {/* Нова назва */}
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block flex items-center justify-between">
+                                                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
                                                         <span>Нова назва (На що замінити)</span>
                                                         <span className="text-[10px] text-emerald-400 font-mono font-normal">Нове значення</span>
                                                     </label>
@@ -7355,10 +7391,24 @@ const MedicalApp = (function() {
                                     </button>
                                 </div>
                                 <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs sm:text-sm">
-                                    {/* 15.10.2026 */}
+                                    {/* 26.10.2026 */}
                                     <div className="relative pl-5 border-l-2 border-amber-500 space-y-2">
                                         <div className="flex items-center justify-between">
-                                            <span className="font-bold text-amber-400 font-mono text-sm">⚡ v3.6.4 (Відновлення ручного введення дати/часу та оптимізація фокусу полів)</span>
+                                            <span className="font-bold text-amber-400 font-mono text-sm">⚡ v3.6.5 (Прямий перехід до HUB, стабілізація табів аналітики & ергономіка)</span>
+                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">26.10.2026</span>
+                                        </div>
+                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
+                                            <li><strong className="text-white">Прямий перехід до HUB («🏠 HUB»):</strong> У командну шапку додано тактичну кнопку швидкого повернення до Єдиного Центру Управління комплексу в один клік.</li>
+                                            <li><strong className="text-white">Стабілізація таб-бару аналітики:</strong> Дії експорту («Доповідь A4/PDF», «Звіт Текст», «Експорт Excel») перенесено у внутрішню панель фільтрів аналітики, що повністю ліквідувало зсув, стискання та появу скролбару на табах шапки.</li>
+                                            <li><strong className="text-white">Швидке повернення нагору («▲ Нагору»):</strong> Додано плаваючу кнопку, яка плавно з'являється при скролі довгих реєстрів (понад 300px) та моментально повертає на початок сторінки.</li>
+                                            <li><strong className="text-white">Спокійні індикатори статусу:</strong> Прибрано пульсацію <code>animate-pulse</code> з індикатора зв'язку з диском та точки черги евакуації для зниження навантаження на зір під час нічних чергувань.</li>
+                                        </ul>
+                                    </div>
+
+                                    {/* 15.10.2026 */}
+                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-bold text-slate-300 font-mono text-sm">⚡ v3.6.4 (Відновлення ручного введення дати/часу та оптимізація фокусу полів)</span>
                                             <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">15.10.2026</span>
                                         </div>
                                         <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
@@ -7570,6 +7620,20 @@ const MedicalApp = (function() {
                             </div>
                         </div>
                     )}
+
+                    {/* Плаваюча кнопка швидкого повернення нагору */}
+                    <button 
+                        id="btn-scroll-top" 
+                        type="button" 
+                        onClick={() => {
+                            const scroller = document.querySelector('[data-suite-module="med"]') || window;
+                            scroller.scrollTo({ top: 0, behavior: 'smooth' });
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }} 
+                        title="Повернутися нагору (Top)"
+                    >
+                        ▲
+                    </button>
                 </div>
             );
         }

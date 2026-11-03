@@ -27,7 +27,7 @@ const { chromium } = require('playwright');
         });
         await page.reload();
         await openMedical();
-        assert.equal(await page.getByRole('checkbox', { name: "Об'єднати групи", exact: true }).count(), 0);
+        assert.equal(await page.getByRole('checkbox', { name: "Об'єднати групи", exact: true }).count(), 1);
         const snapshot = () => page.evaluate(async () => JSON.stringify({ episodes: await localforage.getItem('med_episodes_v3'), people: await localforage.getItem('med_soldiers_v3') }));
         const before = await snapshot();
         const chart = id => page.evaluate(id => {

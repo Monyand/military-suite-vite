@@ -12,7 +12,10 @@ const { createHarness } = require('./suite-backup-unit.cjs');
         const page = await context.newPage(); page.setDefaultTimeout(20000);
         const errors = []; page.on('pageerror', error => errors.push(error.message));
         const top = name => page.getByRole('button', { name, exact: true }).first().click();
-        const ready = () => page.getByRole('heading', { name: 'Стрічка подій', exact: true }).waitFor();
+        const ready = () => Promise.race([
+            page.getByRole('heading', { name: 'Стрічка подій', exact: true }).waitFor(),
+            page.locator('#document-journal').waitFor()
+        ]);
         const store = () => page.evaluate(() => localforage.getItem('document_journal_v1'));
         await page.goto(process.env.SUITE_TEST_URL || 'http://127.0.0.1:5173'); await ready(); await top('Статус позицій');
         const scope = page.locator('#document-journal'), dialog = page.getByRole('dialog');

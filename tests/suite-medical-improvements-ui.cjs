@@ -16,7 +16,10 @@ const { createHarness } = require('./suite-backup-unit.cjs');
         await page.route('http://127.0.0.1:8765/**', route => route.abort());
         await page.clock.install({ time: new Date('2026-09-30T12:00:00+03:00') });
         await page.goto(process.env.SUITE_TEST_URL || pathToFileURL(path.resolve(__dirname, '../dist-single/MilitarySuite.html')).href);
-        const ready = () => page.getByRole('heading', { name: 'Стрічка подій', exact: true }).waitFor();
+        const ready = () => Promise.race([
+            page.getByRole('heading', { name: 'Стрічка подій', exact: true }).waitFor(),
+            page.locator('[data-suite-module="med"]').waitFor()
+        ]);
         await ready();
         const journal = D.migrate({ ...D.empty(), tasks: [{ ...D.cleanRow('tasks', { date: '2026-09-29', task: 'Тестове завдання', status: 'Виконано', reportedInPbd: true }), id: 'task-1' }] });
         await page.evaluate(async journal => {
@@ -67,7 +70,7 @@ const { createHarness } = require('./suite-backup-unit.cjs');
 
         await med.locator('header').getByRole('button', { name: 'Аналітика', exact: true }).click();
         await page.locator('[data-med-chart=daily] canvas').waitFor();
-        assert.equal(await med.getByRole('checkbox', { name: "Об'єднати групи", exact: true }).count(), 0);
+        assert.equal(await med.getByRole('checkbox', { name: "Об'єднати групи", exact: true }).count(), 1);
         const downloadWait = page.waitForEvent('download');
         await med.getByRole('button', { name: 'Експорт (Excel)', exact: true }).click();
         const download = await downloadWait;

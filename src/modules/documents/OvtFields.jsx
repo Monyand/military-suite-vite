@@ -22,7 +22,7 @@ export function OvtFields({ draft: source, setDraft, rows, modelOptions, busy })
         setDraft(prepareOvtDraft(next));
     };
     const field = (key, title, { type = 'text', choices, wide = false, required = false } = {}) => {
-        if (choices === undefined) choices = key === 'position' ? options('docPlaces', rows.map(row => row.position), draft.position) : key === 'nomenclature' ? modelOptions : lists[key] ? ovtTemplateOptions(templates, lists[key], draft) : null;
+        if (choices === undefined) choices = key === 'position' ? options('docPlaces', rows.map(row => row.position), draft.position) : key === 'nomenclature' && !isTransport ? modelOptions : lists[key] ? ovtTemplateOptions(templates, lists[key], draft) : null;
         const id = 'ovt-field-' + key;
         return <label key={key} className={'ovt-field' + (wide ? ' ovt-wide' : '')}>
             <span>{title}{required ? ' *' : ''}</span>
