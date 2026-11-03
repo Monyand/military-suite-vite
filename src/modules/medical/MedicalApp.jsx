@@ -2734,7 +2734,7 @@ const MedicalApp = (function() {
                         <span style="color:#64748b;">(з них ПВР: <b style="color:#475569;">${count200PVR}</b>)</span>
                     </div>
                 </div>
-                <div class="summary-card" style="border-left: 3px solid #dc2626;">
+                <div class="summary-card">
                     <div class="label" style="color: #dc2626;">Поранені (300)</div>
                     <div class="value" id="card-val-300" style="color: #dc2626;">${count300}</div>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 2px 6px; font-size:7.5pt; margin-top:4px; padding-top:3px; border-top:1px solid #e2e8f0;">
@@ -2749,7 +2749,7 @@ const MedicalApp = (function() {
                     <div class="value" id="card-val-mia" style="color: #2563eb;">${countMIA}</div>
                     <div class="sub">Місцезнаходження невідоме</div>
                 </div>
-                <div class="summary-card" style="border-left: 3px solid #16a34a;">
+                <div class="summary-card">
                     <div class="label" style="color: #16a34a;">Евакуйовано (з актуальних)</div>
                     <div class="value" style="color: #16a34a;">${evac300 + evac200}</div>
                     <div style="display:flex; justify-content:space-between; font-weight:600; font-size:8pt; color:#334155; margin-top:4px; padding-top:3px; border-top:1px solid #e2e8f0;">
@@ -3013,13 +3013,13 @@ const MedicalApp = (function() {
 
                         var causeEntries = Object.entries(causeCounts).sort(function(a, b) { return b[1] - a[1]; });
                         var causeHtml = causeEntries.length > 0
-                            ? causeEntries.map(function(pair) { return '<tr><td>' + pair[0] + '</td><td style="text-align:right; font-weight:bold; font-family:\'JetBrains Mono\', monospace;">' + pair[1] + '</td></tr>'; }).join('')
+                            ? causeEntries.map(function(pair) { return '<tr><td>' + pair[0] + '</td><td style="text-align:right; font-weight:bold; font-family:JetBrains Mono, monospace;">' + pair[1] + '</td></tr>'; }).join('')
                             : '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">Дані відсутні</td></tr>';
                         var tbCauses = doc.getElementById('tbody-causes'); if (tbCauses) tbCauses.innerHTML = causeHtml;
 
                         var unitEntries = Object.entries(unitCounts).sort(function(a, b) { return b[1] - a[1]; });
                         var unitHtml = unitEntries.length > 0
-                            ? unitEntries.map(function(pair) { return '<tr><td>' + pair[0] + '</td><td style="text-align:right; font-weight:bold; font-family:\'JetBrains Mono\', monospace;">' + pair[1] + '</td></tr>'; }).join('')
+                            ? unitEntries.map(function(pair) { return '<tr><td>' + pair[0] + '</td><td style="text-align:right; font-weight:bold; font-family:JetBrains Mono, monospace;">' + pair[1] + '</td></tr>'; }).join('')
                             : '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">Дані відсутні</td></tr>';
                         var tbUnits = doc.getElementById('tbody-units'); if (tbUnits) tbUnits.innerHTML = unitHtml;
                     };
@@ -5573,7 +5573,6 @@ const MedicalApp = (function() {
                                     </div>
 
                                     <div className="bg-tactical-950/60 border border-tactical-800 rounded-xl p-5 shadow-sm lg:col-span-6 flex flex-col relative overflow-hidden group">
-                                        <div className="absolute top-0 left-0 w-1 h-full bg-cyan-500"></div>
                                         <div className="flex items-center gap-2 mb-4">
                                             <div className="p-1.5 bg-cyan-950/50 rounded-lg"><Icon name="truck" className="w-4 h-4 text-cyan-400" /></div>
                                             <h3 className="font-bold text-white text-sm">Розширений звіт з евакуації за період</h3>

@@ -36,16 +36,16 @@
       "previousSha256": "9fd9303e0db60d5a4d802933489df25d94052b083d90d1e56798c8890a475dfd"
     },
     "modules/medical/MedicalApp.jsx": {
-      "date": "2026-10-28",
-      "reason": "Sync with Облік втрат.html v3.6.5: Direct transition to HUB, analytics tab bar stabilization, scroll-to-top ergonomics, calm status indicators.",
-      "sha256": "a3c4398f80fdf56c34237c882662734c6d5f39898f80d733315ff8e9c5833f87",
-      "previousSha256": "42b6d6570d3733f2073369e636514b4f6b21f2f4b967f2f00674ece8e333bb41"
+      "date": "2026-11-03",
+      "reason": "Impeccable distillation: remove artificial decorative cyan card side-stripe, normalize printable summary cards and design token fonts.",
+      "sha256": "2f3ebf373b4e5857387679cfe60ff1ceb7c33d8fb04081ed8e101082bf451aa2",
+      "previousSha256": "53ce99015c6d43f9f1d197618636432e304e6586aff9d0c30b209b31997ea09c"
     },
     "modules/events/EventsApp.jsx": {
       "date": "2026-11-03",
-      "reason": "Add Danger Zone database clearing for enemy events and personnel records with rollback snapshot.",
-      "sha256": "432b734cb6d533f820c30650cb0dbbf2e71494dd5be9fa4464043b53affb10f1",
-      "previousSha256": "b888d1702410d73d562dcbcf9daf336bdea301335314f64f36c060dfc5ab87ba"
+      "reason": "Add Danger Zone database clearing for enemy events and personnel records with rollback snapshot; Impeccable distillation, hardening, keyboard accelerators (N, /) and a11y labels.",
+      "sha256": "a8bfeed5798c7707bb65ac00ca348abcc88c7e5ec9e02431fed41b67d098cc2a",
+      "previousSha256": "24445ab13ca9efc241db80ed1df19972c1b68d49e8681da8f4a7f158416bd002"
     },
     "app/App.jsx": {
       "date": "2026-10-28",

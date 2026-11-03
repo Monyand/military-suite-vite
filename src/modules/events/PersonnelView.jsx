@@ -94,10 +94,10 @@ export const PersonnelView = ({ personnel, savePersonnel, showToast, Icon, gener
                                 {p.notes && <div className="text-xs text-slate-500 mt-1 italic">{p.notes}</div>}
                             </div>
                             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
-                                <button onClick={() => { setEditingId(p.id); setFormData({ callsign: p.callsign, status: p.status, notes: p.notes || '' }); }} className="p-2 text-slate-400 hover:text-amber-400 hover:bg-amber-400/10 rounded-lg">
+                                <button type="button" aria-label="Редагувати запис" title="Редагувати" onClick={() => { setEditingId(p.id); setFormData({ callsign: p.callsign, status: p.status, notes: p.notes || '' }); }} className="p-2 text-slate-400 hover:text-amber-400 hover:bg-amber-400/10 rounded-lg">
                                     <Icon name="edit-2" className="w-4 h-4" />
                                 </button>
-                                <button onClick={() => handleDelete(p.id)} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg">
+                                <button type="button" aria-label="Видалити запис" title="Видалити" onClick={() => handleDelete(p.id)} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg">
                                     <Icon name="trash-2" className="w-4 h-4" />
                                 </button>
                             </div>

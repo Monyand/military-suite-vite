@@ -86,7 +86,8 @@ const EventsApp = (function() {
         };
         const formatDateUA = (iso) => {
             if (!iso) return '';
-            const [y, m, d] = iso.split('-');
+            const [y, m, d] = String(iso).split('-');
+            if (!y || !m || !d) return String(iso);
             return `${d}.${m}.${y}`;
         };
         const getEventDateStr = (ev) => ev?.actionDetails?.startDate || (ev?.createdAt ? window.SuiteDates.localISO(new Date(ev.createdAt)) : '');
@@ -106,8 +107,9 @@ const EventsApp = (function() {
             if (!isoStr) return '';
             try {
                 const d = new Date(isoStr);
+                if (isNaN(d.getTime())) return String(isoStr);
                 return `${pad2(d.getDate())}.${pad2(d.getMonth()+1)}.${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
-            } catch { return isoStr; }
+            } catch { return String(isoStr); }
         };
 
         const LOSS_SERIES = [
@@ -1108,11 +1110,9 @@ const EventsApp = (function() {
                             ? 'bg-red-950/30 border-2 border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.35)] animate-pulse' 
                             : 'bg-slate-900/85 border border-slate-800 hover:border-slate-600'
                     }`}>
-                        <div className={`absolute top-0 left-0 w-1.5 h-full ${isUnclosedAssault ? 'bg-red-500 animate-pulse' : 'bg-gradient-to-b from-amber-500 to-red-600'}`}></div>
-
                         {/* Попередження про незакритий ШД */}
                         {isUnclosedAssault && (
-                            <div className="flex flex-wrap items-center justify-between gap-2 bg-red-900/70 border border-red-500/80 rounded-xl px-3.5 py-2 text-xs text-red-100 font-bold ml-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2 bg-red-900/70 border border-red-500/80 rounded-xl px-3.5 py-2 text-xs text-red-100 font-bold">
                                 <div className="flex items-center gap-2.5">
                                     <span className="relative flex h-3 w-3 shrink-0">
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -1127,7 +1127,7 @@ const EventsApp = (function() {
                         )}
 
                         {/* Верхній ряд: Дата/Час, Типи подій, Дії */}
-                        <div className="flex flex-wrap items-center justify-between gap-3 pl-2">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
                             <div className="flex flex-wrap items-center gap-2">
                                 <div className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 px-2.5 py-1 rounded-lg">
                                     <Icon name="calendar" className="w-3.5 h-3.5 text-amber-500" />
@@ -1163,13 +1163,13 @@ const EventsApp = (function() {
                             {/* Кнопки дій */}
                             <div className="flex flex-wrap items-center gap-1.5">
                                 {isAssault && <button type="button" aria-label={`Доповідь ШД ${event.id}`} disabled={!isCompletedAssault(event)} onClick={() => onReport(event)} title={isCompletedAssault(event) ? 'Сформувати чернетку позатермінового донесення' : 'Спочатку вкажіть коректний час завершення ШД'} className="px-2.5 py-1.5 bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 rounded-lg transition border border-amber-700/60 text-xs font-semibold flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"><Icon name="file-text" className="w-4 h-4" />Доповідь</button>}
-                                <button onClick={() => onView(event)} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-blue-400 rounded-lg transition border border-slate-700" title="Переглянути деталі">
+                                <button type="button" aria-label="Переглянути деталі" onClick={() => onView(event)} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-blue-400 rounded-lg transition border border-slate-700" title="Переглянути деталі">
                                     <Icon name="eye" className="w-4 h-4" />
                                 </button>
-                                <button onClick={() => onEdit(event)} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-400 rounded-lg transition border border-slate-700" title="Редагувати">
+                                <button type="button" aria-label="Редагувати подію" onClick={() => onEdit(event)} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-400 rounded-lg transition border border-slate-700" title="Редагувати">
                                     <Icon name="edit" className="w-4 h-4" />
                                 </button>
-                                <button onClick={() => onDelete(event.id)} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-red-400 rounded-lg transition border border-slate-700" title="Видалити">
+                                <button type="button" aria-label="Видалити подію" onClick={() => onDelete(event.id)} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-red-400 rounded-lg transition border border-slate-700" title="Видалити">
                                     <Icon name="trash-2" className="w-4 h-4" />
                                 </button>
                             </div>
@@ -1177,11 +1177,11 @@ const EventsApp = (function() {
 
                         {/* Тактичний контекстний рядок: Локації, Підрозділи, Сили */}
                         {(docLoc || factLoc || direction || position || conductedBy || friendlyCount > 0 || enemySize > 0 || hasVehicles) && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 text-xs ml-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 text-xs">
                                 {(factLoc || docLoc) && (
-                                    <div className="flex items-start gap-1.5 truncate">
+                                    <div className="flex items-start gap-1.5 min-w-0">
                                         <Icon name="map-pin" className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-                                        <div className="truncate">
+                                        <div className="min-w-0 truncate">
                                             <span className="text-slate-500 font-semibold block text-[10px] uppercase">Локація</span>
                                             <span className="text-slate-200 font-medium">{factLoc || docLoc}</span>
                                             {factLoc && docLoc && factLoc !== docLoc && <span className="text-slate-400 text-[10px] ml-1">({docLoc})</span>}
@@ -1189,27 +1189,27 @@ const EventsApp = (function() {
                                     </div>
                                 )}
                                 {(direction || position) && (
-                                    <div className="flex items-start gap-1.5 truncate">
+                                    <div className="flex items-start gap-1.5 min-w-0">
                                         <Icon name="navigation" className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
-                                        <div className="truncate">
+                                        <div className="min-w-0 truncate">
                                             <span className="text-slate-500 font-semibold block text-[10px] uppercase">Напрямок / Позиція</span>
                                             <span className="text-slate-200 font-medium">{direction || position}</span>
                                         </div>
                                     </div>
                                 )}
                                 {conductedBy && (
-                                    <div className="flex items-start gap-1.5 truncate">
+                                    <div className="flex items-start gap-1.5 min-w-0">
                                         <Icon name="shield" className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                                        <div className="truncate">
+                                        <div className="min-w-0 truncate">
                                             <span className="text-slate-500 font-semibold block text-[10px] uppercase">Хто проводив</span>
                                             <span className="text-slate-200 font-medium">{conductedBy}</span>
                                         </div>
                                     </div>
                                 )}
                                 {(friendlyCount > 0 || enemySize > 0 || hasVehicles) && (
-                                    <div className="flex items-start gap-1.5 truncate">
-                                        <Icon name="users" className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
-                                        <div className="truncate">
+                                    <div className="flex items-start gap-1.5 min-w-0">
+                                        <Icon name="users" className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                                        <div className="min-w-0 truncate">
                                             <span className="text-slate-500 font-semibold block text-[10px] uppercase">Сили сторін</span>
                                             <span className="text-slate-300 font-medium">
                                                 {friendlyCount > 0 && <span className="text-blue-300 mr-2">Наші: {friendlyCount}</span>}
@@ -1223,11 +1223,11 @@ const EventsApp = (function() {
                         )}
 
                         {/* Підсумок втрат сторін */}
-                        <div className="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between pl-2 pt-1 border-t border-slate-800/60">
+                        <div className="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between pt-1 border-t border-slate-800/60">
                             <div className="flex flex-wrap gap-1.5 items-center">
                                 {totalE200 > 0 && <div className="bg-red-950/50 border border-red-900/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-xs"><Icon name="skull" className="w-3.5 h-3.5 text-red-500"/> <span className="text-slate-300">200:</span><b className="text-red-400 font-mono">{totalE200}</b></div>}
                                 {totalE200Unc > 0 && <div className="bg-rose-950/50 border border-rose-900/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-xs"><Icon name="help-circle" className="w-3.5 h-3.5 text-rose-400"/> <span className="text-slate-300">200*:</span><b className="text-rose-300 font-mono">{totalE200Unc}</b></div>}
-                                {totalE200Disc > 0 && <div className="bg-purple-950/50 border border-purple-900/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-xs"><Icon name="eye" className="w-3.5 h-3.5 text-purple-400"/> <span className="text-slate-300">Вияв:</span><b className="text-purple-300 font-mono">{totalE200Disc}</b></div>}
+                                {totalE200Disc > 0 && <div className="bg-coyote-600/10 border border-coyote-500/30 px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-xs"><Icon name="eye" className="w-3.5 h-3.5 text-coyote-400"/> <span className="text-slate-300">Вияв:</span><b className="text-coyote-400 font-mono">{totalE200Disc}</b></div>}
                                 {totalE300 > 0 && <div className="bg-amber-950/50 border border-amber-900/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-xs"><Icon name="activity" className="w-3.5 h-3.5 text-amber-500"/> <span className="text-slate-300">300:</span><b className="text-amber-400 font-mono">{totalE300}</b></div>}
                                 {totalPOW > 0 && <div className="bg-emerald-950/50 border border-emerald-900/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-xs"><Icon name="users" className="w-3.5 h-3.5 text-emerald-500"/> <span className="text-slate-300">Полон:</span><b className="text-emerald-400 font-mono">{totalPOW}</b></div>}
                                 {totalE200 + totalE200Unc + totalE200Disc + totalE300 + totalPOW === 0 && (
@@ -1249,7 +1249,7 @@ const EventsApp = (function() {
 
                         {/* Деталізація уражень з часовими мітками */}
                         {event.enemyLosses && event.enemyLosses.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 pl-2 text-xs">
+                            <div className="flex flex-wrap gap-1.5 text-xs">
                                 {event.enemyLosses.map((l, idx) => (
                                     <div key={idx} className="bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-300 flex items-center gap-1.5">
                                         {l.time && <span className="font-mono text-amber-300 font-bold bg-amber-950/60 px-1 rounded border border-amber-900/50">{l.time}</span>}
@@ -1270,7 +1270,7 @@ const EventsApp = (function() {
                                         <span className="font-mono text-slate-400 ml-1">
                                             {l.count200 > 0 && <span className="text-red-400 mr-1">200:{l.count200}</span>}
                                             {l.count200Unconfirmed > 0 && <span className="text-rose-400 mr-1">200*:{l.count200Unconfirmed}</span>}
-                                            {l.count200Discovered > 0 && <span className="text-purple-400 mr-1">Вияв:{l.count200Discovered}</span>}
+                                            {l.count200Discovered > 0 && <span className="text-coyote-400 mr-1">Вияв:{l.count200Discovered}</span>}
                                             {l.count300 > 0 && <span className="text-amber-400 mr-1">300:{l.count300}</span>}
                                             {l.count200POW > 0 && <span className="text-rose-500 mr-1" title="200 з полонених">200(п):{l.count200POW}</span>}
                                             {l.countPOW > 0 && <span className="text-emerald-400">Полон:{l.countPOW}</span>}
@@ -1282,7 +1282,13 @@ const EventsApp = (function() {
 
                         {/* Текст опису */}
                         {event.description && (
-                            <div className="text-xs text-slate-300 bg-slate-950/50 border border-slate-800/80 rounded-lg p-2.5 ml-2 leading-relaxed whitespace-pre-wrap line-clamp-2 hover:line-clamp-none transition-all">
+                            <div 
+                                tabIndex={0}
+                                role="region"
+                                aria-label="Опис події"
+                                title="Натисніть або наведіть для перегляду повного тексту"
+                                className="text-xs text-slate-300 bg-slate-950/50 border border-slate-800/80 rounded-lg p-2.5 leading-relaxed whitespace-pre-wrap break-words line-clamp-2 hover:line-clamp-none focus:line-clamp-none focus:outline-none focus:ring-1 focus:ring-amber-500/50 transition-all cursor-pointer"
+                            >
                                 <span className="text-slate-500 font-semibold uppercase text-[10px] block mb-0.5">Опис події:</span>
                                 {event.description}
                             </div>
@@ -1324,6 +1330,29 @@ const EventsApp = (function() {
                 const [query, setQuery] = useState('');
                 const [weaponFilter, setWeaponFilter] = useState('all');
                 const [onlyWithLosses, setOnlyWithLosses] = useState(false);
+                const searchInputRef = useRef(null);
+
+                useEffect(() => {
+                    const handleKeyDown = (e) => {
+                        const inInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
+                        if (e.key === 'Escape') {
+                            if (inInput) {
+                                document.activeElement.blur();
+                            }
+                            return;
+                        }
+                        if (inInput) return;
+                        if (e.key === '/' || e.key === '?') {
+                            e.preventDefault();
+                            searchInputRef.current?.focus();
+                        } else if (e.key === 'n' || e.key === 'N' || e.key === 'т' || e.key === 'Т') {
+                            e.preventDefault();
+                            setIsFormOpen(true);
+                        }
+                    };
+                    window.addEventListener('keydown', handleKeyDown);
+                    return () => window.removeEventListener('keydown', handleKeyDown);
+                }, [setIsFormOpen]);
 
                 const resetFilters = () => {
                     setFilterType('all');
@@ -1399,7 +1428,7 @@ const EventsApp = (function() {
                                         <span className="text-xs text-slate-400 font-semibold uppercase">Пошук</span>
                                         <div className="relative">
                                             <Icon name="search" className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5 pointer-events-none" />
-                                            <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Опис, позивний, зброя..." className="w-full bg-slate-950 border border-slate-700 rounded-lg pl-8 pr-2 py-1.5 text-sm text-slate-200 focus:border-amber-500" />
+                                            <input ref={searchInputRef} value={query} onChange={e=>setQuery(e.target.value)} placeholder="Опис, позивний, зброя..." className="w-full bg-slate-950 border border-slate-700 rounded-lg pl-8 pr-2 py-1.5 text-sm text-slate-200 focus:border-amber-500" />
                                         </div>
                                     </label>
                                     <label className="flex flex-col gap-1">
@@ -1468,7 +1497,7 @@ const EventsApp = (function() {
                                     <span>УПД: <strong className="text-slate-300">{udpsCount}</strong></span>
                                     <span className="text-red-400">200: {feedTotals.e200}</span>
                                     <span className="text-rose-400">200*: {feedTotals.e200u}</span>
-                                    <span className="text-purple-400">Вияв: {feedTotals.e200d}</span>
+                                    <span className="text-coyote-400">Вияв: {feedTotals.e200d}</span>
                                     <span className="text-amber-400">300: {feedTotals.e300}</span>
                                     <span className="text-emerald-400">Полон: {feedTotals.epow}</span>
                                 </div>
@@ -1479,6 +1508,15 @@ const EventsApp = (function() {
                                     <Icon name="clipboard-list" className="w-12 h-12 mb-3 text-slate-700" />
                                     <p className="text-lg font-medium">{events.length === 0 ? 'Подій ще немає' : 'Нічого не знайдено за фільтрами'}</p>
                                     <p className="text-sm">{events.length === 0 ? 'Натисніть "Додати подію", щоб розпочати облік.' : 'Змініть період або скиньте фільтри.'}</p>
+                                    {events.length > 0 && (
+                                        <button 
+                                            type="button" 
+                                            onClick={resetFilters} 
+                                            className="mt-3 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg border border-slate-700 transition"
+                                        >
+                                            Скинути фільтри
+                                        </button>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="flex flex-col gap-2">
@@ -1959,7 +1997,7 @@ const EventsApp = (function() {
                                         </div>
                                         <div className="flex flex-col items-center w-full md:w-auto">
                                             <div className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Співвідношення</div>
-                                            <div className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-red-500 whitespace-nowrap">1 : {ratio}</div>
+                                            <div className="text-5xl font-mono font-bold text-amber-400 whitespace-nowrap">1 : {ratio}</div>
                                         </div>
                                         <div className="text-center w-full md:w-auto">
                                             <div className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Втрати ворога</div>
@@ -1980,8 +2018,8 @@ const EventsApp = (function() {
                                                     <input type="checkbox" checked={include200Unc} onChange={e=>setInclude200Unc(e.target.checked)} className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500" />
                                                     200* (Ймовірно)
                                                 </label>
-                                                <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-purple-300 hover:text-purple-200 transition">
-                                                    <input type="checkbox" checked={include200Disc} onChange={e=>setInclude200Disc(e.target.checked)} className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-purple-500 focus:ring-purple-500" />
+                                                <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-coyote-400 hover:text-coyote-300 transition">
+                                                    <input type="checkbox" checked={include200Disc} onChange={e=>setInclude200Disc(e.target.checked)} className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-coyote-500 focus:ring-coyote-500" />
                                                     Виявлені 200
                                                 </label>
                                                 <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-300 hover:text-white transition">
@@ -2024,35 +2062,35 @@ const EventsApp = (function() {
                                     <span className="text-[11px] text-slate-400">💡 Натискайте на картку, щоб активувати/зняти тип у підрахунках нижче</span>
                                 </div>
                                 <div data-testid="discovered-total" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-2">
-                                    <div onClick={() => setStatsFilters(p => ({...p, e200: !p.e200}))} className={`cursor-pointer transition border p-4 rounded-xl text-center select-none ${statsFilters.e200 ? 'bg-red-950/20 border-red-900/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-slate-950/50 border-slate-800 opacity-50 hover:opacity-80'}`}>
+                                    <div onClick={() => setStatsFilters(p => ({...p, e200: !p.e200}))} className={`cursor-pointer transition border p-4 rounded-xl text-center select-none ${statsFilters.e200 ? 'bg-red-950/20 border-red-900/50' : 'bg-slate-950/50 border-slate-800 opacity-50 hover:opacity-80'}`}>
                                         <div className="flex items-center justify-center gap-1.5 mb-1">
                                             <input type="checkbox" checked={statsFilters.e200} readOnly className="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-red-500 pointer-events-none" />
                                             <div className="text-xs text-slate-400 uppercase font-semibold">200 (Вбито)</div>
                                         </div>
                                         <div className={`text-3xl font-bold font-mono ${statsFilters.e200 ? 'text-red-500' : 'text-slate-500'}`}>{stats.e200}</div>
                                     </div>
-                                    <div onClick={() => setStatsFilters(p => ({...p, e200u: !p.e200u}))} className={`cursor-pointer transition border p-4 rounded-xl text-center select-none ${statsFilters.e200u ? 'bg-rose-950/20 border-rose-900/50 shadow-[0_0_15px_rgba(244,63,94,0.15)]' : 'bg-slate-950/50 border-slate-800 opacity-50 hover:opacity-80'}`}>
+                                    <div onClick={() => setStatsFilters(p => ({...p, e200u: !p.e200u}))} className={`cursor-pointer transition border p-4 rounded-xl text-center select-none ${statsFilters.e200u ? 'bg-rose-950/20 border-rose-900/50' : 'bg-slate-950/50 border-slate-800 opacity-50 hover:opacity-80'}`}>
                                         <div className="flex items-center justify-center gap-1.5 mb-1">
                                             <input type="checkbox" checked={statsFilters.e200u} readOnly className="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-rose-500 pointer-events-none" />
                                             <div className="text-xs text-slate-400 uppercase font-semibold">200* (Ймов)</div>
                                         </div>
                                         <div className={`text-3xl font-bold font-mono ${statsFilters.e200u ? 'text-rose-400' : 'text-slate-500'}`}>{stats.e200u}</div>
                                     </div>
-                                    <div onClick={() => setStatsFilters(p => ({...p, e200d: !p.e200d}))} className={`cursor-pointer transition border p-4 rounded-xl text-center select-none ${statsFilters.e200d ? 'bg-purple-950/30 border-purple-800/60 shadow-[0_0_15px_rgba(168,85,247,0.2)]' : 'bg-slate-950/50 border-slate-800 opacity-50 hover:opacity-80'}`}>
+                                    <div onClick={() => setStatsFilters(p => ({...p, e200d: !p.e200d}))} className={`cursor-pointer transition border p-4 rounded-xl text-center select-none ${statsFilters.e200d ? 'bg-coyote-600/10 border-coyote-500/40' : 'bg-slate-950/50 border-slate-800 opacity-50 hover:opacity-80'}`}>
                                         <div className="flex items-center justify-center gap-1.5 mb-1">
-                                            <input type="checkbox" checked={statsFilters.e200d} readOnly className="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-purple-500 pointer-events-none" />
-                                            <div className="text-xs text-purple-300 uppercase font-semibold">Виявлені 200</div>
+                                            <input type="checkbox" checked={statsFilters.e200d} readOnly className="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-coyote-500 pointer-events-none" />
+                                            <div className="text-xs text-slate-400 uppercase font-semibold">Виявлені 200</div>
                                         </div>
-                                        <div data-testid="discovered-total-value" className={`text-3xl font-bold font-mono ${statsFilters.e200d ? 'text-purple-300' : 'text-slate-500'}`}>{stats.e200d}</div>
+                                        <div data-testid="discovered-total-value" className={`text-3xl font-bold font-mono ${statsFilters.e200d ? 'text-coyote-400' : 'text-slate-500'}`}>{stats.e200d}</div>
                                     </div>
-                                    <div onClick={() => setStatsFilters(p => ({...p, e300: !p.e300}))} className={`cursor-pointer transition border p-4 rounded-xl text-center select-none ${statsFilters.e300 ? 'bg-amber-950/20 border-amber-900/50 shadow-[0_0_15px_rgba(245,158,11,0.15)]' : 'bg-slate-950/50 border-slate-800 opacity-50 hover:opacity-80'}`}>
+                                    <div onClick={() => setStatsFilters(p => ({...p, e300: !p.e300}))} className={`cursor-pointer transition border p-4 rounded-xl text-center select-none ${statsFilters.e300 ? 'bg-amber-950/20 border-amber-900/50' : 'bg-slate-950/50 border-slate-800 opacity-50 hover:opacity-80'}`}>
                                         <div className="flex items-center justify-center gap-1.5 mb-1">
                                             <input type="checkbox" checked={statsFilters.e300} readOnly className="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-amber-500 pointer-events-none" />
                                             <div className="text-xs text-slate-400 uppercase font-semibold">300 (Поран)</div>
                                         </div>
                                         <div className={`text-3xl font-bold font-mono ${statsFilters.e300 ? 'text-amber-500' : 'text-slate-500'}`}>{stats.e300}</div>
                                     </div>
-                                    <div onClick={() => setStatsFilters(p => ({...p, epow: !p.epow}))} className={`cursor-pointer transition border p-4 rounded-xl text-center select-none ${statsFilters.epow ? 'bg-emerald-950/20 border-emerald-900/50 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-slate-950/50 border-slate-800 opacity-50 hover:opacity-80'}`}>
+                                    <div onClick={() => setStatsFilters(p => ({...p, epow: !p.epow}))} className={`cursor-pointer transition border p-4 rounded-xl text-center select-none ${statsFilters.epow ? 'bg-emerald-950/20 border-emerald-900/50' : 'bg-slate-950/50 border-slate-800 opacity-50 hover:opacity-80'}`}>
                                         <div className="flex items-center justify-center gap-1.5 mb-1">
                                             <input type="checkbox" checked={statsFilters.epow} readOnly className="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-emerald-500 pointer-events-none" />
                                             <div className="text-xs text-slate-400 uppercase font-semibold">Полонені</div>
@@ -2488,9 +2526,9 @@ const EventsApp = (function() {
                 <div class="label" style="color: #16a34a;">Полонені</div>
                 <div class="value" style="color: #16a34a;">${escapeHtml(epow)}</div>
             </div>
-            <div class="summary-card" style="border-left: 3px solid #8b5cf6;">
-                <div class="label" style="color: #8b5cf6;">Виявлені тіла</div>
-                <div class="value" style="color: #8b5cf6;">${escapeHtml(e200d)}</div>
+            <div class="summary-card" style="border-left: 3px solid #8c6833;">
+                <div class="label" style="color: #8c6833;">Виявлені тіла</div>
+                <div class="value" style="color: #8c6833;">${escapeHtml(e200d)}</div>
             </div>
             <div class="summary-card" style="border-left: 3px solid #f59e0b;">
                 <div class="label" style="color: #f59e0b;">Непідтв. (200*)</div>

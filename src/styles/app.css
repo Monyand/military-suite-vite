@@ -89,8 +89,8 @@ body, html { margin: 0; padding: 0; height: 100%; }
             cursor: crosshair !important;
         }
         body.target-mode-active .tactical-card:hover {
-            border-color: #6366f1 !important;
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.5) !important;
+            border-color: #f59e0b !important;
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.5) !important;
         }
 
         /* Modern View Transitions API cross-fade */

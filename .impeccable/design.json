@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-03T11:32:40.000Z",
+  "title": "Design System: Military Suite",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Olive Drab", "canonical": "#5c693a" },
+      "coyote": { "role": "secondary", "displayName": "Coyote Sand", "canonical": "#c5a365" },
+      "neutral-bg": { "role": "neutral", "displayName": "Deep Void Canvas", "canonical": "#020617" },
+      "neutral-surface": { "role": "neutral", "displayName": "Card Slate Surface", "canonical": "#0f172a" },
+      "neutral-subtle": { "role": "neutral", "displayName": "Menu Light Text", "canonical": "#e2e8f0" },
+      "neutral-light": { "role": "neutral", "displayName": "Pure White", "canonical": "#ffffff" },
+      "neutral-slate-600": { "role": "neutral", "displayName": "Muted Slate Stroke", "canonical": "#475569" },
+      "scrollbar-thumb": { "role": "neutral", "displayName": "Scrollbar Thumb Light", "canonical": "#8a8d86" },
+      "scrollbar-thumb-dark": { "role": "neutral", "displayName": "Scrollbar Thumb Dark", "canonical": "#44403c" },
+      "status-danger": { "role": "status", "displayName": "Operational Red", "canonical": "#dc2626" },
+      "status-warning": { "role": "status", "displayName": "Tactical Amber", "canonical": "#f59e0b" },
+      "status-friendly": { "role": "status", "displayName": "Friendly Blue", "canonical": "#3b82f6" },
+      "status-success": { "role": "status", "displayName": "POW Emerald", "canonical": "#10b981" },
+      "accent-cyan": { "role": "accent", "displayName": "Tactical Cyan Accent", "canonical": "#38bdf8" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Module title and top analytics summary." },
+      "body": { "displayName": "Body", "purpose": "Descriptions, logs, and form inputs." },
+      "label": { "displayName": "Label / Monospace", "purpose": "Coordinates, timestamps, and tally counters." },
+      "micro": { "displayName": "Micro", "purpose": "Badge counts and compact indicators." }
+    },
+    "shadows": [
+      { "name": "attention-glow", "value": "0 0 25px rgba(239, 68, 68, 0.35)", "purpose": "Focus glow for unclosed administrative events." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Default easing for panel transitions and hover states." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Event Card",
+      "kind": "card",
+      "refersTo": "card-event",
+      "description": "Tactical log entry card with metadata rows and monospace counters.",
+      "html": "<div class=\"p-4 rounded-2xl bg-slate-900/85 border border-slate-800 text-slate-100\"><span>Event Details</span></div>",
+      "css": ".event-card { background: rgba(15, 23, 42, 0.85); border: 1px solid #1e293b; border-radius: 16px; padding: 16px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Tactical Command Log",
+    "overview": "Military Suite is an administrative event log and reporting interface designed for high-density historical record-keeping, documentation, and reporting. The visual philosophy prioritizes immediate legibility, dark-adapted operational comfort, and rigorous tabular and card layout clarity.",
+    "keyCharacteristics": [
+      "High Information Density with structured tactical grids",
+      "Tonal Layering through Slate depth progression",
+      "Precision Monospace Metrics for timestamps and casualty totals",
+      "Calm Administrative Statuses without artificial AI gradients"
+    ],
+    "rules": [
+      { "name": "The Legibility First Rule", "body": "Loss ratios and key metric digits must always be rendered in solid high-contrast colors rather than gradient text.", "section": "colors" },
+      { "name": "The Tonal Layering Rule", "body": "Surfaces rely on dark tone progressions and 1px borders rather than ambient drop shadows.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do provide clear aria-label attributes on every icon-only button",
+      "Do format all dates, timestamps, ratios, and statistics with monospace typography",
+      "Do ensure all text color combinations meet WCAG AA contrast (4.5:1)"
+    ],
+    "donts": [
+      "Don't add decorative side-tab stripes (w-1, border-l-4) to cards",
+      "Don't use gradient text (bg-clip-text) on numerical values or statistics",
+      "Don't use purple/violet neon gradients on military administrative surfaces"
+    ]
+  }
+}
