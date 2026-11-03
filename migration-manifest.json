@@ -49,9 +49,9 @@
     },
     "app/App.jsx": {
       "date": "2026-11-03",
-      "reason": "Display top medical tab as 'Втрати о/с' while preserving 'Медична Евакуація' accessible name and cross-module HUB navigation.",
-      "sha256": "87237d1466cadb1240f323b21129131523286a83d48357a5a4ff720096dbac9a",
-      "previousSha256": "05c93fd062fbdb1ae0cbb60270d01b4ae70ad878f3b83ab9f2ee1e70f6c8508d"
+      "reason": "Display top medical tab as 'Наші втрати о/с' while preserving 'Медична Евакуація' accessible name; modernize top navbar with tactical iconography, segmented tabs, and consistent utility buttons.",
+      "sha256": "6d0a3d8f158c92e8c0e3542b1e8a7a576f2c071cfe0ce52991526576f419f969",
+      "previousSha256": "87237d1466cadb1240f323b21129131523286a83d48357a5a4ff720096dbac9a"
     },
     "modules/personnel/personnel.js": {
       "date": "2026-11-03",

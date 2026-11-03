@@ -144,25 +144,179 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
 
             return (
                 <div className="flex flex-col h-full w-full relative">
-                    <div className="shrink-0 h-14 bg-[#0f172a] border-b border-slate-800 flex items-center justify-between px-4 z-[9999] print:hidden shadow-md">
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className="font-bold text-amber-500 tracking-wider hidden xl:block shrink-0">MILITARY SUITE</div>
-                            <div className="flex bg-slate-950 rounded-lg overflow-x-auto whitespace-nowrap border border-slate-700 p-1 gap-1 min-w-0">
-                                <button disabled={restoreStarted} onClick={() => switchApp('enemy')} className={`px-4 py-1 text-sm font-bold rounded-md transition-all ${activeApp==='enemy'?'bg-amber-600 text-white':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Втрати Противника</button>
-                                <button aria-label="Медична Евакуація" title="Втрати о/с (медична евакуація)" disabled={restoreStarted} onClick={() => switchApp('med')} className={`px-4 py-1 text-sm font-bold rounded-md transition-all ${activeApp==='med'?'bg-rose-600 text-white':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Втрати о/с</button>
-                                <button disabled={restoreStarted} onClick={() => switchApp('tactical')} className={`px-4 py-1 text-sm font-bold rounded-md transition-all ${activeApp==='tactical'?'bg-indigo-600 text-white':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Журнал О/С</button>
-                                <button disabled={restoreStarted} onClick={() => switchApp('tasks')} className={`px-4 py-1 text-sm font-bold rounded-md transition-all ${activeApp==='tasks'?'bg-teal-600 text-white':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Завдання</button>
-                                <button disabled={restoreStarted} onClick={() => switchApp('ovt')} className={`px-4 py-1 text-sm font-bold rounded-md transition-all ${activeApp==='ovt'?'bg-amber-700 text-white':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Втрати ОВТ</button>
-                                <button disabled={restoreStarted} onClick={() => switchApp('positions')} className={`px-4 py-1 text-sm font-bold rounded-md transition-all ${activeApp==='positions'?'bg-emerald-600 text-white':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Статус позицій</button>
+                    <div className="shrink-0 h-14 bg-slate-900/95 backdrop-blur border-b border-slate-800 flex items-center justify-between px-3 md:px-4 z-[9999] print:hidden shadow-lg select-none">
+                        <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+                            <div className="flex items-center gap-2 shrink-0 pr-1">
+                                <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 shadow-sm">
+                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
+                                    </svg>
+                                </div>
+                                <div className="flex items-baseline gap-1.5 hidden xl:flex">
+                                    <span className="font-black text-amber-400 tracking-wider text-sm">MILITARY SUITE</span>
+                                    <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-500/15 text-amber-300 font-bold border border-amber-500/30">C2</span>
+                                </div>
                             </div>
+
+                            <nav aria-label="Головна навігація" className="flex bg-slate-950/80 rounded-xl overflow-x-auto whitespace-nowrap border border-slate-800 p-1 gap-1 min-w-0 shadow-inner">
+                                <button 
+                                    aria-label="Втрати Противника"
+                                    title="Втрати противника (журнал подій та боєзіткнень)" 
+                                    disabled={restoreStarted} 
+                                    onClick={() => switchApp('enemy')} 
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+                                        activeApp==='enemy'
+                                            ? 'bg-amber-600 text-white shadow-sm shadow-amber-950/60 border border-amber-400/40'
+                                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                                    }`}
+                                >
+                                    <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/>
+                                    </svg>
+                                    <span>Втрати Противника</span>
+                                </button>
+
+                                <button 
+                                    aria-label="Медична Евакуація" 
+                                    title="Наші втрати о/с (медична евакуація)" 
+                                    disabled={restoreStarted} 
+                                    onClick={() => switchApp('med')} 
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+                                        activeApp==='med'
+                                            ? 'bg-rose-600 text-white shadow-sm shadow-rose-950/60 border border-rose-400/40'
+                                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                                    }`}
+                                >
+                                    <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                                    </svg>
+                                    <span>Наші втрати о/с</span>
+                                </button>
+
+                                <button 
+                                    aria-label="Журнал О/С"
+                                    title="Журнал особового складу підрозділів" 
+                                    disabled={restoreStarted} 
+                                    onClick={() => switchApp('tactical')} 
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+                                        activeApp==='tactical'
+                                            ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-950/60 border border-indigo-400/40'
+                                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                                    }`}
+                                >
+                                    <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                    </svg>
+                                    <span>Журнал О/С</span>
+                                </button>
+
+                                <button 
+                                    aria-label="Завдання"
+                                    title="Журнал бойових розпоряджень та завдань" 
+                                    disabled={restoreStarted} 
+                                    onClick={() => switchApp('tasks')} 
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+                                        activeApp==='tasks'
+                                            ? 'bg-teal-600 text-white shadow-sm shadow-teal-950/60 border border-teal-400/40'
+                                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                                    }`}
+                                >
+                                    <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                                    </svg>
+                                    <span>Завдання</span>
+                                </button>
+
+                                <button 
+                                    aria-label="Втрати ОВТ"
+                                    title="Облік втрат озброєння та військової техніки" 
+                                    disabled={restoreStarted} 
+                                    onClick={() => switchApp('ovt')} 
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+                                        activeApp==='ovt'
+                                            ? 'bg-amber-700 text-white shadow-sm shadow-amber-950/60 border border-amber-500/40'
+                                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                                    }`}
+                                >
+                                    <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+                                    </svg>
+                                    <span>Втрати ОВТ</span>
+                                </button>
+
+                                <button 
+                                    aria-label="Статус позицій"
+                                    title="Статус та рубежі позицій" 
+                                    disabled={restoreStarted} 
+                                    onClick={() => switchApp('positions')} 
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+                                        activeApp==='positions'
+                                            ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/60 border border-emerald-400/40'
+                                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                                    }`}
+                                >
+                                    <svg className="w-3.5 h-3.5 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                                    </svg>
+                                    <span>Статус позицій</span>
+                                </button>
+                            </nav>
                         </div>
-                        <div className="flex gap-2 shrink-0 ml-2">
-                        <button aria-label="Перевірка даних" disabled={restoreStarted} onClick={() => setIntegrityOpen(true)} className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1.5 rounded-lg text-sm font-bold">Перевірка даних</button>
-                        <button aria-label="Спільні довідники" disabled={restoreStarted} onClick={() => setDictionariesOpen(true)} className="bg-teal-950 hover:bg-teal-900 text-teal-200 border border-teal-700 px-3 py-1.5 rounded-lg text-sm font-bold"><span className="hidden lg:inline">Спільні довідники</span><span className="lg:hidden">Довідники</span></button>
-                        <button aria-label="Створити Єдиний Бекап" onClick={() => openBackup('export')} className="bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-900/50 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2">
-                            <span className="hidden lg:inline">Створити Єдиний Бекап</span><span className="lg:hidden">Бекап</span>
-                        </button>
-                        <button aria-label="Відновити бекап" onClick={() => openBackup('import')} className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1.5 rounded-lg text-sm font-bold"><span className="hidden lg:inline">Відновити бекап</span><span className="lg:hidden">Відновити</span></button>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                            <button 
+                                aria-label="Перевірка даних" 
+                                title="Перевірка цілісності даних та зв'язків між записами"
+                                disabled={restoreStarted} 
+                                onClick={() => setIntegrityOpen(true)} 
+                                className="bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+                            >
+                                <svg className="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>
+                                </svg>
+                                <span className="hidden sm:inline">Перевірка даних</span>
+                            </button>
+
+                            <button 
+                                aria-label="Спільні довідники" 
+                                title="Спільні довідники підрозділів, звань та правил замін"
+                                disabled={restoreStarted} 
+                                onClick={() => setDictionariesOpen(true)} 
+                                className="bg-teal-950/50 hover:bg-teal-900/70 text-teal-200 hover:text-white border border-teal-800/60 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+                            >
+                                <svg className="w-3.5 h-3.5 text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                                </svg>
+                                <span className="hidden lg:inline">Спільні довідники</span>
+                                <span className="lg:hidden hidden sm:inline">Довідники</span>
+                            </button>
+
+                            <div className="h-4 w-[1px] bg-slate-800 hidden sm:block mx-0.5" aria-hidden="true" />
+
+                            <button 
+                                aria-label="Створити Єдиний Бекап" 
+                                title="Створити єдиний зашифрований бекап бази даних (AES-256-GCM)"
+                                onClick={() => openBackup('export')} 
+                                className="bg-amber-950/30 hover:bg-amber-900/50 text-amber-300 hover:text-amber-100 border border-amber-700/50 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+                            >
+                                <svg className="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                <span className="hidden lg:inline">Створити Єдиний Бекап</span>
+                                <span className="lg:hidden hidden sm:inline">Бекап</span>
+                            </button>
+
+                            <button 
+                                aria-label="Відновити бекап" 
+                                title="Відновити базу даних із зашифрованого файлу бекапу"
+                                onClick={() => openBackup('import')} 
+                                className="bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+                            >
+                                <svg className="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                                <span className="hidden lg:inline">Відновити бекап</span>
+                                <span className="lg:hidden hidden sm:inline">Відновити</span>
+                            </button>
                         </div>
                     </div>
                     <div id="suite-content" className="flex-1 min-h-0 min-w-0 relative bg-slate-950 overflow-hidden">
