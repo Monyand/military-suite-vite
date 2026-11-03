@@ -660,7 +660,7 @@ const EventsApp = (function() {
 
                 return (
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-[1920px] shadow-2xl flex flex-col max-h-[90vh]">
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh]">
                             <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-900/50 rounded-t-2xl sticky top-0 z-10">
                                 <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
                                     <Icon name={eventToEdit ? "edit" : "plus-circle"} className="w-5 h-5 text-amber-500" />
@@ -791,65 +791,76 @@ const EventsApp = (function() {
                                             Немає записів про втрати ворога. Натисніть "Додати ураження".
                                         </div>
                                     ) : (
-                                        <div className="space-y-2">
+                                        <div className="space-y-2.5">
                                             {formData.enemyLosses.map((loss, idx) => (
-                                                <div key={loss.id} className="flex flex-col bg-slate-950 p-3 rounded-xl border border-slate-800/80 gap-3">
+                                                <div key={loss.id} className="flex flex-col bg-slate-950/80 p-3 rounded-xl border border-slate-800/80 gap-2.5">
                                                     
-                                                    {/* Верхній ряд: Зброя, Хто наносив, Позивний, Час ураження */}
-                                                    <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 gap-3">
+                                                    {/* Шапка ураження з кнопкою видалення */}
+                                                    <div className="flex items-center justify-between pb-1.5 border-b border-slate-800/60">
+                                                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                                            <Icon name="crosshair" className="w-3.5 h-3.5 text-red-400" />
+                                                            Ураження #{idx + 1}
+                                                        </span>
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={() => removeEnemyLoss(loss.id)} 
+                                                            className="text-slate-400 hover:text-red-400 p-1 hover:bg-red-950/40 rounded-lg transition" 
+                                                            title="Видалити ураження"
+                                                        >
+                                                            <Icon name="trash-2" className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Ряд параметрів: Зброя, Хто наносив, Час ураження */}
+                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                                                         <div>
-                                                            <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase">Засіб ураження</label>
-                                                            <select value={loss.weapon} onChange={e => updateEnemyLoss(loss.id, 'weapon', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:border-red-500">
+                                                            <label className="block text-[10px] font-semibold text-slate-400 mb-1 uppercase">Засіб ураження</label>
+                                                            <select value={loss.weapon} onChange={e => updateEnemyLoss(loss.id, 'weapon', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:border-red-500">
                                                                 {dictionaryOptions('weapons', settings.weapons, loss.weapon).map(w => <option key={w} value={w}>{w}</option>)}
                                                             </select>
                                                         </div>
                                                         <div>
-                                                            <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase">Хто наносив ураження (наші)</label>
-                                                            <input type="text" placeholder="Позивний / Підрозділ" value={loss.inflicter} onChange={e => updateEnemyLoss(loss.id, 'inflicter', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:border-red-500" />
+                                                            <label className="block text-[10px] font-semibold text-slate-400 mb-1 uppercase">Хто наносив ураження (наші)</label>
+                                                            <input type="text" placeholder="Позивний / Підрозділ" value={loss.inflicter} onChange={e => updateEnemyLoss(loss.id, 'inflicter', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:border-red-500" />
                                                         </div>
                                                         <div>
                                                             <label className="text-[10px] font-semibold text-amber-400 mb-1 uppercase flex items-center gap-1">
                                                                 <Icon name="clock" className="w-3 h-3 text-amber-400" /> Час ураження
                                                             </label>
-                                                            <input type="time" value={loss.time || ''} onChange={e => updateEnemyLoss(loss.id, 'time', e.target.value)} className="w-full bg-slate-900 border border-amber-500/50 rounded-lg px-3 py-1.5 text-sm text-amber-200 focus:border-amber-400" />
+                                                            <input type="time" value={loss.time || ''} onChange={e => updateEnemyLoss(loss.id, 'time', e.target.value)} className="w-full bg-slate-900 border border-amber-500/50 rounded-lg px-2.5 py-1.5 text-xs text-amber-200 focus:border-amber-400" />
                                                         </div>
                                                     </div>
 
-                                                    {/* Нижній ряд: Рахунки (200, 200*, 300, Полонені) */}
-                                                    <div className="flex flex-wrap md:flex-nowrap items-center gap-3">
-                                                        <div className="flex-1">
-                                                            <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase">200 (Вбито)</label>
-                                                            <input type="number" min="0" value={loss.count200} onChange={e => updateEnemyLoss(loss.id, 'count200', parseInt(e.target.value)||0)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-mono font-bold text-red-500 focus:border-red-500 text-center" />
+                                                    {/* Компактна сітка лічильників втрат (6 колонок) */}
+                                                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 pt-0.5">
+                                                        <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-1.5 text-center">
+                                                            <label className="block text-[9.5px] font-semibold text-slate-400 uppercase tracking-wider mb-1 truncate" title="200 (Вбито)">200 (Вбито)</label>
+                                                            <input type="number" min="0" value={loss.count200} onChange={e => updateEnemyLoss(loss.id, 'count200', parseInt(e.target.value)||0)} className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono font-bold text-red-500 focus:border-red-500 text-center" />
                                                         </div>
-                                                        <div className="flex-1">
-                                                            <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase" title="Не підтверджено">200* (Ймовірно)</label>
-                                                            <input type="number" min="0" value={loss.count200Unconfirmed} onChange={e => updateEnemyLoss(loss.id, 'count200Unconfirmed', parseInt(e.target.value)||0)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-mono font-bold text-rose-300 focus:border-rose-400 text-center" />
+                                                        <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-1.5 text-center">
+                                                            <label className="block text-[9.5px] font-semibold text-slate-400 uppercase tracking-wider mb-1 truncate" title="Не підтверджено">200* (Ймов.)</label>
+                                                            <input type="number" min="0" value={loss.count200Unconfirmed} onChange={e => updateEnemyLoss(loss.id, 'count200Unconfirmed', parseInt(e.target.value)||0)} className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono font-bold text-rose-300 focus:border-rose-400 text-center" />
                                                         </div>
-                                                        <div className="flex-1">
-                                                            <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase" title="Виявлені тіла, невідомо хто знищив">Виявлений 200</label>
-                                                            <input type="number" min="0" value={loss.count200Discovered} onChange={e => updateEnemyLoss(loss.id, 'count200Discovered', parseInt(e.target.value)||0)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-mono font-bold text-purple-400 focus:border-purple-500 text-center" />
+                                                        <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-1.5 text-center">
+                                                            <label className="block text-[9.5px] font-semibold text-slate-400 uppercase tracking-wider mb-1 truncate" title="Виявлені тіла, невідомо хто знищив">Вияв. 200</label>
+                                                            <input type="number" min="0" value={loss.count200Discovered} onChange={e => updateEnemyLoss(loss.id, 'count200Discovered', parseInt(e.target.value)||0)} className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono font-bold text-purple-400 focus:border-purple-500 text-center" />
                                                         </div>
-                                                        <div className="flex-1">
-                                                            <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase">300 (Поранені)</label>
-                                                            <input type="number" min="0" value={loss.count300} onChange={e => updateEnemyLoss(loss.id, 'count300', parseInt(e.target.value)||0)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-mono font-bold text-amber-400 focus:border-amber-500 text-center" />
+                                                        <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-1.5 text-center">
+                                                            <label className="block text-[9.5px] font-semibold text-slate-400 uppercase tracking-wider mb-1 truncate" title="300 (Поранені)">300 (Поран.)</label>
+                                                            <input type="number" min="0" value={loss.count300} onChange={e => updateEnemyLoss(loss.id, 'count300', parseInt(e.target.value)||0)} className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono font-bold text-amber-400 focus:border-amber-500 text-center" />
                                                         </div>
-                                                        <div className="flex-1">
-                                                            <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase" title="Вкажіть кількість вбитих полонених">Загиблі полонені</label>
-                                                            <input type="number" min="0" value={loss.count200POW} onChange={e => updateEnemyLoss(loss.id, 'count200POW', parseInt(e.target.value)||0)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-mono font-bold text-rose-500 focus:border-rose-400 text-center" />
+                                                        <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-1.5 text-center">
+                                                            <label className="block text-[9.5px] font-semibold text-slate-400 uppercase tracking-wider mb-1 truncate" title="Вкажіть кількість вбитих полонених">Заг. полонені</label>
+                                                            <input type="number" min="0" value={loss.count200POW} onChange={e => updateEnemyLoss(loss.id, 'count200POW', parseInt(e.target.value)||0)} className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono font-bold text-rose-500 focus:border-rose-400 text-center" />
                                                         </div>
-                                                        <div className="flex-1">
-                                                            <label className="block text-[10px] font-semibold text-slate-500 mb-1 uppercase text-center">Полон</label>
-                                                            <input type="number" min="0" value={loss.countPOW} onChange={e => updateEnemyLoss(loss.id, 'countPOW', parseInt(e.target.value)||0)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-mono font-bold text-emerald-400 focus:border-emerald-500 text-center" />
-                                                        </div>
-                                                        <div className="w-auto flex items-end justify-center pt-5">
-                                                            <button type="button" onClick={() => removeEnemyLoss(loss.id)} className="p-2 hover:bg-red-900/40 text-red-400 rounded-lg transition" title="Видалити">
-                                                                <Icon name="trash-2" className="w-4 h-4" />
-                                                            </button>
+                                                        <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-1.5 text-center">
+                                                            <label className="block text-[9.5px] font-semibold text-slate-400 uppercase tracking-wider mb-1 truncate" title="Полон">Полон</label>
+                                                            <input type="number" min="0" value={loss.countPOW} onChange={e => updateEnemyLoss(loss.id, 'countPOW', parseInt(e.target.value)||0)} className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono font-bold text-emerald-400 focus:border-emerald-500 text-center" />
                                                         </div>
                                                     </div>
 
                                                     {/* Динамічні інпути для позивних */}
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-2 pl-2">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pl-1">
                                                         <CallsignArrayInput count={loss.count200} values={loss.callsigns200} onChange={v => updateEnemyLoss(loss.id, 'callsigns200', v)} label="200 (Вбиті)" colorClass="text-red-500" />
                                                         <CallsignArrayInput count={loss.count200Unconfirmed} values={loss.callsigns200Unconfirmed} onChange={v => updateEnemyLoss(loss.id, 'callsigns200Unconfirmed', v)} label="200* (Ймовірно)" colorClass="text-rose-300" />
                                                         <CallsignArrayInput count={loss.count200Discovered} values={loss.callsigns200Discovered} onChange={v => updateEnemyLoss(loss.id, 'callsigns200Discovered', v)} label="Виявлені 200" colorClass="text-purple-400" />
@@ -1105,31 +1116,31 @@ const EventsApp = (function() {
                 const vehicleDetails = event.actionDetails?.vehicleDetails;
 
                 return (
-                    <div className={`relative rounded-2xl p-4 flex flex-col gap-3.5 transition-all shadow-md group overflow-hidden ${
+                    <div className={`relative rounded-xl p-3 sm:p-3.5 flex flex-col gap-2 transition-all shadow-sm group overflow-hidden ${
                         isUnclosedAssault 
-                            ? 'bg-red-950/30 border-2 border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.35)] animate-pulse' 
-                            : 'bg-slate-900/85 border border-slate-800 hover:border-slate-600'
+                            ? 'bg-red-950/30 border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)] animate-pulse' 
+                            : 'bg-slate-900/85 border border-slate-800 hover:border-slate-700'
                     }`}>
                         {/* Попередження про незакритий ШД */}
                         {isUnclosedAssault && (
-                            <div className="flex flex-wrap items-center justify-between gap-2 bg-red-900/70 border border-red-500/80 rounded-xl px-3.5 py-2 text-xs text-red-100 font-bold">
-                                <div className="flex items-center gap-2.5">
-                                    <span className="relative flex h-3 w-3 shrink-0">
+                            <div className="flex flex-wrap items-center justify-between gap-2 bg-red-900/70 border border-red-500/80 rounded-lg px-3 py-1.5 text-xs text-red-100 font-bold">
+                                <div className="flex items-center gap-2">
+                                    <span className="relative flex h-2.5 w-2.5 shrink-0">
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
                                     </span>
                                     <span>УВАГА: Штурмові дії (ШД) не закрито! Не вказано час закінчення.</span>
                                 </div>
-                                <button onClick={() => onEdit(event)} className="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow">
+                                <button onClick={() => onEdit(event)} className="bg-red-600 hover:bg-red-500 text-white px-2.5 py-1 rounded-md text-xs font-bold transition flex items-center gap-1.5 shadow">
                                     <Icon name="clock" className="w-3.5 h-3.5" /> Вказати час завершення →
                                 </button>
                             </div>
                         )}
 
                         {/* Верхній ряд: Дата/Час, Типи подій, Дії */}
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <div className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 px-2.5 py-1 rounded-lg">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                                <div className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 px-2 py-0.5 rounded-md">
                                     <Icon name="calendar" className="w-3.5 h-3.5 text-amber-500" />
                                     <span>{formatDateTimeUI(actionDate)}</span>
                                     {event.actionDetails?.endTime && (
@@ -1138,7 +1149,7 @@ const EventsApp = (function() {
                                 </div>
 
                                 {(event.types || []).map(t => (
-                                    <span key={t} className={`text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-lg border shadow-sm ${
+                                    <span key={t} className={`text-[10.5px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border shadow-sm ${
                                         t === EVENT_TYPES.ASSAULT ? 'bg-red-950/70 border-red-800 text-red-300' :
                                         t === EVENT_TYPES.UDP ? 'bg-amber-950/70 border-amber-800 text-amber-300' :
                                         'bg-slate-800 border-slate-700 text-slate-300'
@@ -1148,28 +1159,28 @@ const EventsApp = (function() {
                                 ))}
 
                                 {event.isFireContact && (
-                                    <span className="text-[10px] font-bold uppercase tracking-wider bg-red-900/50 text-red-300 px-2 py-0.5 rounded-lg border border-red-700 flex items-center gap-1" title="Вогневий контакт">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider bg-red-900/50 text-red-300 px-2 py-0.5 rounded-md border border-red-700 flex items-center gap-1" title="Вогневий контакт">
                                         <Icon name="flame" className="w-3 h-3 text-red-400" /> Контакт
                                     </span>
                                 )}
 
                                 {!event.isRealEvent && (
-                                    <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-400 px-2 py-0.5 rounded-lg border border-slate-700">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md border border-slate-700">
                                         ТЕСТ
                                     </span>
                                 )}
                             </div>
 
                             {/* Кнопки дій */}
-                            <div className="flex flex-wrap items-center gap-1.5">
-                                {isAssault && <button type="button" aria-label={`Доповідь ШД ${event.id}`} disabled={!isCompletedAssault(event)} onClick={() => onReport(event)} title={isCompletedAssault(event) ? 'Сформувати чернетку позатермінового донесення' : 'Спочатку вкажіть коректний час завершення ШД'} className="px-2.5 py-1.5 bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 rounded-lg transition border border-amber-700/60 text-xs font-semibold flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"><Icon name="file-text" className="w-4 h-4" />Доповідь</button>}
-                                <button type="button" aria-label="Переглянути деталі" onClick={() => onView(event)} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-blue-400 rounded-lg transition border border-slate-700" title="Переглянути деталі">
+                            <div className="flex flex-wrap items-center gap-1">
+                                {isAssault && <button type="button" aria-label={`Доповідь ШД ${event.id}`} disabled={!isCompletedAssault(event)} onClick={() => onReport(event)} title={isCompletedAssault(event) ? 'Сформувати чернетку позатермінового донесення' : 'Спочатку вкажіть коректний час завершення ШД'} className="px-2 py-1 bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 rounded-md transition border border-amber-700/60 text-xs font-semibold flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"><Icon name="file-text" className="w-3.5 h-3.5" />Доповідь</button>}
+                                <button type="button" aria-label="Переглянути деталі" onClick={() => onView(event)} className="p-1 hover:bg-slate-800 text-slate-400 hover:text-blue-400 rounded-md transition" title="Переглянути деталі">
                                     <Icon name="eye" className="w-4 h-4" />
                                 </button>
-                                <button type="button" aria-label="Редагувати подію" onClick={() => onEdit(event)} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-400 rounded-lg transition border border-slate-700" title="Редагувати">
+                                <button type="button" aria-label="Редагувати подію" onClick={() => onEdit(event)} className="p-1 hover:bg-slate-800 text-slate-400 hover:text-amber-400 rounded-md transition" title="Редагувати">
                                     <Icon name="edit" className="w-4 h-4" />
                                 </button>
-                                <button type="button" aria-label="Видалити подію" onClick={() => onDelete(event.id)} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-red-400 rounded-lg transition border border-slate-700" title="Видалити">
+                                <button type="button" aria-label="Видалити подію" onClick={() => onDelete(event.id)} className="p-1 hover:bg-slate-800 text-slate-400 hover:text-red-400 rounded-md transition" title="Видалити">
                                     <Icon name="trash-2" className="w-4 h-4" />
                                 </button>
                             </div>
@@ -1177,7 +1188,7 @@ const EventsApp = (function() {
 
                         {/* Тактичний контекстний рядок: Локації, Підрозділи, Сили */}
                         {(docLoc || factLoc || direction || position || conductedBy || friendlyCount > 0 || enemySize > 0 || hasVehicles) && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 text-xs">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 bg-slate-950/70 border border-slate-800/80 rounded-lg p-2 text-xs">
                                 {(factLoc || docLoc) && (
                                     <div className="flex items-start gap-1.5 min-w-0">
                                         <Icon name="map-pin" className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
@@ -1222,21 +1233,58 @@ const EventsApp = (function() {
                             </div>
                         )}
 
-                        {/* Підсумок втрат сторін */}
-                        <div className="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between pt-1 border-t border-slate-800/60">
-                            <div className="flex flex-wrap gap-1.5 items-center">
-                                {totalE200 > 0 && <div className="bg-red-950/50 border border-red-900/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-xs"><Icon name="skull" className="w-3.5 h-3.5 text-red-500"/> <span className="text-slate-300">200:</span><b className="text-red-400 font-mono">{totalE200}</b></div>}
-                                {totalE200Unc > 0 && <div className="bg-rose-950/50 border border-rose-900/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-xs"><Icon name="help-circle" className="w-3.5 h-3.5 text-rose-400"/> <span className="text-slate-300">200*:</span><b className="text-rose-300 font-mono">{totalE200Unc}</b></div>}
-                                {totalE200Disc > 0 && <div className="bg-coyote-600/10 border border-coyote-500/30 px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-xs"><Icon name="eye" className="w-3.5 h-3.5 text-coyote-400"/> <span className="text-slate-300">Вияв:</span><b className="text-coyote-400 font-mono">{totalE200Disc}</b></div>}
-                                {totalE300 > 0 && <div className="bg-amber-950/50 border border-amber-900/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-xs"><Icon name="activity" className="w-3.5 h-3.5 text-amber-500"/> <span className="text-slate-300">300:</span><b className="text-amber-400 font-mono">{totalE300}</b></div>}
-                                {totalPOW > 0 && <div className="bg-emerald-950/50 border border-emerald-900/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-xs"><Icon name="users" className="w-3.5 h-3.5 text-emerald-500"/> <span className="text-slate-300">Полон:</span><b className="text-emerald-400 font-mono">{totalPOW}</b></div>}
-                                {totalE200 + totalE200Unc + totalE200Disc + totalE300 + totalPOW === 0 && (
-                                    <span className="text-xs text-slate-500 italic">Без втрат противника</span>
+                        {/* Підсумок втрат сторін та деталізація уражень */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/60 text-xs">
+                            <div className="flex flex-wrap items-center gap-2">
+                                {/* Загальні втрати противника */}
+                                <div className="flex flex-wrap gap-1.5 items-center">
+                                    {totalE200 > 0 && <div className="bg-red-950/50 border border-red-900/60 px-2 py-0.5 rounded-md flex items-center gap-1.5 text-xs"><Icon name="skull" className="w-3.5 h-3.5 text-red-500"/> <span className="text-slate-300">200:</span><b className="text-red-400 font-mono">{totalE200}</b></div>}
+                                    {totalE200Unc > 0 && <div className="bg-rose-950/50 border border-rose-900/60 px-2 py-0.5 rounded-md flex items-center gap-1.5 text-xs"><Icon name="help-circle" className="w-3.5 h-3.5 text-rose-400"/> <span className="text-slate-300">200*:</span><b className="text-rose-300 font-mono">{totalE200Unc}</b></div>}
+                                    {totalE200Disc > 0 && <div className="bg-coyote-600/10 border border-coyote-500/30 px-2 py-0.5 rounded-md flex items-center gap-1.5 text-xs"><Icon name="eye" className="w-3.5 h-3.5 text-coyote-400"/> <span className="text-slate-300">Вияв:</span><b className="text-coyote-400 font-mono">{totalE200Disc}</b></div>}
+                                    {totalE300 > 0 && <div className="bg-amber-950/50 border border-amber-900/60 px-2 py-0.5 rounded-md flex items-center gap-1.5 text-xs"><Icon name="activity" className="w-3.5 h-3.5 text-amber-500"/> <span className="text-slate-300">300:</span><b className="text-amber-400 font-mono">{totalE300}</b></div>}
+                                    {totalPOW > 0 && <div className="bg-emerald-950/50 border border-emerald-900/60 px-2 py-0.5 rounded-md flex items-center gap-1.5 text-xs"><Icon name="users" className="w-3.5 h-3.5 text-emerald-500"/> <span className="text-slate-300">Полон:</span><b className="text-emerald-400 font-mono">{totalPOW}</b></div>}
+                                    {totalE200 + totalE200Unc + totalE200Disc + totalE300 + totalPOW === 0 && (
+                                        <span className="text-xs text-slate-500 italic">Без втрат противника</span>
+                                    )}
+                                </div>
+
+                                {/* Деталізація конкретних ударів/засобів поряд */}
+                                {event.enemyLosses && event.enemyLosses.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 items-center">
+                                        {event.enemyLosses.map((l, idx) => (
+                                            <div key={idx} className="bg-slate-950/80 border border-slate-800 rounded-md px-2 py-0.5 text-[11px] text-slate-300 flex items-center gap-1.5">
+                                                {l.time && <span className="font-mono text-amber-300 font-bold bg-amber-950/60 px-1 rounded border border-amber-900/50">{l.time}</span>}
+                                                <span className="font-semibold text-slate-200">{l.weapon}</span>
+                                                {l.inflicter && <span className="text-slate-400">(від: {l.inflicter})</span>}
+                                                {((l.callsigns200 && l.callsigns200.some(c=>c)) || (l.callsigns200Unconfirmed && l.callsigns200Unconfirmed.some(c=>c)) || (l.callsigns200Discovered && l.callsigns200Discovered.some(c=>c)) || (l.callsigns300 && l.callsigns300.some(c=>c)) || (l.callsignsPOW && l.callsignsPOW.some(c=>c)) || (l.callsigns200POW && l.callsigns200POW.some(c=>c))) && (
+                                                    <span className="text-slate-400" title="Деталізовані позивні">
+                                                        [{[
+                                                            ...(l.callsigns200||[]).filter(c=>c).map(c=>`200:${c}`),
+                                                            ...(l.callsigns200Unconfirmed||[]).filter(c=>c).map(c=>`200*:${c}`),
+                                                            ...(l.callsigns200Discovered||[]).filter(c=>c).map(c=>`Вияв:${c}`),
+                                                            ...(l.callsigns300||[]).filter(c=>c).map(c=>`300:${c}`),
+                                                            ...(l.callsignsPOW||[]).filter(c=>c).map(c=>`Полон:${c}`),
+                                                            ...(l.callsigns200POW||[]).filter(c=>c).map(c=>`Заг.Полон:${c}`)
+                                                        ].join(', ')}]
+                                                    </span>
+                                                )}
+                                                <span className="font-mono text-slate-400 ml-1">
+                                                    {l.count200 > 0 && <span className="text-red-400 mr-1">200:{l.count200}</span>}
+                                                    {l.count200Unconfirmed > 0 && <span className="text-rose-400 mr-1">200*:{l.count200Unconfirmed}</span>}
+                                                    {l.count200Discovered > 0 && <span className="text-coyote-400 mr-1">Вияв:{l.count200Discovered}</span>}
+                                                    {l.count300 > 0 && <span className="text-amber-400 mr-1">300:{l.count300}</span>}
+                                                    {l.count200POW > 0 && <span className="text-rose-500 mr-1" title="200 з полонених">200(п):{l.count200POW}</span>}
+                                                    {l.countPOW > 0 && <span className="text-emerald-400">Полон:{l.countPOW}</span>}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 )}
                             </div>
 
+                            {/* Втрати наших сил (якщо є) */}
                             {(event.friendlyLosses?.count200 > 0 || event.friendlyLosses?.count300 > 0 || event.friendlyLosses?.countZBV > 0) && (
-                                <div className="bg-blue-950/30 border border-blue-900/40 rounded-lg px-2.5 py-1 text-xs flex items-center gap-2">
+                                <div className="bg-blue-950/30 border border-blue-900/40 rounded-md px-2 py-0.5 text-xs flex items-center gap-2">
                                     <span className="font-bold text-blue-400 uppercase text-[10px]">Наші:</span>
                                     <div className="flex gap-2 font-mono">
                                         {event.friendlyLosses.count200 > 0 && <span className="text-blue-300 font-bold">200:{event.friendlyLosses.count200}</span>}
@@ -1246,39 +1294,6 @@ const EventsApp = (function() {
                                 </div>
                             )}
                         </div>
-
-                        {/* Деталізація уражень з часовими мітками */}
-                        {event.enemyLosses && event.enemyLosses.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 text-xs">
-                                {event.enemyLosses.map((l, idx) => (
-                                    <div key={idx} className="bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-300 flex items-center gap-1.5">
-                                        {l.time && <span className="font-mono text-amber-300 font-bold bg-amber-950/60 px-1 rounded border border-amber-900/50">{l.time}</span>}
-                                        <span className="font-semibold text-slate-200">{l.weapon}</span>
-                                        {l.inflicter && <span className="text-slate-400">(від: {l.inflicter})</span>}
-                                        {((l.callsigns200 && l.callsigns200.some(c=>c)) || (l.callsigns200Unconfirmed && l.callsigns200Unconfirmed.some(c=>c)) || (l.callsigns200Discovered && l.callsigns200Discovered.some(c=>c)) || (l.callsigns300 && l.callsigns300.some(c=>c)) || (l.callsignsPOW && l.callsignsPOW.some(c=>c)) || (l.callsigns200POW && l.callsigns200POW.some(c=>c))) && (
-                                            <span className="text-slate-400" title="Деталізовані позивні">
-                                                [{[
-                                                    ...(l.callsigns200||[]).filter(c=>c).map(c=>`200:${c}`),
-                                                    ...(l.callsigns200Unconfirmed||[]).filter(c=>c).map(c=>`200*:${c}`),
-                                                    ...(l.callsigns200Discovered||[]).filter(c=>c).map(c=>`Вияв:${c}`),
-                                                    ...(l.callsigns300||[]).filter(c=>c).map(c=>`300:${c}`),
-                                                    ...(l.callsignsPOW||[]).filter(c=>c).map(c=>`Полон:${c}`),
-                                                    ...(l.callsigns200POW||[]).filter(c=>c).map(c=>`Заг.Полон:${c}`)
-                                                ].join(', ')}]
-                                            </span>
-                                        )}
-                                        <span className="font-mono text-slate-400 ml-1">
-                                            {l.count200 > 0 && <span className="text-red-400 mr-1">200:{l.count200}</span>}
-                                            {l.count200Unconfirmed > 0 && <span className="text-rose-400 mr-1">200*:{l.count200Unconfirmed}</span>}
-                                            {l.count200Discovered > 0 && <span className="text-coyote-400 mr-1">Вияв:{l.count200Discovered}</span>}
-                                            {l.count300 > 0 && <span className="text-amber-400 mr-1">300:{l.count300}</span>}
-                                            {l.count200POW > 0 && <span className="text-rose-500 mr-1" title="200 з полонених">200(п):{l.count200POW}</span>}
-                                            {l.countPOW > 0 && <span className="text-emerald-400">Полон:{l.countPOW}</span>}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
 
                         {/* Текст опису */}
                         {event.description && (

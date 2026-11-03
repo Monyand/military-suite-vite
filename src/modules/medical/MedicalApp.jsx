@@ -12,13 +12,23 @@ const MedicalApp = (function() {
             
 
         const DEFAULT_RANKS = ["Солдат", "Старший солдат", "Молодший сержант", "Сержант", "Старший сержант", "Головний сержант", "Молодший лейтенант", "Лейтенант", "Старший лейтенант", "Капітан", "Майор"];
-        const DEFAULT_UNITS = ["1-ша рота", "2-га рота", "3-тя рота", "Взвод вогневої підтримки", "Розвідвзвод", "Управління батальйону"];
+        const DEFAULT_UNITS = ["1-ша рота", "2-га рота", "3-тя рота", "4 МР", "5 МР", "6 МР", "Взвод вогневої підтримки", "Розвідвзвод", "Управління батальйону"];
         const DEFAULT_SECTORS = ["Позиція 'Альфа'", "Позиція 'Браво'", "КСП батальйону", "Точка вивантаження", "Стабпункт"];
         const DEFAULT_CAUSES = [
             "Удар КАБом", "Удар FPV", "Удар FPV (оптоволокно)", "Удар FPV (крило)", "Скид з БПЛА", 
             "Скид горючої суміші з дрона", "Скид з важкого бомбера", "Обстріл з міномета, 82мм", 
             "Обстріл з міномета, 120мм", "Обстріл з ствольної артилерії", "Підрив на ворожому мінуванні", 
             "Стрілецька зброя", "Залишив позицію", "Нещасний випадок / Хвороба", "Інше"
+        ];
+
+        const DEFAULT_AWOL_CAUSES = [
+            "З бойової позиції", 
+            "З району розташування (ППД/тилу)", 
+            "З лікування / шпиталю / ВЛК", 
+            "З відпустки / відрядження", 
+            "Під час ротації / переміщення", 
+            "Не прибув з НЦ/ТЦК", 
+            "Інше"
         ];
 
         const LOSS_TYPES = [
@@ -705,8 +715,8 @@ const MedicalApp = (function() {
                             <div className="grid grid-cols-1 sm:grid-cols-[minmax(180px,250px)_minmax(140px,200px)_1fr] items-center gap-2">
                                 <div className="min-w-0 flex items-center">
                                     <div className="w-fit max-w-full flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
-                                        <Icon name="target" className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                                        <span className="text-slate-400 text-[10px] uppercase font-semibold tracking-wider shrink-0">Причина:</span>
+                                        <Icon name={isAwol(episode.lossType) ? "compass" : "target"} className={`w-3.5 h-3.5 ${isAwol(episode.lossType) ? 'text-fuchsia-400' : 'text-red-400'} shrink-0`} />
+                                        <span className="text-slate-400 text-[10px] uppercase font-semibold tracking-wider shrink-0">{isAwol(episode.lossType) ? "Звідки:" : "Причина:"}</span>
                                         <span className="font-medium text-white truncate" title={episode.cause}>{episode.cause}</span>
                                     </div>
                                 </div>
@@ -866,8 +876,8 @@ const MedicalApp = (function() {
                         {/* Рядок 1: Причина | Факт | Док */}
                         <div className="grid grid-cols-1 sm:grid-cols-[minmax(160px,210px)_minmax(130px,160px)_minmax(130px,1fr)] items-center gap-2">
                             <div className="flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
-                                <Icon name="target" className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                                <span className="text-slate-400 text-[10px] uppercase font-semibold tracking-wider shrink-0">Причина:</span>
+                                <Icon name={isAwol(episode.lossType) ? "compass" : "target"} className={`w-3.5 h-3.5 ${isAwol(episode.lossType) ? 'text-fuchsia-400' : 'text-red-400'} shrink-0`} />
+                                <span className="text-slate-400 text-[10px] uppercase font-semibold tracking-wider shrink-0">{isAwol(episode.lossType) ? "Звідки:" : "Причина:"}</span>
                                 <span className="font-medium text-white truncate" title={episode.cause}>{episode.cause}</span>
                             </div>
                             <div className="flex items-center gap-1.5 bg-amber-950/20 border border-amber-900/40 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
@@ -1263,7 +1273,7 @@ const MedicalApp = (function() {
             const [activeTab, setActiveTab] = useState("list");
             const [clockTick, setClockTick] = useState(0);
             useEffect(() => {
-                if (!['list', 'triage'].includes(activeTab)) return;
+                if (!['list', 'awol', 'triage'].includes(activeTab)) return;
                 const timer = setInterval(() => setClockTick(tick => tick + 1), 60000);
                 return () => clearInterval(timer);
             }, [activeTab]);
@@ -1700,8 +1710,14 @@ const MedicalApp = (function() {
                 const deadCount = latestEpisodesData.filter(e => isAny200(e.lossType)).length;
                 const miaCount = latestEpisodesData.filter(e => e.lossType === 'Зниклий безвісти (ЗБВ)').length;
                 const awolCount = latestEpisodesData.filter(e => isAwol(e.lossType) && e.awolStatus === 'В розшуку').length;
+                const awolTotal = latestEpisodesData.filter(e => isAwol(e.lossType)).length;
+                const awolReturned = latestEpisodesData.filter(e => isAwol(e.lossType) && e.awolStatus === 'Повернувся').length;
+                const lossesCount = timeFilteredEpisodes.filter(e => !isAwol(e.lossType)).length;
+                const awolFilteredCount = timeFilteredEpisodes.filter(e => isAwol(e.lossType)).length;
+                const lossesSoldiersCount = latestEpisodesData.filter(e => !isAwol(e.lossType)).length;
+                const count300 = latestEpisodesData.filter(e => isAny300(e.lossType)).length;
                 
-                return { totalEpisodes, uniqueSoldiersCount, activeEvacNeed300, activeEvacNeed200_MIA, deadCount, miaCount, awolCount };
+                return { totalEpisodes, uniqueSoldiersCount, activeEvacNeed300, activeEvacNeed200_MIA, deadCount, miaCount, awolCount, awolTotal, awolReturned, lossesCount, awolFilteredCount, lossesSoldiersCount, count300 };
             }, [timeFilteredEpisodes, latestEpisodesData, globalLatestEpisodes]);
 
             const evacStats = useMemo(() => {
@@ -3341,7 +3357,7 @@ const MedicalApp = (function() {
                         if (isInsideModal) return;
 
                         e.preventDefault();
-                        if (activeTab !== "list" && activeTab !== "triage") {
+                        if (activeTab !== "list" && activeTab !== "awol" && activeTab !== "triage") {
                             setActiveTab("list");
                         }
                         setTimeout(() => {
@@ -3363,6 +3379,13 @@ const MedicalApp = (function() {
                     const soldier = MedicalPersonnelDirectory.forEpisode(episode, soldiersMap.get(episode.soldierId));
                     if (!soldier) return false;
 
+                    // Розділення списків: вкладка 'list' (Втрати о/с) показує 300, 200, ЗБВ; вкладка 'awol' (Облік СЗЧ) показує СЗЧ/Дезертирство
+                    if (activeTab === 'awol') {
+                        if (!isAwol(episode.lossType)) return false;
+                    } else if (activeTab === 'list') {
+                        if (isAwol(episode.lossType)) return false;
+                    }
+
                     let matchSearch = true;
                     if (normSearch) {
                         const searchStr = normalizeMilitaryText(`${soldier.name} ${soldier.callsign || ''} ${episode.actualLoc || ''}`, { toLower: true, replaceHomoglyphs: true });
@@ -3373,7 +3396,7 @@ const MedicalApp = (function() {
                     const matchSeverity = isAny300(episode.lossType) ? (!episode.severity || filterSeverities.includes(episode.severity)) : true;
                     const currentStatus = isAwol(episode.lossType) ? episode.awolStatus : episode.evacStatus;
                     const matchEvac = filterEvacStatuses.includes(currentStatus);
-                    const matchCause = !episode.cause || filterCauses.includes(episode.cause);
+                    const matchCause = isAwol(episode.lossType) ? true : (!episode.cause || filterCauses.includes(episode.cause));
                     const matchUdp = filterUdp === "all" ? true : (filterUdp === "yes" ? episode.inUdp : !episode.inUdp);
                     
                     const matchWeapon = filterWeapon.length === 0 || filterWeapon.includes(episode.weaponStatus || "Не вказано");
@@ -3417,7 +3440,7 @@ const MedicalApp = (function() {
                     // default: date_desc
                     return parseSafeDate(b.date) - parseSafeDate(a.date);
                 });
-            }, [activeDataSource, soldiersMap, searchTerm, filterLossTypes, filterSeverities, filterEvacStatuses, filterCauses, filterUdp, filterWeapon, filterReport, filterInjuries, sortBy]);
+            }, [activeDataSource, soldiersMap, searchTerm, filterLossTypes, filterSeverities, filterEvacStatuses, filterCauses, filterUdp, filterWeapon, filterReport, filterInjuries, sortBy, activeTab]);
 
             // Видима порція списку карток (для максимальної швидкодії)
             const visibleList = useMemo(() => {
@@ -3462,7 +3485,7 @@ const MedicalApp = (function() {
                 }
                 
                 setEpisodeDate("");
-                setLossType("");
+                setLossType(activeTab === 'awol' ? "СЗЧ" : "");
                 setCause("");
                 setSeverity("");
                 setInUdp(false);
@@ -4426,19 +4449,43 @@ const MedicalApp = (function() {
 
                         {/* 2. Центральна частина: Преміальний Segmented Tabs Bar */}
                         <div className="flex items-center gap-1 bg-slate-950/90 border border-slate-800/90 p-1.5 rounded-xl shadow-inner shrink-0 self-start xl:self-center">
-                            {/* Вкладка: Журнал */}
+                            {/* Вкладка: Втрати о/с */}
                             <button 
                                 onClick={() => handleTabSwitch("list")} 
+                                aria-label={`Журнал ${stats.lossesCount}`}
+                                title="Журнал втрат особового складу (300, 200, ЗБВ)"
                                 className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 text-xs font-semibold cursor-pointer select-none ${
                                     activeTab === "list" 
                                         ? "bg-slate-800 text-white border border-slate-700 shadow-sm" 
                                         : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent"
                                 }`}
                             >
-                                <Icon name="list" className={`w-4 h-4 ${activeTab === "list" ? "text-amber-400" : "text-slate-400"}`} />
-                                <span>Журнал</span>
+                                <Icon name="activity" className={`w-4 h-4 ${activeTab === "list" ? "text-rose-400" : "text-slate-400"}`} />
+                                <span>Втрати о/с</span>
                                 <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-slate-900 border border-slate-800 text-slate-300">
-                                    {timeFilteredEpisodes.length}
+                                    {stats.lossesCount}
+                                </span>
+                            </button>
+
+                            {/* Вкладка: Облік СЗЧ */}
+                            <button 
+                                onClick={() => handleTabSwitch("awol")} 
+                                aria-label={`Облік СЗЧ ${stats.awolFilteredCount}`}
+                                title="Облік військовослужбовців СЗЧ та дезертирства"
+                                className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 text-xs font-semibold cursor-pointer select-none ${
+                                    activeTab === "awol" 
+                                        ? "bg-purple-950/70 text-purple-200 border border-purple-500/50 shadow-sm" 
+                                        : "text-slate-400 hover:text-purple-300 hover:bg-slate-900/60 border border-transparent"
+                                }`}
+                            >
+                                <Icon name="user-x" className={`w-4 h-4 ${activeTab === "awol" ? "text-purple-400" : "text-slate-400"}`} />
+                                <span>Облік СЗЧ</span>
+                                <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold border ${
+                                    stats.awolFilteredCount > 0 
+                                        ? "bg-purple-900/80 border-purple-700/80 text-purple-200" 
+                                        : "bg-slate-900 border-slate-800 text-slate-400"
+                                }`}>
+                                    {stats.awolFilteredCount}
                                 </span>
                             </button>
 
@@ -4551,8 +4598,8 @@ const MedicalApp = (function() {
                     )}
 
                     <main className="flex-1 w-full flex flex-col gap-3">
-                        {/* ГОРИЗОНТАЛЬНА ВЕРХНЯ ПАНЕЛЬ ФІЛЬТРІВ (ДЛЯ ЖУРНАЛУ ТА ТРІАЖУ) */}
-                        {(activeTab === "list" || activeTab === "triage") && (
+                        {/* ГОРИЗОНТАЛЬНА ВЕРХНЯ ПАНЕЛЬ ФІЛЬТРІВ (ДЛЯ ВТРАТ О/С, СЗЧ ТА ТРІАЖУ) */}
+                        {(activeTab === "list" || activeTab === "awol" || activeTab === "triage") && (
                             <div className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-2 sm:p-2.5 shadow-lg flex items-center gap-2 flex-wrap">
                                 
                                 {/* Пошук */}
@@ -4647,60 +4694,123 @@ const MedicalApp = (function() {
                                     </div>
                                 </div>
 
-                                {/* Дропдаун: Тип втрати */}
-                                <FilterDropdown 
-                                    title="Тип втрати" 
-                                    count={filterLossTypes.length} 
-                                    total={LOSS_TYPES.length} 
-                                    isOpen={openDropdown === 'types'} 
-                                    onToggle={() => setOpenDropdown(openDropdown === 'types' ? null : 'types')}
-                                    onSelectAll={() => setFilterLossTypes([...LOSS_TYPES])}
-                                    onClearAll={() => setFilterLossTypes([])}
-                                >
-                                    <CheckboxList 
-                                        items={LOSS_TYPES} 
-                                        selected={filterLossTypes} 
-                                        toggle={(v) => toggleFilterItem(filterLossTypes, setFilterLossTypes, v)} 
-                                        onSelectOnly={(v) => setFilterLossTypes([v])} 
-                                    />
-                                </FilterDropdown>
+                                {/* Дропдаун: Тип втрати (для Втрат о/с) */}
+                                {activeTab === "list" && (
+                                    <FilterDropdown 
+                                        title="Тип втрати" 
+                                        count={filterLossTypes.filter(t => !isAwol(t)).length} 
+                                        total={LOSS_TYPES.filter(t => !isAwol(t)).length} 
+                                        isOpen={openDropdown === 'types'} 
+                                        onToggle={() => setOpenDropdown(openDropdown === 'types' ? null : 'types')}
+                                        onSelectAll={() => setFilterLossTypes(prev => [...prev.filter(isAwol), ...LOSS_TYPES.filter(t => !isAwol(t))])}
+                                        onClearAll={() => setFilterLossTypes(prev => prev.filter(isAwol))}
+                                    >
+                                        <CheckboxList 
+                                            items={LOSS_TYPES.filter(t => !isAwol(t))} 
+                                            selected={filterLossTypes} 
+                                            toggle={(v) => toggleFilterItem(filterLossTypes, setFilterLossTypes, v)} 
+                                            onSelectOnly={(v) => setFilterLossTypes(prev => [...prev.filter(isAwol), v])} 
+                                        />
+                                    </FilterDropdown>
+                                )}
 
-                                {/* Дропдаун: Евакуація / СЗЧ */}
-                                <FilterDropdown 
-                                    title="Евакуація" 
-                                    count={filterEvacStatuses.length} 
-                                    total={5} 
-                                    isOpen={openDropdown === 'evac'} 
-                                    onToggle={() => setOpenDropdown(openDropdown === 'evac' ? null : 'evac')}
-                                    onSelectAll={() => setFilterEvacStatuses(["Не евакуйований", "Евакуйований", "Не потребує евакуації", "В розшуку", "Повернувся"])}
-                                    onClearAll={() => setFilterEvacStatuses([])}
-                                >
-                                    <div className="flex gap-1 mb-2 p-1 bg-slate-950 rounded-lg border border-slate-800 text-[10px] font-mono">
-                                        <button 
-                                            type="button" 
-                                            onClick={() => setFilterEvacStatuses(["Не евакуйований"])} 
-                                            className="flex-1 py-1 rounded bg-red-950/40 hover:bg-red-900/60 text-red-300 font-semibold text-center cursor-pointer transition"
-                                            title="Показати тільки тих, хто очікує на евакуацію"
-                                        >
-                                            ⏳ Очікують
-                                        </button>
-                                        <button 
-                                            type="button" 
-                                            onClick={() => setFilterEvacStatuses(["Евакуйований"])} 
-                                            className="flex-1 py-1 rounded bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 font-semibold text-center cursor-pointer transition"
-                                            title="Показати тільки евакуйованих"
-                                        >
-                                            ✅ Евакуйовані
-                                        </button>
-                                    </div>
-                                    <CheckboxList 
-                                        items={["Не евакуйований", "Евакуйований", "Не потребує евакуації", "В розшуку", "Повернувся"]} 
-                                        selected={filterEvacStatuses} 
-                                        toggle={(v) => toggleFilterItem(filterEvacStatuses, setFilterEvacStatuses, v)} 
-                                        onSelectOnly={(v) => setFilterEvacStatuses([v])} 
-                                        maxH={false} 
-                                    />
-                                </FilterDropdown>
+                                {/* Дропдаун: Категорія СЗЧ (для Обліку СЗЧ) */}
+                                {activeTab === "awol" && (
+                                    <FilterDropdown 
+                                        title="Категорія" 
+                                        count={filterLossTypes.filter(isAwol).length} 
+                                        total={2} 
+                                        isOpen={openDropdown === 'types'} 
+                                        onToggle={() => setOpenDropdown(openDropdown === 'types' ? null : 'types')}
+                                        onSelectAll={() => setFilterLossTypes(prev => [...prev.filter(t => !isAwol(t)), "СЗЧ", "Дезертирство"])}
+                                        onClearAll={() => setFilterLossTypes(prev => prev.filter(t => !isAwol(t)))}
+                                    >
+                                        <CheckboxList 
+                                            items={["СЗЧ", "Дезертирство"]} 
+                                            selected={filterLossTypes} 
+                                            toggle={(v) => toggleFilterItem(filterLossTypes, setFilterLossTypes, v)} 
+                                            onSelectOnly={(v) => setFilterLossTypes(prev => [...prev.filter(t => !isAwol(t)), v])} 
+                                        />
+                                    </FilterDropdown>
+                                )}
+
+                                {/* Дропдаун: Евакуація (для Втрат о/с та Тріажу) */}
+                                {activeTab !== "awol" && (
+                                    <FilterDropdown 
+                                        title="Евакуація" 
+                                        count={filterEvacStatuses.filter(s => s !== "В розшуку" && s !== "Повернувся").length} 
+                                        total={3} 
+                                        isOpen={openDropdown === 'evac'} 
+                                        onToggle={() => setOpenDropdown(openDropdown === 'evac' ? null : 'evac')}
+                                        onSelectAll={() => setFilterEvacStatuses(prev => Array.from(new Set([...prev, "Не евакуйований", "Евакуйований", "Не потребує евакуації"])))}
+                                        onClearAll={() => setFilterEvacStatuses(prev => prev.filter(s => s === "В розшуку" || s === "Повернувся"))}
+                                    >
+                                        <div className="flex gap-1 mb-2 p-1 bg-slate-950 rounded-lg border border-slate-800 text-[10px] font-mono">
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setFilterEvacStatuses(prev => [...prev.filter(s => s === "В розшуку" || s === "Повернувся"), "Не евакуйований"])} 
+                                                className="flex-1 py-1 rounded bg-red-950/40 hover:bg-red-900/60 text-red-300 font-semibold text-center cursor-pointer transition"
+                                                title="Показати тільки тих, хто очікує на евакуацію"
+                                            >
+                                                ⏳ Очікують
+                                            </button>
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setFilterEvacStatuses(prev => [...prev.filter(s => s === "В розшуку" || s === "Повернувся"), "Евакуйований"])} 
+                                                className="flex-1 py-1 rounded bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 font-semibold text-center cursor-pointer transition"
+                                                title="Показати тільки евакуйованих"
+                                            >
+                                                ✅ Евакуйовані
+                                            </button>
+                                        </div>
+                                        <CheckboxList 
+                                            items={["Не евакуйований", "Евакуйований", "Не потребує евакуації"]} 
+                                            selected={filterEvacStatuses} 
+                                            toggle={(v) => toggleFilterItem(filterEvacStatuses, setFilterEvacStatuses, v)} 
+                                            onSelectOnly={(v) => setFilterEvacStatuses(prev => [...prev.filter(s => s === "В розшуку" || s === "Повернувся"), v])} 
+                                            maxH={false} 
+                                        />
+                                    </FilterDropdown>
+                                )}
+
+                                {/* Дропдаун: Статус розшуку (для Обліку СЗЧ) */}
+                                {activeTab === "awol" && (
+                                    <FilterDropdown 
+                                        title="Статус розшуку" 
+                                        count={filterEvacStatuses.filter(s => s === "В розшуку" || s === "Повернувся").length} 
+                                        total={2} 
+                                        isOpen={openDropdown === 'evac'} 
+                                        onToggle={() => setOpenDropdown(openDropdown === 'evac' ? null : 'evac')}
+                                        onSelectAll={() => setFilterEvacStatuses(prev => Array.from(new Set([...prev, "В розшуку", "Повернувся"])))}
+                                        onClearAll={() => setFilterEvacStatuses(prev => prev.filter(s => s !== "В розшуку" && s !== "Повернувся"))}
+                                    >
+                                        <div className="flex gap-1 mb-2 p-1 bg-slate-950 rounded-lg border border-slate-800 text-[10px] font-mono">
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setFilterEvacStatuses(prev => [...prev.filter(s => s !== "В розшуку" && s !== "Повернувся"), "В розшуку"])} 
+                                                className="flex-1 py-1 rounded bg-purple-950/50 hover:bg-purple-900/60 text-purple-300 font-semibold text-center cursor-pointer transition"
+                                                title="Показати тих, хто в розшуку"
+                                            >
+                                                🔍 В розшуку
+                                            </button>
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setFilterEvacStatuses(prev => [...prev.filter(s => s !== "В розшуку" && s !== "Повернувся"), "Повернувся"])} 
+                                                className="flex-1 py-1 rounded bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 font-semibold text-center cursor-pointer transition"
+                                                title="Показати тих, хто повернувся"
+                                            >
+                                                ✅ Повернувся
+                                            </button>
+                                        </div>
+                                        <CheckboxList 
+                                            items={["В розшуку", "Повернувся"]} 
+                                            selected={filterEvacStatuses} 
+                                            toggle={(v) => toggleFilterItem(filterEvacStatuses, setFilterEvacStatuses, v)} 
+                                            onSelectOnly={(v) => setFilterEvacStatuses(prev => [...prev.filter(s => s !== "В розшуку" && s !== "Повернувся"), v])} 
+                                            maxH={false} 
+                                        />
+                                    </FilterDropdown>
+                                )}
 
                                 {/* Поповер: Додаткові фільтри [ ⚙️ Інше ] */}
                                 {(() => {
@@ -4869,7 +4979,7 @@ const MedicalApp = (function() {
                                 })()}
 
                                 {/* Дропдаун: Сортування списку */}
-                                {activeTab === "list" && (
+                                {(activeTab === "list" || activeTab === "awol") && (
                                     <div className="relative">
                                         <button 
                                             type="button" 
@@ -5002,31 +5112,59 @@ const MedicalApp = (function() {
                                 {/* РЯДОК 2: Зведена статистика + Записів + Актуальні & Скинути */}
                                 <div className="w-full flex items-center justify-between gap-2 border-t border-slate-800/60 pt-2 flex-wrap">
                                     {/* Зведена швидка статистика */}
-                                    <div className="flex items-center gap-2 bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800 text-xs shadow-inner">
-                                        <span className="text-slate-300 text-xs font-semibold flex items-center gap-1" title="Унікальних військових у базі">
-                                            <Icon name="users" className="w-3.5 h-3.5 text-slate-400" />
-                                            <span className="font-mono text-slate-200 font-bold">{stats.uniqueSoldiersCount}</span>
-                                            <span className="text-slate-500 text-[10px]">в/сл</span>
-                                        </span>
-                                        <span className="text-slate-700 font-mono">|</span>
-                                        <span className="text-slate-300 text-xs flex items-center gap-1 font-mono" title="Загибель (200)">
-                                            <span className="text-slate-400 font-sans text-[10px] font-semibold">200:</span>
-                                            <span className="text-slate-200 font-bold">{stats.deadCount}</span>
-                                        </span>
-                                        <span className="text-slate-700 font-mono">|</span>
-                                        <span className="text-blue-300 text-xs flex items-center gap-1 font-mono" title="Зниклі безвісти (ЗБВ)">
-                                            <span className="text-blue-400 font-sans text-[10px] font-semibold">ЗБВ:</span>
-                                            <span className="text-blue-200 font-bold">{stats.miaCount}</span>
-                                        </span>
-                                        <span className="text-slate-700 font-mono">|</span>
-                                        <span className="text-fuchsia-300 text-xs flex items-center gap-1 font-mono" title="СЗЧ / Дезертирство">
-                                            <span className="text-fuchsia-400 font-sans text-[10px] font-semibold">СЗЧ:</span>
-                                            <span className="text-fuchsia-200 font-bold">{stats.awolCount}</span>
-                                        </span>
-                                    </div>
+                                    {activeTab === "list" ? (
+                                        <div className="flex items-center gap-2 bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800 text-xs shadow-inner">
+                                            <span className="text-slate-300 text-xs font-semibold flex items-center gap-1" title="Унікальних військових у базі втрат">
+                                                <Icon name="users" className="w-3.5 h-3.5 text-slate-400" />
+                                                <span className="font-mono text-slate-200 font-bold">{stats.lossesSoldiersCount}</span>
+                                                <span className="text-slate-500 text-[10px]">в/сл</span>
+                                            </span>
+                                            <span className="text-slate-700 font-mono">|</span>
+                                            <span className="text-amber-300 text-xs flex items-center gap-1 font-mono" title="Поранення та небойові травми (300)">
+                                                <span className="text-amber-400 font-sans text-[10px] font-semibold">300:</span>
+                                                <span className="text-amber-200 font-bold">{stats.count300}</span>
+                                            </span>
+                                            <span className="text-slate-700 font-mono">|</span>
+                                            <span className="text-slate-300 text-xs flex items-center gap-1 font-mono" title="Загибель (200)">
+                                                <span className="text-slate-400 font-sans text-[10px] font-semibold">200:</span>
+                                                <span className="text-slate-200 font-bold">{stats.deadCount}</span>
+                                            </span>
+                                            <span className="text-slate-700 font-mono">|</span>
+                                            <span className="text-blue-300 text-xs flex items-center gap-1 font-mono" title="Зниклі безвісти (ЗБВ)">
+                                                <span className="text-blue-400 font-sans text-[10px] font-semibold">ЗБВ:</span>
+                                                <span className="text-blue-200 font-bold">{stats.miaCount}</span>
+                                            </span>
+                                        </div>
+                                    ) : activeTab === "awol" ? (
+                                        <div className="flex items-center gap-2 bg-slate-950 px-2.5 py-1 rounded-xl border border-purple-900/60 text-xs shadow-inner">
+                                            <span className="text-purple-300 text-xs font-semibold flex items-center gap-1" title="Всього військовослужбовців з епізодами СЗЧ">
+                                                <Icon name="user-x" className="w-3.5 h-3.5 text-purple-400" />
+                                                <span className="font-mono text-purple-200 font-bold">{stats.awolTotal}</span>
+                                                <span className="text-purple-400/70 text-[10px]">всього</span>
+                                            </span>
+                                            <span className="text-slate-700 font-mono">|</span>
+                                            <span className="text-amber-300 text-xs flex items-center gap-1 font-mono" title="В розшуку">
+                                                <span className="text-amber-400 font-sans text-[10px] font-semibold">В розшуку:</span>
+                                                <span className="text-amber-200 font-bold">{stats.awolCount}</span>
+                                            </span>
+                                            <span className="text-slate-700 font-mono">|</span>
+                                            <span className="text-emerald-300 text-xs flex items-center gap-1 font-mono" title="Повернулись">
+                                                <span className="text-emerald-400 font-sans text-[10px] font-semibold">Повернулись:</span>
+                                                <span className="text-emerald-200 font-bold">{stats.awolReturned}</span>
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2 bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800 text-xs shadow-inner">
+                                            <span className="text-slate-300 text-xs font-semibold flex items-center gap-1" title="Унікальних військових у базі">
+                                                <Icon name="users" className="w-3.5 h-3.5 text-slate-400" />
+                                                <span className="font-mono text-slate-200 font-bold">{stats.uniqueSoldiersCount}</span>
+                                                <span className="text-slate-500 text-[10px]">в/сл</span>
+                                            </span>
+                                        </div>
+                                    )}
 
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        {activeTab === "list" && (
+                                        {(activeTab === "list" || activeTab === "awol") && (
                                             <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-800 text-xs text-slate-300 shadow-inner" title="Кількість відфільтрованих записів">
                                                 <Icon name="list-filter" className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                                                 <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">Записів:</span>
@@ -5055,11 +5193,13 @@ const MedicalApp = (function() {
                             </div>
                         )}
 
-                        {/* ТАБ: ЖУРНАЛ */}
-                        {activeTab === "list" && (
+                        {/* ТАБ: ВТРАТИ О/С ТА ОБЛІК СЗЧ */}
+                        {(activeTab === "list" || activeTab === "awol") && (
                             <div className="w-full space-y-3">
                                 {filteredList.length === 0 ? (
-                                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-500 text-sm shadow-xl">Жодного запису не знайдено за вказаними фільтрами</div>
+                                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-500 text-sm shadow-xl">
+                                        {activeTab === "awol" ? "Жодного запису СЗЧ не знайдено за вказаними фільтрами" : "Жодного запису не знайдено за вказаними фільтрами"}
+                                    </div>
                                 ) : (
                                     <>
                                         <div className="space-y-2.5">
@@ -6059,6 +6199,11 @@ const MedicalApp = (function() {
                                                             setWeaponStatus("");
                                                         }
                                                     }
+                                                    if (isAwol(newType) && !isAwol(lossType) && DEFAULT_CAUSES.includes(cause)) {
+                                                        setCause("");
+                                                    } else if (!isAwol(newType) && isAwol(lossType) && DEFAULT_AWOL_CAUSES.includes(cause)) {
+                                                        setCause("");
+                                                    }
                                                     setLossType(newType);
                                                 }} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none cursor-pointer">
                                                     <option value="">-- Оберіть тип події --</option>
@@ -6085,13 +6230,15 @@ const MedicalApp = (function() {
                                                 </div>
                                             )}
 
-                                            <div>
-                                                <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Причина події</label>
-                                                <select aria-label="Причина медичного запису" value={cause} onChange={(e) => setCause(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer">
-                                                    <option value="">-- Оберіть причину --</option>
-                                                    {dictionaryOptions('causes', settings.causes, cause).map(c => <option key={c} value={c}>{c}</option>)}
-                                                </select>
-                                            </div>
+                                            {!isAwol(lossType) && (
+                                                <div>
+                                                    <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Причина події</label>
+                                                    <select aria-label="Причина медичного запису" value={cause} onChange={(e) => setCause(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer">
+                                                        <option value="">-- Оберіть причину --</option>
+                                                        {dictionaryOptions('causes', settings.causes, cause).map(c => <option key={c} value={c}>{c}</option>)}
+                                                    </select>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -6169,6 +6316,14 @@ const MedicalApp = (function() {
                                                         <input type="date" value={evacDate} onChange={(e) => setEvacDate(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none transition" />
                                                     </div>
                                                 )}
+                                                <div>
+                                                    <label className="text-[10px] text-fuchsia-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Звідки вибув / Обставини {lossType}</label>
+                                                    <select aria-label="Звідки вибув / Обставини СЗЧ" value={cause} onChange={(e) => setCause(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-fuchsia-500/80 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer">
+                                                        <option value="">-- Оберіть звідки вибув --</option>
+                                                        {DEFAULT_AWOL_CAUSES.map(c => <option key={c} value={c}>{c}</option>)}
+                                                        {cause && !DEFAULT_AWOL_CAUSES.includes(cause) && <option value={cause}>{cause}</option>}
+                                                    </select>
+                                                </div>
                                             </div>
                                         )}
 

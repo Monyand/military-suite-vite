@@ -361,7 +361,7 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
     return <section id="document-journal" data-tab={tab} data-period-open={periodOpen || options.from !== options.to} style={{ '--dj-accent': tone, '--dj-solid': { tasks: '#0d9488', ovt: '#d97706', positions: '#059669' }[tab] }} className="w-full min-w-0 text-slate-200">
         <style>{`
                     #document-journal{min-height:100%;background:radial-gradient(ellipse at 50% 0%,#0d1b38 0%,#020617 70%);padding:0 24px 24px;font-family:Inter,sans-serif}
-                    #document-journal .dj-header{margin:0 -24px 20px;padding:16px 24px 0;background:#090e1aeF;backdrop-filter:blur(12px);border-bottom:1px solid #1e293b;box-shadow:0 8px 24px #0003}
+                    #document-journal .dj-header{margin:0 -24px 12px;padding:12px 24px 0;background:#090e1aeF;backdrop-filter:blur(12px);border-bottom:1px solid #1e293b;box-shadow:0 8px 24px #0003}
                     #document-journal .dj-headline{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
                     #document-journal .dj-logo{display:flex;align-items:center;justify-content:center;width:42px;height:42px;background:linear-gradient(135deg,#10b981,#0f766e);border-radius:12px;box-shadow:0 4px 16px #10b98130;color:white}
                     #document-journal h1{font-size:20px;font-weight:800;letter-spacing:-.025em;line-height:1.3}
@@ -375,12 +375,17 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
                     #document-journal .dj-tab:hover{transform:translateY(-1px);border-color:var(--tab-tone)}
                     #document-journal .dj-tab[aria-pressed=true]{background:linear-gradient(135deg,var(--tab-tint),#090e1a);border-color:var(--tab-tone);color:var(--tab-tone);box-shadow:0 4px 18px -3px var(--tab-tint)}
                     #document-journal .dj-tab-count{font-family:'JetBrains Mono',monospace;border-radius:20px;padding:2px 8px;background:var(--tab-tint);color:var(--tab-tone);font-size:11px}
-                    #document-journal .dj-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:14px}
-                    #document-journal .dj-stat{text-align:left;background:#090e1a;border:1px solid;border-radius:16px;padding:14px;box-shadow:0 5px 14px #0002;min-height:118px}
-                    #document-journal .dj-stat-label{font-size:11px;text-transform:uppercase;color:#94a3b8;font-weight:700;letter-spacing:.035em}
-                    #document-journal .dj-stat-number{font:800 26px 'JetBrains Mono',monospace;line-height:1.2;margin-top:5px}
-                    #document-journal .dj-stat-hint{font:10px 'JetBrains Mono',monospace;color:#94a3b8;margin-top:7px}
-                    #document-journal .dj-stat-icon{padding:7px;border-radius:10px}
+                    #document-journal .dj-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:8px}
+                    #document-journal .dj-stat{text-align:left;background:#090e1a;border:1px solid;border-radius:10px;padding:7px 11px;box-shadow:0 2px 8px #0002;min-height:auto}
+                    #document-journal .dj-stat-label{font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:700;letter-spacing:.025em;line-height:1.2}
+                    #document-journal .dj-stat-number{font:800 18px 'JetBrains Mono',monospace;line-height:1.15;margin-top:2px}
+                    #document-journal .dj-stat-hint{font:9px 'JetBrains Mono',monospace;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+                    #document-journal .dj-stat-icon{padding:4px;border-radius:6px;display:flex;align-items:center;justify-content:center}
+                    #document-journal .dj-stat-icon svg{width:14px;height:14px}
+                    #document-journal .dj-position-categories{gap:8px;margin-bottom:8px}
+                    #document-journal .dj-position-categories .dj-stat{padding:6px 10px;min-height:auto}
+                    #document-journal .dj-position-categories .dj-stat .dj-stat-number{font-size:16px;margin-top:2px}
+                    #document-journal .dj-position-categories .dj-stat .dj-stat-hint{font-size:8.5px;margin-top:1px;color:#64748b}
                     #document-journal .dj-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border:1px solid #1e293b;border-radius:15px;background:#090e1a;margin:0 0 10px}
                     #document-journal .dj-filter-main,#document-journal .dj-filter-extra{display:contents}
                     #document-journal .dj-filter-main>label{flex:0 1 auto}#document-journal .dj-filter-main>label:first-child{flex:0 1 255px}
@@ -390,7 +395,7 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
                     #document-journal .dj-filter-main label:nth-child(2) input,#document-journal .dj-filter-main label:nth-child(3) input{width:145px}
                     #document-journal .dj-input{padding:8px 10px;border:1px solid #334155;background:#111b2e;color:#e2e8f0;border-radius:10px;font-size:12px;outline:none}
                     #document-journal .dj-input:focus{border-color:var(--dj-accent);box-shadow:0 0 0 2px #ffffff08}#document-journal input[type=checkbox]{accent-color:var(--dj-accent);width:15px;height:15px;flex-shrink:0}
-                    #document-journal .dj-table-wrap{overflow:auto;max-height:calc(100vh - 350px);background:#090e1a;border:1px solid #1e293b;border-radius:16px;box-shadow:0 6px 20px #0003;margin-top:12px}
+                    #document-journal .dj-table-wrap{overflow:auto;max-height:calc(100vh - 280px);background:#090e1a;border:1px solid #1e293b;border-radius:16px;box-shadow:0 6px 20px #0003;margin-top:10px}
                     #document-journal .dj-table{width:100%;font-size:12px;text-align:left;border-collapse:separate;border-spacing:0}
                     #document-journal .dj-table th{position:sticky;top:0;background:#0f172a;z-index:2;padding:12px;color:#94a3b8;font-weight:600;font-size:11px;white-space:nowrap;border-bottom:1px solid #26344b}
                     #document-journal .dj-table td{padding:12px;border-bottom:1px solid #1e293b88;vertical-align:middle}#document-journal .dj-table tr:last-child td{border-bottom:0}
@@ -406,7 +411,6 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
                     #document-journal .dj-modal{background:#090e1a;border-color:#334155;box-shadow:0 24px 80px #0009}
                     @media(prefers-reduced-motion:reduce){#document-journal .dj-tab,#document-journal .dj-button{transition:none}}
                     @media(max-width:800px){#document-journal{padding:0 12px 16px}#document-journal .dj-header{margin:0 -12px 14px;padding:14px 12px 0}#document-journal .dj-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#document-journal .dj-filter-main>label:first-child{max-width:none}#document-journal .dj-tab{padding:10px 12px}}
-                    #document-journal .dj-position-categories .dj-stat{min-height:100px}
                     #document-journal .dj-stat[aria-pressed=true]{outline:2px solid var(--dj-accent);outline-offset:-2px;background:#0b272a}
                     #document-journal .dj-table tbody tr.dj-missing-doc{background:#451a1a;animation:dj-document-reminder 2.8s ease-in-out infinite}
                     #document-journal .dj-table tbody tr.dj-missing-doc td:first-child{border-left:3px solid #fb7185}
@@ -429,16 +433,16 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
                     for (const key of Object.keys(filter)) newFilter[key] = isActive ? D.filters()[key] : filter[key];
                     changeFilter(newFilter);
                 }, title: 'Фільтрувати записи: ' + title
-            } : {})}><div className="flex items-center justify-between gap-2"><span className="dj-stat-label">{title}</span><span className="dj-stat-icon" style={tagStyle(color)}><DocumentJournalIcon name={icon} /></span></div><div className="dj-stat-number" style={{ color: palette[color] }}>{value}</div><p className="dj-stat-hint">{hint}</p></CardTag>;
+            } : {})}><div className="flex items-center justify-between gap-2"><span className="dj-stat-label">{title}</span><span className="dj-stat-icon" style={tagStyle(color)}><DocumentJournalIcon name={icon} size={14} /></span></div><div className="dj-stat-number" style={{ color: palette[color] }}>{value}</div><p className="dj-stat-hint">{hint}</p></CardTag>;
         })}</div>
         {tab === 'positions' && <>
             <div className="dj-stats dj-position-categories" data-testid="position-category-cards">{D.positionCategoryCards.map(category => <button type="button" key={category} aria-pressed={options.category === category} onClick={() => changeFilter({ category: options.category === category ? '' : category })} className="dj-stat" style={{ borderColor: '#334155' }}><span className="dj-stat-label">{category}</span><div className="dj-stat-number text-emerald-300">{periodRows.filter(row => D.matchesPositionCategory(row.category, category)).length}</div><p className="dj-stat-hint">{category === 'ОВгП' ? 'мінометні + вогневі · записів' : 'записів за період'}</p></button>)}</div>
-            <div className="mb-4 rounded-xl border border-slate-700 bg-slate-900/70 p-4 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-sm font-bold text-emerald-300">Звірка документального реєстру</h2><p className="text-xs text-slate-400 mt-1">Картки рахують записи за період. Історія пов’язує документи, а не підтверджує фактичний стан позиції.</p></div><label className="text-xs text-slate-400 space-y-1"><span className="block">Відкрити історію позиції</span><select aria-label="Відкрити історію позиції" className="dj-input max-w-full" value="" onChange={event => { const entry = positionRegister.entries.find(item => item.id === event.target.value); if (entry) { setNotice(''); setHistoryRow(entry.records[0]); } }}><option value="">Реєстр виставлень ({positionRegister.entries.length})</option>{positionRegister.entries.map(entry => <option key={entry.id} value={entry.id}>{entry.name} · {D.dateLabel(entry.records[0].date)} · № {entry.records[0].docNumber || 'очікується'}</option>)}</select></label></div>
+            <div className="mb-2.5 rounded-xl border border-slate-700/80 bg-slate-900/70 p-3 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2.5"><div><h2 className="text-xs font-bold text-emerald-300">Звірка документального реєстру</h2><p className="text-[11px] text-slate-400 mt-0.5">Картки рахують записи за період. Історія пов’язує документи, а не підтверджує фактичний стан позиції.</p></div><label className="text-xs text-slate-400 space-y-0.5"><span className="block text-[11px]">Відкрити історію позиції</span><select aria-label="Відкрити історію позиції" className="dj-input max-w-full py-1 text-xs" value="" onChange={event => { const entry = positionRegister.entries.find(item => item.id === event.target.value); if (entry) { setNotice(''); setHistoryRow(entry.records[0]); } }}><option value="">Реєстр виставлень ({positionRegister.entries.length})</option>{positionRegister.entries.map(entry => <option key={entry.id} value={entry.id}>{entry.name} · {D.dateLabel(entry.records[0].date)} · № {entry.records[0].docNumber || 'очікується'}</option>)}</select></label></div>
                 <div className="flex flex-wrap gap-2">
-                    <button className="dj-button" style={tagStyle('rose')} onClick={() => changePrefs(tab, { ...viewFilters, [tab]: { ...D.filters(), missingDoc: true } })}>Без номера донесення: {data.positions.filter(row => !D.hasDoc(row)).length}</button>
-                    <button className="dj-button" style={tagStyle('amber')} onClick={() => changePrefs(tab, { ...viewFilters, [tab]: { ...D.filters(), needsReview: true } })}>Потребує звірки: {positionRegister.issues.size}</button>
-                    <button className="dj-button" onClick={() => changeFilter({ category: '__uncategorized' })}>Без категорії: {periodRows.filter(row => !row.category).length}</button>
+                    <button className="dj-button text-[10px] py-1 px-2.5" style={tagStyle('rose')} onClick={() => changePrefs(tab, { ...viewFilters, [tab]: { ...D.filters(), missingDoc: true } })}>Без номера донесення: {data.positions.filter(row => !D.hasDoc(row)).length}</button>
+                    <button className="dj-button text-[10px] py-1 px-2.5" style={tagStyle('amber')} onClick={() => changePrefs(tab, { ...viewFilters, [tab]: { ...D.filters(), needsReview: true } })}>Потребує звірки: {positionRegister.issues.size}</button>
+                    <button className="dj-button text-[10px] py-1 px-2.5" onClick={() => changeFilter({ category: '__uncategorized' })}>Без категорії: {periodRows.filter(row => !row.category).length}</button>
                 </div>
             </div>
         </>}

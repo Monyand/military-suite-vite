@@ -30,28 +30,28 @@
       "previousSha256": "8736014f5a5ff35055fcb2b42151c681e30b7669bc8af619a6bc6d7f32c0071d"
     },
     "modules/documents/DocumentsApp.jsx": {
-      "date": "2026-10-28",
-      "reason": "Fix batch comparison, category learning, pagination, local ISO export filename, memoized documentary filtering and restore OVT nomenclature settings button.",
-      "sha256": "43ad94b45e9a76896a0ff272fd820ffa9bee341ca88cb43a7e0a060985860770",
-      "previousSha256": "9fd9303e0db60d5a4d802933489df25d94052b083d90d1e56798c8890a475dfd"
+      "date": "2026-11-03",
+      "reason": "Compact top action cards, category filter cards, and reconciliation block in DocumentJournal to prevent excessive vertical height and oversized tiles.",
+      "sha256": "d90bc810359be9dbb453cede7a80e8f3452dca0339a3f58dfd19f4dd073d7372",
+      "previousSha256": "43ad94b45e9a76896a0ff272fd820ffa9bee341ca88cb43a7e0a060985860770"
     },
     "modules/medical/MedicalApp.jsx": {
       "date": "2026-11-03",
-      "reason": "Impeccable distillation: remove artificial decorative cyan card side-stripe, normalize printable summary cards and design token fonts.",
-      "sha256": "2f3ebf373b4e5857387679cfe60ff1ceb7c33d8fb04081ed8e101082bf451aa2",
-      "previousSha256": "53ce99015c6d43f9f1d197618636432e304e6586aff9d0c30b209b31997ea09c"
+      "reason": "Separate casualties/losses and AWOL/SZCh into dedicated tabs ('Втрати о/с' and 'Облік СЗЧ'); add '4 МР', '5 МР', and '6 МР' to DEFAULT_UNITS.",
+      "sha256": "f818170a1bb1a2325a892899ade90f08be90fac34bbac7ce46350e7d71e84410",
+      "previousSha256": "808fcc701e89421f3f8280b7e7d2bbf9cdab51764f71c382657a0527175fa531"
     },
     "modules/events/EventsApp.jsx": {
       "date": "2026-11-03",
-      "reason": "Add Danger Zone database clearing for enemy events and personnel records with rollback snapshot; Impeccable distillation, hardening, keyboard accelerators (N, /) and a11y labels.",
-      "sha256": "a8bfeed5798c7707bb65ac00ca348abcc88c7e5ec9e02431fed41b67d098cc2a",
-      "previousSha256": "24445ab13ca9efc241db80ed1df19972c1b68d49e8681da8f4a7f158416bd002"
+      "reason": "Add Danger Zone database clearing; compact feed cards in EventRow and limit EventForm modal dialog width with ergonomic 6-column loss counters.",
+      "sha256": "0293c2ea9b6c8918bc41dffc7960993bfd6862b263909f5add38517964a84397",
+      "previousSha256": "a8bfeed5798c7707bb65ac00ca348abcc88c7e5ec9e02431fed41b67d098cc2a"
     },
     "app/App.jsx": {
-      "date": "2026-10-28",
-      "reason": "Support cross-module suite-switch-tab event for seamless HUB navigation; persist active module tab in localStorage across page reloads; PBD export/import controls.",
-      "sha256": "05c93fd062fbdb1ae0cbb60270d01b4ae70ad878f3b83ab9f2ee1e70f6c8508d",
-      "previousSha256": "02543277a1471fd30d83a958e33fc51cc60c53ad3831f1ecca8cb03d23bd90ff"
+      "date": "2026-11-03",
+      "reason": "Display top medical tab as 'Втрати о/с' while preserving 'Медична Евакуація' accessible name and cross-module HUB navigation.",
+      "sha256": "87237d1466cadb1240f323b21129131523286a83d48357a5a4ff720096dbac9a",
+      "previousSha256": "05c93fd062fbdb1ae0cbb60270d01b4ae70ad878f3b83ab9f2ee1e70f6c8508d"
     },
     "modules/personnel/personnel.js": {
       "date": "2026-10-23",
