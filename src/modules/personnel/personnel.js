@@ -2775,7 +2775,8 @@ const createPersonnelModule = () => {
                 const callsign = c[3] || '';
                 
                 const r  = RANKS.find(x => x.toLowerCase() === rankRaw.toLowerCase()) || rankRaw;
-                const ei = personnel.findIndex(p => (p.fullName || '').toLowerCase() === fullName.toLowerCase());
+                const normName = str => (str || '').toLowerCase().replace(/[\u2018\u2019\u02BC\u0060\u00B4']/g, "'").replace(/\s+/g, ' ').trim();
+                const ei = personnel.findIndex(p => normName(p.fullName) === normName(fullName));
                 if (ei !== -1) {
                     personnel[ei].rank = r;
                     personnel[ei].unit = unit;

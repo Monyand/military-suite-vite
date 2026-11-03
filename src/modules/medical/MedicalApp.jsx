@@ -45,6 +45,25 @@ const MedicalApp = (function() {
         const isAny300 = (type) => type && type.includes("(300)");
         const isAwol = (type) => type === "СЗЧ" || type === "Дезертирство";
         const isAny200 = (type) => type && (type.includes("(200)") || type.includes("200 (від ран)"));
+        const isLossTypeActive = (lossType, dynFilters, groupAnalytics) => {
+            if (!dynFilters) return true;
+            let effType = lossType;
+            if (groupAnalytics) {
+                if (effType === 'Зниклий безвісти (ЗБВ)') effType = 'Загибель (200)';
+                if (effType === 'Бойове травмування (300)') effType = 'Поранення (300)';
+            }
+            if (effType === 'Загибель (200)') return !!dynFilters.show200;
+            if (effType === '200 (від ран)') return !!dynFilters.show200pvr;
+            if (effType === 'Небойова смерть (200)') return !!dynFilters.showNonCombatDead;
+            if (effType === 'Поранення (300)') return !!dynFilters.showWound;
+            if (effType === 'Бойове травмування (300)') return !!dynFilters.showCombatTr;
+            if (effType === 'Небойове травмування (300)') return !!dynFilters.showNonCombatTr;
+            if (effType === 'Зниклий безвісти (ЗБВ)') return !!dynFilters.showMIA;
+            if (effType === 'СЗЧ' || effType === 'Дезертирство') return !!dynFilters.showAWOL;
+            if (isAny200(effType)) return !!dynFilters.show200;
+            if (isAny300(effType)) return !!dynFilters.showWound;
+            return true;
+        };
 
         const BODY_REGIONS = [
             { id: 'head', name: 'Голова', x: 100, y: 35, r: 22 }, { id: 'neck', name: 'Шия', x: 100, y: 65, r: 10 },
@@ -1752,6 +1771,8 @@ const MedicalApp = (function() {
                         if (ep.actualLoc !== anSector && ep.docLoc !== anSector) return;
                     }
 
+                    if (!isLossTypeActive(ep.lossType, dynFilters, groupAnalytics)) return;
+
                     const effType = groupAnalytics ? (ep.lossType === 'Зниклий безвісти (ЗБВ)' ? 'Загибель (200)' : ep.lossType === 'Бойове травмування (300)' ? 'Поранення (300)' : ep.lossType) : (ep.lossType === 'Бойове травмування (300)' ? 'Поранення (300)' : ep.lossType);
                     const is300 = isAny300(effType);
                     const is200 = isAny200(effType);
@@ -1800,6 +1821,7 @@ const MedicalApp = (function() {
 
                 // 2. Актуальна черга неевакуйованих (синхронізована з верхнім табло)
                 const globalWaiting300 = globalLatestEpisodes.filter(e => {
+                    if (!isLossTypeActive(e.lossType, dynFilters, groupAnalytics)) return false;
                     if (e.evacStatus !== "Не евакуйований" || !isAny300(e.lossType)) return false;
                     if (anUdp !== "all" && ((anUdp === "yes" && !e.inUdp) || (anUdp === "no" && e.inUdp))) return false;
                     if (anSector !== "all" && e.actualLoc !== anSector && e.docLoc !== anSector) return false;
@@ -1807,6 +1829,7 @@ const MedicalApp = (function() {
                 }).length;
 
                 const globalWaitingCritHeavy = globalLatestEpisodes.filter(e => {
+                    if (!isLossTypeActive(e.lossType, dynFilters, groupAnalytics)) return false;
                     if (e.evacStatus !== "Не евакуйований" || !isAny300(e.lossType)) return false;
                     if (e.severity !== 'Критичний' && e.severity !== 'Важкий') return false;
                     if (anUdp !== "all" && ((anUdp === "yes" && !e.inUdp) || (anUdp === "no" && e.inUdp))) return false;
@@ -1815,6 +1838,7 @@ const MedicalApp = (function() {
                 }).length;
 
                 const globalWaiting200 = globalLatestEpisodes.filter(e => {
+                    if (!isLossTypeActive(e.lossType, dynFilters, groupAnalytics)) return false;
                     const effType = groupAnalytics ? (e.lossType === 'Зниклий безвісти (ЗБВ)' ? 'Загибель (200)' : e.lossType) : e.lossType;
                     if (e.evacStatus !== "Не евакуйований" || !isAny200(effType)) return false;
                     if (anUdp !== "all" && ((anUdp === "yes" && !e.inUdp) || (anUdp === "no" && e.inUdp))) return false;
@@ -1823,6 +1847,7 @@ const MedicalApp = (function() {
                 }).length;
 
                 const globalWaitingMia = globalLatestEpisodes.filter(e => {
+                    if (!isLossTypeActive(e.lossType, dynFilters, groupAnalytics)) return false;
                     if (groupAnalytics) return false;
                     if (e.evacStatus !== "Не евакуйований" || e.lossType !== 'Зниклий безвісти (ЗБВ)') return false;
                     if (anUdp !== "all" && ((anUdp === "yes" && !e.inUdp) || (anUdp === "no" && e.inUdp))) return false;
@@ -1842,7 +1867,7 @@ const MedicalApp = (function() {
                     globalWaiting300, globalWaiting200, globalWaitingMia, globalWaitingCritHeavy,
                     avgEvacTimeDays, evacSuccessRate
                 };
-            }, [episodes, globalLatestEpisodes, anDateFrom, anDateTo, anUdp, anSector, anShowLatest, groupAnalytics]);
+            }, [episodes, globalLatestEpisodes, anDateFrom, anDateTo, anUdp, anSector, anShowLatest, groupAnalytics, dynFilters]);
 
             const availableAnSectors = useMemo(() => {
                 const map = new Map();
@@ -1878,6 +1903,7 @@ const MedicalApp = (function() {
                     if (anSector !== "all") {
                         if (ep.actualLoc !== anSector && ep.docLoc !== anSector) return false;
                     }
+                    if (!isLossTypeActive(ep.lossType, dynFilters, groupAnalytics)) return false;
                     return true;
                 });
                 if (anShowLatest) {
@@ -1886,7 +1912,7 @@ const MedicalApp = (function() {
                     filtered = Array.from(map.values()).sort((a, b) => parseSafeDate(b.date) - parseSafeDate(a.date));
                 }
                 return filtered;
-            }, [episodes, anDateFrom, anDateTo, anUdp, anSector, anShowLatest]);
+            }, [episodes, anDateFrom, anDateTo, anUdp, anSector, anShowLatest, dynFilters, groupAnalytics]);
 
             const chartData = useMemo(() => {
                 const anFiltered = anFilteredEpisodes;
@@ -2030,13 +2056,26 @@ const MedicalApp = (function() {
                     });
                 };
 
-                const evacLabels = ['Критичний', 'Важкий', 'Середній', 'Легкий', '200 (Тіла)'];
+                const showAny300 = dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr;
+                const showAny200 = dynFilters.show200 || dynFilters.show200pvr || dynFilters.showNonCombatDead;
+
+                const evacLabels = [
+                    ...(showAny300 ? ['Критичний', 'Важкий', 'Середній', 'Легкий'] : []),
+                    ...(showAny200 ? ['200 (Тіла)'] : [])
+                ];
+                const evacColorsMap = {
+                    'Критичний': '#a855f7',
+                    'Важкий': '#ef4444',
+                    'Середній': '#f59e0b',
+                    'Легкий': '#10b981',
+                    '200 (Тіла)': '#71717a'
+                };
                 const evacChartDataConfig = {
                     labels: evacLabels,
                     datasets: [{
                         label: 'Середній час (днів)',
                         data: evacLabels.map(l => evacDaysCount[l] > 0 ? (evacDaysSum[l] / evacDaysCount[l]).toFixed(1) : 0),
-                        backgroundColor: ['#a855f7', '#ef4444', '#f59e0b', '#10b981', '#71717a'],
+                        backgroundColor: evacLabels.map(l => evacColorsMap[l]),
                         borderRadius: 4
                     }]
                 };
@@ -2083,7 +2122,7 @@ const MedicalApp = (function() {
                     evacStatusData,
                     causeColors
                 };
-            }, [anFilteredEpisodes, soldiers, groupAnalytics]);
+            }, [anFilteredEpisodes, soldiers, groupAnalytics, dynFilters]);
 
             const soldierHistory = useMemo(() => {
                 if (!selectedSoldierId) return [];
@@ -5703,7 +5742,7 @@ const MedicalApp = (function() {
                                     </div>
                                 </div>
 
-                                <p className="text-xs text-slate-400">Галочки вище керують структурою втрат. Для поденної та погодинної діаграм типи й зведення налаштовуються окремо в їхніх картках.</p>
+                                <p className="text-xs text-slate-400">Галочки вище фільтрують усі показники евакуації та діаграми аналітики.</p>
                                 <div className="medical-charts-grid grid grid-cols-1 lg:grid-cols-12 gap-6">
                                     <div className="bg-tactical-950/60 border border-tactical-800 rounded-xl p-5 shadow-sm lg:col-span-6 flex flex-col">
                                         <div className="flex items-center gap-2 mb-4">
@@ -5731,11 +5770,27 @@ const MedicalApp = (function() {
                                                 <div className="space-y-1.5 text-[11px] text-tactical-300 border-t border-tactical-800/50 pt-2">
                                                     <div className="flex justify-between" title="Поранені та евакуйовані в цьому ж періоді">
                                                         <span>З цього періоду:</span>
-                                                        <span className="font-bold text-cyan-200">300: {evacStats.evacPeriod300} / 200: {evacStats.evacPeriod200}</span>
+                                                        <span className="font-bold text-cyan-200">
+                                                            {(dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr) && (dynFilters.show200 || dynFilters.show200pvr || dynFilters.showNonCombatDead)
+                                                                ? `300: ${evacStats.evacPeriod300} / 200: ${evacStats.evacPeriod200}`
+                                                                : (dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr)
+                                                                    ? `300: ${evacStats.evacPeriod300}`
+                                                                    : (dynFilters.show200 || dynFilters.show200pvr || dynFilters.showNonCombatDead)
+                                                                        ? `200: ${evacStats.evacPeriod200}`
+                                                                        : '0'}
+                                                        </span>
                                                     </div>
                                                     <div className="flex justify-between" title="Евакуйовані зараз, але поранені раніше">
                                                         <span>З минулих періодів:</span>
-                                                        <span className="font-bold text-cyan-200">300: {evacStats.evacBefore300} / 200: {evacStats.evacBefore200}</span>
+                                                        <span className="font-bold text-cyan-200">
+                                                            {(dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr) && (dynFilters.show200 || dynFilters.show200pvr || dynFilters.showNonCombatDead)
+                                                                ? `300: ${evacStats.evacBefore300} / 200: ${evacStats.evacBefore200}`
+                                                                : (dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr)
+                                                                    ? `300: ${evacStats.evacBefore300}`
+                                                                    : (dynFilters.show200 || dynFilters.show200pvr || dynFilters.showNonCombatDead)
+                                                                        ? `200: ${evacStats.evacBefore200}`
+                                                                        : '0'}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -5750,11 +5805,27 @@ const MedicalApp = (function() {
                                                 <div className="space-y-1.5 text-[11px] text-tactical-300 border-t border-tactical-800/50 pt-2">
                                                     <div className="flex justify-between" title="Вже вивезені">
                                                         <span>Вже евакуйовано:</span>
-                                                        <span className="font-bold text-emerald-400">300: {evacStats.periodEvacuated300} / 200: {evacStats.periodEvacuated200}</span>
+                                                        <span className="font-bold text-emerald-400">
+                                                            {(dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr) && (dynFilters.show200 || dynFilters.show200pvr || dynFilters.showNonCombatDead)
+                                                                ? `300: ${evacStats.periodEvacuated300} / 200: ${evacStats.periodEvacuated200}`
+                                                                : (dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr)
+                                                                    ? `300: ${evacStats.periodEvacuated300}`
+                                                                    : (dynFilters.show200 || dynFilters.show200pvr || dynFilters.showNonCombatDead)
+                                                                        ? `200: ${evacStats.periodEvacuated200}`
+                                                                        : '0'}
+                                                        </span>
                                                     </div>
                                                     <div className="flex justify-between" title="Все ще чекають">
                                                         <span>Очікують евакуації:</span>
-                                                        <span className="font-bold text-red-400">300: {evacStats.periodWaiting300} / 200: {evacStats.periodWaiting200}</span>
+                                                        <span className="font-bold text-red-400">
+                                                            {(dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr) && (dynFilters.show200 || dynFilters.show200pvr || dynFilters.showNonCombatDead)
+                                                                ? `300: ${evacStats.periodWaiting300} / 200: ${evacStats.periodWaiting200}`
+                                                                : (dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr)
+                                                                    ? `300: ${evacStats.periodWaiting300}`
+                                                                    : (dynFilters.show200 || dynFilters.show200pvr || dynFilters.showNonCombatDead)
+                                                                        ? `200: ${evacStats.periodWaiting200}`
+                                                                        : '0'}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -5765,10 +5836,14 @@ const MedicalApp = (function() {
                                                     <div className="text-[10px] text-tactical-400">Всі, хто залишався неевакуйованим на момент кінця вказаного періоду.</div>
                                                 </div>
                                                 <div className="text-right border-l border-red-900/30 pl-4">
-                                                    <div className="font-bold text-white text-sm whitespace-nowrap mb-0.5">300: <span className="text-red-400 text-lg">{evacStats.globalWaiting300}</span> <span className="text-[9px] text-tactical-500 font-normal">({evacStats.globalWaitingCritHeavy} важкі)</span></div>
+                                                    {(dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr) && (
+                                                        <div className="font-bold text-white text-sm whitespace-nowrap mb-0.5">300: <span className="text-red-400 text-lg">{evacStats.globalWaiting300}</span> <span className="text-[9px] text-tactical-500 font-normal">({evacStats.globalWaitingCritHeavy} важкі)</span></div>
+                                                    )}
                                                     <div className="font-bold text-white text-sm whitespace-nowrap flex items-center justify-end gap-2">
-                                                        <span>200: <span className="text-tactical-300 text-lg">{evacStats.globalWaiting200}</span></span>
-                                                        {!groupAnalytics && evacStats.globalWaitingMia > 0 && (
+                                                        {(dynFilters.show200 || dynFilters.show200pvr || dynFilters.showNonCombatDead) && (
+                                                            <span>200: <span className="text-tactical-300 text-lg">{evacStats.globalWaiting200}</span></span>
+                                                        )}
+                                                        {!groupAnalytics && dynFilters.showMIA && evacStats.globalWaitingMia > 0 && (
                                                             <span className="text-blue-400 font-semibold text-xs ml-1">/ ЗБВ: <span className="text-blue-300 text-base font-bold">{evacStats.globalWaitingMia}</span></span>
                                                         )}
                                                     </div>
