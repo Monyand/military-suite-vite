@@ -5,7 +5,7 @@ const DocumentJournal = (() => {
             const tabs = ['tasks', 'ovt', 'positions'];
             const schemas = {
                 tasks: { title: 'Завдання', sheets: ['завдання', 'tasks'], fields: [
-                    ['date', 'Дата', 'date'], ['task', 'Зміст завдання', 'textarea', true],
+                    ['date', 'Дата', 'date'], ['task', 'Зміст завдання', 'textarea'],
                     ['reportedInPbd', 'Подано в ПБД', 'checkbox'],
                     ['status', 'Статус', ['Заплановано', 'Виконується', 'Виконано', 'Не виконано']], ['comment', 'Коментар', 'textarea']
                 ] },
@@ -139,7 +139,7 @@ const DocumentJournal = (() => {
                         const input = Object.fromEntries(schemas[tab].fields.map(([key], i) => [key, cells[i] ?? '']));
                         if (workbook.Workbook?.WBProps?.date1904 && typeof input.date === 'number') input.date += 1462;
                         const row = cleanRow(tab, input);
-                        const error = rowError(tab, row) || (tab === 'ovt' && input.time !== '' && !timeValue(input.time) ? 'Некоректний час.' : '');
+                        const error = rowError(tab, row) || (tab === 'tasks' && !row.task ? 'Заповніть поле «Зміст завдання».' : '') || (tab === 'ovt' && input.time !== '' && !timeValue(input.time) ? 'Некоректний час.' : '');
                         if (error) issues.push(`${sheetName}, рядок ${index + 2}: ${error}`);
                         else incoming[tab].push(row);
                     });
@@ -153,7 +153,7 @@ const DocumentJournal = (() => {
                     (!options.from || row.date >= options.from) && (!options.to || row.date <= options.to) &&
                     (!options.status || row.status === options.status) && (!options.category || (options.category === '__uncategorized' ? !row.category : tab === 'positions' ? matchesPositionCategory(row.category, options.category) : row.category === options.category)) && (!options.event || row.isEvent === (options.event === 'marked')) &&
                     (!options.unreported || !row.reportedInPbd) && (!options.missingDoc || !hasDoc(row));
-            }).sort((a, b) => tab === 'tasks' ? (a.date.localeCompare(b.date) || (a.createdAt || '').localeCompare(b.createdAt || '')) : (b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || '')));
+            }).sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || ''));
             return { KEY, tabs, schemas, positionCategoryCards, matchesPositionCategory, filters, defaultOvtDict, empty, settings, norm, checked, dateKey, dateLabel, timeValue, cleanRow, rowError, migrate, validate, fingerprint, merge, readWorkbook, hasDoc, filtered };
         })();
 

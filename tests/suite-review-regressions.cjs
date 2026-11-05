@@ -66,11 +66,15 @@ const medical = new Function('localforage', 'localStorage', 'localMedicalInput',
     assert.equal(medical.classify('NEW UNKNOWN'), 'unknown');
     const { buildPositionRegister } = await import('../src/modules/documents/position-register.js');
     const inspect = new Function('D', 'MedicalDailyTotals', 'buildPositionRegister', readSource('core/integrity.js').replace(/^export /gm, '') + '\nreturn inspectIntegrity;')(D, medical, buildPositionRegister);
-    const auditData = { localstorage: {}, localforage: { [D.KEY]: incoming, med_soldiers_v3: [{ id: 's' }], med_episodes_v3: [
-        { id: 'ok', soldierId: 's', date: '2026-09-28', lossType: '200 (від ран)' },
-        { id: 'bad', soldierId: 'missing', date: '2026-02-30', lossType: 'NEW UNKNOWN' },
-        { id: 'bad', soldierId: 's', date: '2026-09-28', lossType: 'СЗЧ' }
-    ] } };
+    const auditData = {
+        localstorage: {}, localforage: {
+            [D.KEY]: incoming, med_soldiers_v3: [{ id: 's' }], med_episodes_v3: [
+                { id: 'ok', soldierId: 's', date: '2026-09-28', lossType: '200 (від ран)' },
+                { id: 'bad', soldierId: 'missing', date: '2026-02-30', lossType: 'NEW UNKNOWN' },
+                { id: 'bad', soldierId: 's', date: '2026-09-28', lossType: 'СЗЧ' }
+            ]
+        }
+    };
     const auditRaw = JSON.stringify(auditData), audit = inspect(auditData);
     assert.equal(audit.medical.included, 1); assert.ok(audit.issues.length >= 4);
     assert.ok(audit.issues.some(issue => issue.recordId === 'bad' && issue.message.includes('Нерозпізнаний')));
@@ -94,7 +98,7 @@ const medical = new Function('localforage', 'localStorage', 'localMedicalInput',
         assert.deepEqual(getPage(tab, rows, 1, 50), rows.slice(0, 50));
         assert.deepEqual(getPage(tab, rows, 3, 50), rows.slice(100));
     }
-    assert.deepEqual(getPage('tasks', rows, 1, 50), rows.slice(70), 'Keep requested bottom-first task page');
+    assert.deepEqual(getPage('tasks', rows, 1, 50), rows.slice(0, 50), 'Top-first task page for newest-first sorting');
     assert.ok(documentSource.includes('date: window.SuiteDates.localISO()'));
     assert.ok(!readSource('modules/events/EventsApp.jsx').includes('const PersonnelView ='));
     console.log('PASS: multi-day local PBD transfer, fresh restore, legacy flags, exact rollback, preview, version migration, invalid-data rejection, integrity audit, new medical type, OVT status, HTML escaping and pagination.');
