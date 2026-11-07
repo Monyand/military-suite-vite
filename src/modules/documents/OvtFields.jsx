@@ -54,8 +54,8 @@ export function OvtFields({ draft: source, setDraft, rows, modelOptions, busy })
                 {field('status', 'Статус', { type: 'select', choices: isTransport ? OVT_STATUSES : D.schemas.ovt.fields.find(([key]) => key === 'status')[2] })}
                 {isTransport && field('equipmentType', 'Тип транспорту', { wide: true })}
                 {field('nomenclature', 'Номенклатура / Модель', { wide: true, required: true })}
-                {isUav ? field('serialNumber', 'Серійний номер') : switchedField('identifierType', 'Тип ідентифікатора', OVT_IDENTIFIERS)}
-                {!isUav && switchedField('registrationType', 'Тип реєстраційного номера', OVT_REGISTRATIONS)}
+                {isTransport ? switchedField('identifierType', 'Тип ідентифікатора', OVT_IDENTIFIERS) : field('serialNumber', 'Серійний номер')}
+                {isTransport && switchedField('registrationType', 'Тип реєстраційного номера', OVT_REGISTRATIONS)}
                 {(isTransport || isUav) && field('taskText', 'Завдання', { wide: true })}
                 {isUav && field('crewName', 'Назва екіпажу (наприклад «БАМБУК»)', { wide: true })}
                 {!isUav && <div className="ovt-wide ovt-location">

@@ -27,7 +27,7 @@
     <!-- Обгортка основного додатку -->
     <div id="app-wrapper" class="h-full flex flex-col md:flex-row">
         
-        <div id="toast" class="fixed top-4 right-4 bg-olive-600 text-white px-4 py-3 rounded-lg shadow-xl hidden z-[220] transition-opacity items-center space-x-2">
+        <div id="toast" class="fixed top-16 right-4 bg-olive-600 text-white px-4 py-3 rounded-lg shadow-xl hidden z-[220] transition-opacity items-center space-x-2">
             <i data-lucide="check" class="w-5 h-5"></i><span id="toast-msg" class="font-medium"></span>
         </div>
 
@@ -46,7 +46,7 @@
             </div>
         </div>
 
-        <div id="target-mode-banner" class="hidden fixed top-0 left-0 right-0 bg-slate-900 text-amber-200 border-b-2 border-amber-500 p-3 text-center shadow-lg z-[200] justify-center items-center gap-4 animate-fade-in">
+        <div id="target-mode-banner" class="hidden fixed top-14 left-0 right-0 bg-slate-900 text-amber-200 border-b-2 border-amber-500 p-3 text-center shadow-lg z-[200] justify-center items-center gap-4 animate-fade-in">
             <i data-lucide="crosshair" class="w-5 h-5 animate-pulse"></i>
             <span class="font-bold text-sm tracking-wide" id="target-mode-text">Виберіть позицію для переміщення...</span>
             <button onclick="cancelTargetMode()" class="bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded text-xs transition-colors shadow font-bold border border-slate-600 text-slate-200">Скасувати (Esc)</button>

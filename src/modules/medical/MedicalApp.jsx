@@ -39,11 +39,12 @@ const MedicalApp = (function() {
 
         const LOSS_TYPES = [
             "Поранення (300)", "Небойове травмування (300)", 
-            "Загибель (200)", "Небойова смерть (200)", "200 (від ран)", "Зниклий безвісти (ЗБВ)", "СЗЧ", "Дезертирство"
+            "Загибель (200)", "Небойова смерть (200)", "200 (від ран)", "Зниклий безвісти (ЗБВ)", "СЗЧ", "Повернення з СЗЧ", "Дезертирство"
         ];
         
         const isAny300 = (type) => type && type.includes("(300)");
-        const isAwol = (type) => type === "СЗЧ" || type === "Дезертирство";
+        const isAwol = (type) => type === "СЗЧ" || type === "Повернення з СЗЧ" || type === "Дезертирство";
+        const isAwolReturnEp = (ep) => Boolean(ep && (ep.lossType === "Повернення з СЗЧ" || (isAwol(ep.lossType) && ep.awolStatus === "Повернувся")));
         const isAny200 = (type) => type && (type.includes("(200)") || type.includes("200 (від ран)"));
         const isLossTypeActive = (lossType, dynFilters, groupAnalytics) => {
             if (!dynFilters) return true;
@@ -59,7 +60,7 @@ const MedicalApp = (function() {
             if (effType === 'Бойове травмування (300)') return !!dynFilters.showCombatTr;
             if (effType === 'Небойове травмування (300)') return !!dynFilters.showNonCombatTr;
             if (effType === 'Зниклий безвісти (ЗБВ)') return !!dynFilters.showMIA;
-            if (effType === 'СЗЧ' || effType === 'Дезертирство') return !!dynFilters.showAWOL;
+            if (effType === 'СЗЧ' || effType === 'Повернення з СЗЧ' || effType === 'Дезертирство') return !!dynFilters.showAWOL;
             if (isAny200(effType)) return !!dynFilters.show200;
             if (isAny300(effType)) return !!dynFilters.showWound;
             return true;
@@ -332,11 +333,12 @@ const MedicalApp = (function() {
 
         const calculateWaitTimeUI = medicalWaitTime;
 
-        const getBadgeColors = (lossType, severity) => {
+        const getBadgeColors = (lossType, severity, awolStatus) => {
             if (lossType === "Загибель (200)") return "bg-zinc-900 text-zinc-300 border-zinc-700";
             if (lossType === "Небойова смерть (200)") return "bg-stone-900 text-stone-300 border-stone-700";
             if (lossType === "200 (від ран)") return "bg-slate-900 text-slate-300 border-slate-700";
             if (lossType === "Зниклий безвісти (ЗБВ)") return "bg-blue-950 text-blue-300 border-blue-800";
+            if (lossType === "Повернення з СЗЧ" || (isAwol(lossType) && awolStatus === "Повернувся")) return "bg-emerald-950 text-emerald-300 border-emerald-800";
             if (lossType === "СЗЧ") return "bg-fuchsia-950 text-fuchsia-300 border-fuchsia-800";
             if (lossType === "Дезертирство") return "bg-pink-950 text-pink-300 border-pink-800";
             if (severity === "Критичний") return "bg-purple-950 text-purple-300 border-purple-800 animate-pulse";
@@ -559,6 +561,8 @@ const MedicalApp = (function() {
                 charStr = `300 (${sev})`;
             } else if (isAny200(episode.lossType)) {
                 charStr = 'Загибель (200)';
+            } else if (isAwolReturnEp(episode)) {
+                charStr = episode.lossType === 'Дезертирство' ? 'Повернення (Дезертирство)' : 'Повернення з СЗЧ';
             }
 
             const injPart = injStr ? ` — ${injStr}` : '';
@@ -570,7 +574,7 @@ const MedicalApp = (function() {
             const isAwolType = isAwol(episode.lossType);
             const isEvac = episode.evacStatus === "Евакуйований";
             if (isAwolType) {
-                evacStr = episode.awolStatus || 'СЗЧ';
+                evacStr = isAwolReturnEp(episode) ? 'Повернувся' : (episode.awolStatus || 'СЗЧ');
             } else if (isEvac || episode.awolStatus === "Повернувся") {
                 evacStr = 'Евакуйований';
             } else {
@@ -586,7 +590,8 @@ const MedicalApp = (function() {
         const EpisodeCard = React.memo(({ episode, soldier: baseSoldier, soldierEpisodes = [], onEdit, onNotify, viewMode = 'grid', onReview, clockTick }) => {
             const soldier = MedicalPersonnelDirectory.forEpisode(episode, baseSoldier);
             const [isCopied, setIsCopied] = React.useState(false);
-            const badgeClass = getBadgeColors(episode.lossType, episode.severity);
+            const isReturnedAwol = isAwolReturnEp(episode);
+            const badgeClass = getBadgeColors(episode.lossType, episode.severity, episode.awolStatus);
             const isEvac = episode.evacStatus === "Евакуйований";
             const injStr = getInjStrUI(episode.injuries);
             
@@ -606,7 +611,9 @@ const MedicalApp = (function() {
             // Рядок для копіювання
             let evacCopyStr = 'Не евакуйований';
             if (isAwol(episode.lossType)) {
-                evacCopyStr = episode.awolStatus || 'СЗЧ';
+                evacCopyStr = isReturnedAwol
+                    ? (evacFormattedDate ? `Повернувся (${evacFormattedDate})` : 'Повернувся')
+                    : (episode.awolStatus || 'СЗЧ');
             } else if (isEvac || episode.awolStatus === "Повернувся") {
                 evacCopyStr = evacFormattedDate ? `Евакуйований (${evacFormattedDate})` : 'Евакуйований';
             } else {
@@ -621,7 +628,8 @@ const MedicalApp = (function() {
 
             const leftAccentColor = 
                 isAny200(episode.lossType) ? 'bg-zinc-500' :
-                episode.lossType === 'Зниклий безвісті (ЗБВ)' ? 'bg-blue-500' :
+                episode.lossType === 'Зниклий безвісті (ЗБВ)' || episode.lossType === 'Зниклий безвісти (ЗБВ)' ? 'bg-blue-500' :
+                isReturnedAwol ? 'bg-emerald-500' :
                 isAwol(episode.lossType) ? 'bg-fuchsia-500' :
                 episode.severity === 'Критичний' ? 'bg-purple-500' :
                 episode.severity === 'Важкий' ? 'bg-red-500' :
@@ -644,6 +652,15 @@ const MedicalApp = (function() {
 
             const renderEvacBadge = (widthClass = "w-48 xl:w-[200px]") => {
                 if (isAwol(episode.lossType)) {
+                    if (isReturnedAwol) {
+                        return (
+                            <div className={`${widthClass} text-center text-xs font-semibold px-2.5 py-1 rounded-xl bg-emerald-950/40 border border-emerald-800/60 text-emerald-300 shadow-inner flex items-center justify-center gap-1.5`}>
+                                <Icon name="check-circle" className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                <span className="text-emerald-300 truncate">Повернувся</span>
+                                {evacFormattedDate && <span className="text-emerald-400 font-mono font-bold text-[11px]">({evacFormattedDate})</span>}
+                            </div>
+                        );
+                    }
                     return (
                         <div className={`${widthClass} text-center text-xs font-semibold px-2.5 py-1 rounded-xl bg-slate-950/90 border border-slate-800 text-slate-300 shadow-inner flex items-center justify-center gap-1.5`}>
                             <Icon name="user-x" className="w-3.5 h-3.5 text-fuchsia-400 shrink-0" />
@@ -740,7 +757,7 @@ const MedicalApp = (function() {
                             <div className="grid grid-cols-1 sm:grid-cols-[minmax(180px,250px)_minmax(140px,200px)_1fr] items-center gap-2">
                                 <div className="min-w-0 flex items-center">
                                     <div className="w-fit max-w-full flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
-                                        <Icon name={isAwol(episode.lossType) ? "compass" : "target"} className={`w-3.5 h-3.5 ${isAwol(episode.lossType) ? 'text-fuchsia-400' : 'text-red-400'} shrink-0`} />
+                                        <Icon name={isAwol(episode.lossType) ? "compass" : "target"} className={`w-3.5 h-3.5 ${isReturnedAwol ? 'text-emerald-400' : isAwol(episode.lossType) ? 'text-fuchsia-400' : 'text-red-400'} shrink-0`} />
                                         <span className="text-slate-400 text-[10px] uppercase font-semibold tracking-wider shrink-0">{isAwol(episode.lossType) ? "Звідки:" : "Причина:"}</span>
                                         <span className="font-medium text-white truncate" title={episode.cause}>{episode.cause}</span>
                                     </div>
@@ -816,7 +833,7 @@ const MedicalApp = (function() {
                         {/* 3. Права колонка: Варіант А (Кольоровий статус втрати + темне скло евакуації з акцентним таймером) */}
                         <div className="flex flex-col items-end justify-center gap-1.5 shrink-0 lg:border-l lg:border-slate-800/80 lg:pl-3.5">
                             <span className={`w-48 xl:w-[200px] text-center text-xs uppercase font-bold tracking-wide px-2.5 py-1 rounded-xl border shadow-sm ${badgeClass}`}>
-                                {isAny300(episode.lossType) ? `${episode.lossType.split(' ')[0]} (${episode.severity})` : episode.lossType}
+                                {isAny300(episode.lossType) ? `${episode.lossType.split(' ')[0]} (${episode.severity})` : isReturnedAwol ? (episode.lossType === "Дезертирство" ? "Повернення (Дезерт.)" : "Повернення з СЗЧ") : episode.lossType}
                             </span>
                             {renderEvacBadge("w-48 xl:w-[200px]")}
                         </div>
@@ -890,7 +907,7 @@ const MedicalApp = (function() {
                         {/* Статуси вгорі */}
                         <div className="flex flex-col items-end gap-1.5 shrink-0">
                             <span className={`w-44 text-center text-xs uppercase font-bold tracking-wide px-2 py-0.5 rounded-xl border shadow-sm ${badgeClass}`}>
-                                {isAny300(episode.lossType) ? `${episode.lossType.split(' ')[0]} (${episode.severity})` : episode.lossType}
+                                {isAny300(episode.lossType) ? `${episode.lossType.split(' ')[0]} (${episode.severity})` : isReturnedAwol ? (episode.lossType === "Дезертирство" ? "Повернення (Дезерт.)" : "Повернення з СЗЧ") : episode.lossType}
                             </span>
                             {renderEvacBadge("w-44")}
                         </div>
@@ -901,7 +918,7 @@ const MedicalApp = (function() {
                         {/* Рядок 1: Причина | Факт | Док */}
                         <div className="grid grid-cols-1 sm:grid-cols-[minmax(160px,210px)_minmax(130px,160px)_minmax(130px,1fr)] items-center gap-2">
                             <div className="flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
-                                <Icon name={isAwol(episode.lossType) ? "compass" : "target"} className={`w-3.5 h-3.5 ${isAwol(episode.lossType) ? 'text-fuchsia-400' : 'text-red-400'} shrink-0`} />
+                                <Icon name={isAwol(episode.lossType) ? "compass" : "target"} className={`w-3.5 h-3.5 ${isReturnedAwol ? 'text-emerald-400' : isAwol(episode.lossType) ? 'text-fuchsia-400' : 'text-red-400'} shrink-0`} />
                                 <span className="text-slate-400 text-[10px] uppercase font-semibold tracking-wider shrink-0">{isAwol(episode.lossType) ? "Звідки:" : "Причина:"}</span>
                                 <span className="font-medium text-white truncate" title={episode.cause}>{episode.cause}</span>
                             </div>
@@ -1734,9 +1751,9 @@ const MedicalApp = (function() {
                 
                 const deadCount = latestEpisodesData.filter(e => isAny200(e.lossType)).length;
                 const miaCount = latestEpisodesData.filter(e => e.lossType === 'Зниклий безвісти (ЗБВ)').length;
-                const awolCount = latestEpisodesData.filter(e => isAwol(e.lossType) && e.awolStatus === 'В розшуку').length;
+                const awolCount = latestEpisodesData.filter(e => isAwol(e.lossType) && !isAwolReturnEp(e)).length;
                 const awolTotal = latestEpisodesData.filter(e => isAwol(e.lossType)).length;
-                const awolReturned = latestEpisodesData.filter(e => isAwol(e.lossType) && e.awolStatus === 'Повернувся').length;
+                const awolReturned = latestEpisodesData.filter(e => isAwolReturnEp(e)).length;
                 const lossesCount = timeFilteredEpisodes.filter(e => !isAwol(e.lossType)).length;
                 const awolFilteredCount = timeFilteredEpisodes.filter(e => isAwol(e.lossType)).length;
                 const lossesSoldiersCount = latestEpisodesData.filter(e => !isAwol(e.lossType)).length;
@@ -1972,7 +1989,7 @@ const MedicalApp = (function() {
                     else if (effType === 'Бойове травмування (300)') { typeKey = 'Бойове'; cCombat++; }
                     else if (effType === 'Небойове травмування (300)') { typeKey = 'Небойове'; cNonCombat++; }
                     else if (effType === 'Зниклий безвісти (ЗБВ)') { typeKey = 'ЗБВ'; cMia++; }
-                    else if (effType === 'СЗЧ') { typeKey = 'СЗЧ'; cAwol++; }
+                    else if (effType === 'СЗЧ' || effType === 'Повернення з СЗЧ') { typeKey = 'СЗЧ'; cAwol++; }
                     else if (effType === 'Дезертирство') { typeKey = 'Дезертирство'; cDesert++; }
 
                     if (typeKey) {
@@ -3437,9 +3454,10 @@ const MedicalApp = (function() {
                         matchSearch = searchStr.includes(normSearch);
                     }
 
-                    const matchLoss = filterLossTypes.includes(episode.lossType);
+                    const effectiveLossType = (episode.lossType === "СЗЧ" && episode.awolStatus === "Повернувся") ? "Повернення з СЗЧ" : episode.lossType;
+                    const matchLoss = filterLossTypes.includes(effectiveLossType);
                     const matchSeverity = isAny300(episode.lossType) ? (!episode.severity || filterSeverities.includes(episode.severity)) : true;
-                    const currentStatus = isAwol(episode.lossType) ? episode.awolStatus : episode.evacStatus;
+                    const currentStatus = isAwol(episode.lossType) ? (isAwolReturnEp(episode) ? "Повернувся" : (episode.awolStatus || "В розшуку")) : episode.evacStatus;
                     const matchEvac = filterEvacStatuses.includes(currentStatus);
                     const matchCause = isAwol(episode.lossType) ? true : (!episode.cause || filterCauses.includes(episode.cause));
                     const matchUdp = filterUdp === "all" ? true : (filterUdp === "yes" ? episode.inUdp : !episode.inUdp);
@@ -3529,8 +3547,9 @@ const MedicalApp = (function() {
                     setNewSoldierUnit("");
                 }
                 
+                const isReturnedTabView = activeTab === 'awol' && filterEvacStatuses.includes('Повернувся') && !filterEvacStatuses.includes('В розшуку');
                 setEpisodeDate("");
-                setLossType(activeTab === 'awol' ? "СЗЧ" : "");
+                setLossType(activeTab === 'awol' ? (isReturnedTabView ? "Повернення з СЗЧ" : "СЗЧ") : "");
                 setCause("");
                 setSeverity("");
                 setInUdp(false);
@@ -3539,7 +3558,7 @@ const MedicalApp = (function() {
                 setNotes("");
                 setInjuries({});
                 setEvacStatus("Не евакуйований");
-                setAwolStatus("В розшуку");
+                setAwolStatus(isReturnedTabView ? "Повернувся" : "В розшуку");
                 setEvacDate(""); 
                 setHasReport(false);
                 setReportDate("");
@@ -3639,6 +3658,7 @@ const MedicalApp = (function() {
                 const soldierObj = rosterSelection ? { name: newSoldierName.trim(), callsign: formatCallsignUI(newSoldierCallsign), rank: newSoldierRank, unit: newSoldierUnit } : (soldiers.find(s => s.id === finalSoldierId) || { name: newSoldierName, callsign: newSoldierCallsign.trim() });
                 const is300 = isAny300(lossType);
                 const todayStrDate = new Date().toLocaleDateString('en-CA');
+                const finalAwolStatus = lossType === "Повернення з СЗЧ" ? "Повернувся" : awolStatus;
 
                 const newEpisode = {
                     id: 'ep_' + Date.now(),
@@ -3649,8 +3669,8 @@ const MedicalApp = (function() {
                     unit: newSoldierUnit || soldierObj.unit || "Не вказано",
                     inUdp, actualLoc, docLoc,
                     injuries: is300 ? injuries : {},
-                    notes, evacStatus, awolStatus, weaponStatus,
-                    evacTime: (evacStatus === 'Евакуйований' || awolStatus === 'Повернувся') ? (evacDate || todayStrDate) : "",
+                    notes, evacStatus, awolStatus: finalAwolStatus, weaponStatus,
+                    evacTime: (evacStatus === 'Евакуйований' || finalAwolStatus === 'Повернувся') ? (evacDate || todayStrDate) : "",
                     hasReport, reportDate: hasReport ? (reportDate || todayStrDate) : ""
                 };
 
@@ -3674,7 +3694,7 @@ const MedicalApp = (function() {
                 setNewSoldierRank(episode.rank || soldier?.rank || "");
                 setNewSoldierUnit(episode.unit || soldier?.unit || "");
                 setEpisodeDate(localMedicalInput(episode.date));
-                setLossType(episode.lossType || "");
+                setLossType((episode.lossType === "СЗЧ" && episode.awolStatus === "Повернувся") ? "Повернення з СЗЧ" : (episode.lossType || ""));
                 setCause(episode.cause || "");
                 setSeverity(episode.severity || "");
                 setInUdp(episode.inUdp);
@@ -3683,7 +3703,7 @@ const MedicalApp = (function() {
                 setNotes(episode.notes || "");
                 setInjuries(episode.injuries || {});
                 setEvacStatus(episode.evacStatus || "Не евакуйований");
-                setAwolStatus(episode.awolStatus || "В розшуку");
+                setAwolStatus(isAwolReturnEp(episode) ? "Повернувся" : (episode.awolStatus || "В розшуку"));
                 
                 const evT = localMedicalInput(episode.evacTime).slice(0, 10);
                 setEvacDate(evT);
@@ -3748,6 +3768,7 @@ const MedicalApp = (function() {
                 const original = episodes.find(ep => ep.id === currentEpisode.id);
                 const is300 = isAny300(lossType);
                 const todayStrDate = new Date().toLocaleDateString('en-CA');
+                const finalAwolStatus = lossType === "Повернення з СЗЧ" ? "Повернувся" : awolStatus;
                 
                 const updatedEpisode = {
                     ...currentEpisode,
@@ -3758,8 +3779,8 @@ const MedicalApp = (function() {
                     unit: newSoldierUnit || original?.unit || "Не вказано",
                     inUdp, actualLoc, docLoc,
                     injuries: is300 ? injuries : {},
-                    notes, evacStatus, awolStatus, weaponStatus,
-                    evacTime: (evacStatus === 'Евакуйований' || awolStatus === 'Повернувся') ? (evacDate || todayStrDate) : "",
+                    notes, evacStatus, awolStatus: finalAwolStatus, weaponStatus,
+                    evacTime: (evacStatus === 'Евакуйований' || finalAwolStatus === 'Повернувся') ? (evacDate || todayStrDate) : "",
                     hasReport, reportDate: hasReport ? (reportDate || todayStrDate) : ""
                 };
 
@@ -4764,17 +4785,24 @@ const MedicalApp = (function() {
                                     <FilterDropdown 
                                         title="Категорія" 
                                         count={filterLossTypes.filter(isAwol).length} 
-                                        total={2} 
+                                        total={LOSS_TYPES.filter(isAwol).length} 
                                         isOpen={openDropdown === 'types'} 
                                         onToggle={() => setOpenDropdown(openDropdown === 'types' ? null : 'types')}
-                                        onSelectAll={() => setFilterLossTypes(prev => [...prev.filter(t => !isAwol(t)), "СЗЧ", "Дезертирство"])}
+                                        onSelectAll={() => setFilterLossTypes(prev => [...prev.filter(t => !isAwol(t)), ...LOSS_TYPES.filter(isAwol)])}
                                         onClearAll={() => setFilterLossTypes(prev => prev.filter(t => !isAwol(t)))}
                                     >
                                         <CheckboxList 
-                                            items={["СЗЧ", "Дезертирство"]} 
+                                            items={LOSS_TYPES.filter(isAwol)} 
                                             selected={filterLossTypes} 
                                             toggle={(v) => toggleFilterItem(filterLossTypes, setFilterLossTypes, v)} 
-                                            onSelectOnly={(v) => setFilterLossTypes(prev => [...prev.filter(t => !isAwol(t)), v])} 
+                                            onSelectOnly={(v) => {
+                                                setFilterLossTypes(prev => [...prev.filter(t => !isAwol(t)), v]);
+                                                if (v === "Повернення з СЗЧ") {
+                                                    setFilterEvacStatuses(prev => Array.from(new Set([...prev, "Повернувся"])));
+                                                } else if (v === "СЗЧ") {
+                                                    setFilterEvacStatuses(prev => Array.from(new Set([...prev, "В розшуку"])));
+                                                }
+                                            }} 
                                         />
                                     </FilterDropdown>
                                 )}
@@ -5180,25 +5208,67 @@ const MedicalApp = (function() {
                                                 <span className="text-blue-200 font-bold">{stats.miaCount}</span>
                                             </span>
                                         </div>
-                                    ) : activeTab === "awol" ? (
-                                        <div className="flex items-center gap-2 bg-slate-950 px-2.5 py-1 rounded-xl border border-purple-900/60 text-xs shadow-inner">
-                                            <span className="text-purple-300 text-xs font-semibold flex items-center gap-1" title="Всього військовослужбовців з епізодами СЗЧ">
-                                                <Icon name="user-x" className="w-3.5 h-3.5 text-purple-400" />
-                                                <span className="font-mono text-purple-200 font-bold">{stats.awolTotal}</span>
-                                                <span className="text-purple-400/70 text-[10px]">всього</span>
-                                            </span>
-                                            <span className="text-slate-700 font-mono">|</span>
-                                            <span className="text-amber-300 text-xs flex items-center gap-1 font-mono" title="В розшуку">
-                                                <span className="text-amber-400 font-sans text-[10px] font-semibold">В розшуку:</span>
-                                                <span className="text-amber-200 font-bold">{stats.awolCount}</span>
-                                            </span>
-                                            <span className="text-slate-700 font-mono">|</span>
-                                            <span className="text-emerald-300 text-xs flex items-center gap-1 font-mono" title="Повернулись">
-                                                <span className="text-emerald-400 font-sans text-[10px] font-semibold">Повернулись:</span>
-                                                <span className="text-emerald-200 font-bold">{stats.awolReturned}</span>
-                                            </span>
-                                        </div>
-                                    ) : (
+                                    ) : activeTab === "awol" ? (() => {
+                                        const hasSearching = filterEvacStatuses.includes("В розшуку");
+                                        const hasReturned = filterEvacStatuses.includes("Повернувся");
+                                        const awolQuickMode = (hasSearching && hasReturned) ? 'all' : hasSearching ? 'searching' : hasReturned ? 'returned' : 'none';
+                                        const ensureAwolTypes = () => setFilterLossTypes(prev => Array.from(new Set([...prev, ...LOSS_TYPES.filter(isAwol)])));
+                                        return (
+                                            <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs shadow-inner">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        ensureAwolTypes();
+                                                        setFilterEvacStatuses(prev => Array.from(new Set([...prev, "В розшуку", "Повернувся"])));
+                                                    }}
+                                                    className={`px-2.5 py-1 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer select-none ${
+                                                        awolQuickMode === 'all'
+                                                            ? 'bg-purple-500/20 border-purple-500/50 text-purple-200 shadow-sm'
+                                                            : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                                                    }`}
+                                                    title="Показати всі записи СЗЧ та повернення"
+                                                >
+                                                    <Icon name="users" className="w-3.5 h-3.5 text-purple-400" />
+                                                    <span className="text-[11px]">Усі:</span>
+                                                    <span className="font-mono font-bold">{stats.awolTotal}</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        ensureAwolTypes();
+                                                        setFilterEvacStatuses(prev => [...prev.filter(s => s !== "В розшуку" && s !== "Повернувся"), "В розшуку"]);
+                                                    }}
+                                                    className={`px-2.5 py-1 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer select-none ${
+                                                        awolQuickMode === 'searching'
+                                                            ? 'bg-fuchsia-500/20 border-fuchsia-500/50 text-fuchsia-200 shadow-sm'
+                                                            : 'border-transparent text-slate-400 hover:text-fuchsia-300 hover:bg-slate-900'
+                                                    }`}
+                                                    title="Показати тільки тих, хто в розшуку (СЗЧ)"
+                                                >
+                                                    <Icon name="user-x" className="w-3.5 h-3.5 text-fuchsia-400" />
+                                                    <span className="text-[11px]">В розшуку:</span>
+                                                    <span className="font-mono font-bold text-fuchsia-300">{stats.awolCount}</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        ensureAwolTypes();
+                                                        setFilterEvacStatuses(prev => [...prev.filter(s => s !== "В розшуку" && s !== "Повернувся"), "Повернувся"]);
+                                                    }}
+                                                    className={`px-2.5 py-1 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer select-none ${
+                                                        awolQuickMode === 'returned'
+                                                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-200 shadow-sm'
+                                                            : 'border-transparent text-slate-400 hover:text-emerald-300 hover:bg-slate-900'
+                                                    }`}
+                                                    title="Показати тільки тих, хто повернувся з СЗЧ"
+                                                >
+                                                    <Icon name="check-circle" className="w-3.5 h-3.5 text-emerald-400" />
+                                                    <span className="text-[11px]">Повернулись:</span>
+                                                    <span className="font-mono font-bold text-emerald-300">{stats.awolReturned}</span>
+                                                </button>
+                                            </div>
+                                        );
+                                    })() : (
                                         <div className="flex items-center gap-2 bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800 text-xs shadow-inner">
                                             <span className="text-slate-300 text-xs font-semibold flex items-center gap-1" title="Унікальних військових у базі">
                                                 <Icon name="users" className="w-3.5 h-3.5 text-slate-400" />
@@ -6169,8 +6239,8 @@ const MedicalApp = (function() {
                                                 />
                                                 
                                                 {searchMatches.length > 0 && !selectedSoldierId && !isEditOpen && (
-                                                    <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-h-48 overflow-y-auto p-1.5 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
-                                                        <div className="flex items-center justify-between p-1.5 border-b border-slate-800 bg-slate-950/80 rounded-lg">
+                                                    <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in duration-150">
+                                                        <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-slate-800 bg-slate-950/90 shrink-0">
                                                             <span className="text-[9px] text-slate-400 uppercase font-bold font-mono">Знайдені збіги в базі:</span>
                                                             <button 
                                                                 type="button" 
@@ -6181,16 +6251,23 @@ const MedicalApp = (function() {
                                                                 <Icon name="x" className="w-2.5 h-2.5" />
                                                             </button>
                                                         </div>
-                                                        {searchMatches.map(s => (
-                                                            <button type="button" key={`${s.source}:${s.id}`} onClick={() => selectExistingSoldier(s)} data-testid="personnel-match" data-source={s.source} className="block w-full text-left p-2.5 rounded-lg border border-transparent hover:border-amber-500/40 bg-slate-950/50 hover:bg-slate-800 cursor-pointer text-xs transition">
-                                                                <div className="font-bold text-white flex items-center justify-between">
-                                                                    <span>{s.name}</span>
-                                                                    {s.callsign && <span className="text-amber-400 font-mono">«{s.callsign}»</span>}
-                                                                </div>
-                                                                <div className="text-[10px] text-slate-400 font-mono mt-0.5">{s.rank || '—'} | {s.unit || '—'}</div>
-                                                                <div className="text-[10px] text-emerald-400 mt-1">{s.source === 'roster' ? 'Журнал О/С' : 'Медична база'}</div>
-                                                            </button>
-                                                        ))}
+                                                        <div className="max-h-48 overflow-y-auto p-1.5 space-y-1">
+                                                            {searchMatches.map(s => {
+                                                                const hasMedLink = s.source === 'roster' && Boolean(MedicalPersonnelDirectory.resolve(s, soldiers).match);
+                                                                return (
+                                                                    <button type="button" key={`${s.source}:${s.id}`} onClick={() => selectExistingSoldier(s)} data-testid="personnel-match" data-source={s.source} className="block w-full text-left p-2.5 rounded-lg border border-transparent hover:border-amber-500/40 bg-slate-950/50 hover:bg-slate-800 cursor-pointer text-xs transition">
+                                                                        <div className="font-bold text-white flex items-center justify-between gap-2">
+                                                                            <span className="truncate">{s.name}</span>
+                                                                            {s.callsign && <span className="text-amber-400 font-mono shrink-0">«{formatCallsignUI(s.callsign)}»</span>}
+                                                                        </div>
+                                                                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">{s.rank || '—'} | {s.unit || '—'}</div>
+                                                                        <div className="text-[10px] text-emerald-400 mt-1">
+                                                                            {s.source === 'roster' ? (hasMedLink ? 'Журнал О/С · Медична база' : 'Журнал О/С') : 'Медична база'}
+                                                                        </div>
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
@@ -6284,6 +6361,11 @@ const MedicalApp = (function() {
                                                         setCause("");
                                                     } else if (!isAwol(newType) && isAwol(lossType) && DEFAULT_AWOL_CAUSES.includes(cause)) {
                                                         setCause("");
+                                                    }
+                                                    if (newType === "Повернення з СЗЧ") {
+                                                        setAwolStatus("Повернувся");
+                                                    } else if (newType === "СЗЧ" || (newType === "Дезертирство" && lossType === "Повернення з СЗЧ")) {
+                                                        setAwolStatus("В розшуку");
                                                     }
                                                     setLossType(newType);
                                                 }} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none cursor-pointer">
@@ -6379,34 +6461,45 @@ const MedicalApp = (function() {
                                             </div>
                                         )}
 
-                                        {isAwol(lossType) && (
-                                            <div className="bg-fuchsia-950/30 border border-fuchsia-800/40 rounded-2xl p-4 space-y-3">
-                                                <div>
-                                                    <label className="text-[10px] text-fuchsia-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Статус {lossType}</label>
-                                                    <select value={awolStatus} onChange={(e) => setAwolStatus(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-fuchsia-500/80 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer">
-                                                        <option value="В розшуку">В розшуку</option>
-                                                        <option value="Повернувся">Повернувся</option>
-                                                    </select>
-                                                </div>
-                                                {awolStatus === "Повернувся" && (
+                                        {isAwol(lossType) && (() => {
+                                            const isReturnedForm = lossType === "Повернення з СЗЧ" || awolStatus === "Повернувся";
+                                            return (
+                                                <div className={`${isReturnedForm ? 'bg-emerald-950/30 border-emerald-800/40' : 'bg-fuchsia-950/30 border-fuchsia-800/40'} border rounded-2xl p-4 space-y-3 transition-colors`}>
                                                     <div>
-                                                        <div className="flex justify-between items-center mb-1.5">
-                                                            <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider">Дата повернення</label>
-                                                            <span className="text-[9px] text-slate-500 font-mono">за замовч. сьогодні</span>
-                                                        </div>
-                                                        <input type="date" value={evacDate} onChange={(e) => setEvacDate(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none transition" />
+                                                        <label className={`text-[10px] ${isReturnedForm ? 'text-emerald-400' : 'text-fuchsia-400'} font-bold uppercase font-mono tracking-wider block mb-1.5`}>Статус {lossType}</label>
+                                                        <select value={awolStatus} onChange={(e) => {
+                                                            const nextStatus = e.target.value;
+                                                            setAwolStatus(nextStatus);
+                                                            if (nextStatus === "Повернувся" && lossType === "СЗЧ") {
+                                                                setLossType("Повернення з СЗЧ");
+                                                            } else if (nextStatus === "В розшуку" && lossType === "Повернення з СЗЧ") {
+                                                                setLossType("СЗЧ");
+                                                            }
+                                                        }} className={`w-full bg-slate-900 border border-slate-800 ${isReturnedForm ? 'focus:border-emerald-500/80' : 'focus:border-fuchsia-500/80'} rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer`}>
+                                                            <option value="В розшуку">В розшуку</option>
+                                                            <option value="Повернувся">Повернувся</option>
+                                                        </select>
                                                     </div>
-                                                )}
-                                                <div>
-                                                    <label className="text-[10px] text-fuchsia-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Звідки вибув / Обставини {lossType}</label>
-                                                    <select aria-label="Звідки вибув / Обставини СЗЧ" value={cause} onChange={(e) => setCause(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-fuchsia-500/80 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer">
-                                                        <option value="">-- Оберіть звідки вибув --</option>
-                                                        {DEFAULT_AWOL_CAUSES.map(c => <option key={c} value={c}>{c}</option>)}
-                                                        {cause && !DEFAULT_AWOL_CAUSES.includes(cause) && <option value={cause}>{cause}</option>}
-                                                    </select>
+                                                    {isReturnedForm && (
+                                                        <div>
+                                                            <div className="flex justify-between items-center mb-1.5">
+                                                                <label className="text-[10px] text-emerald-400 font-bold uppercase font-mono tracking-wider">Дата повернення</label>
+                                                                <span className="text-[9px] text-slate-500 font-mono">за замовч. сьогодні</span>
+                                                            </div>
+                                                            <input type="date" value={evacDate} onChange={(e) => setEvacDate(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500/80 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none transition" />
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <label className={`text-[10px] ${isReturnedForm ? 'text-emerald-400' : 'text-fuchsia-400'} font-bold uppercase font-mono tracking-wider block mb-1.5`}>Звідки вибув / Обставини {lossType === "Повернення з СЗЧ" ? "СЗЧ" : lossType}</label>
+                                                        <select aria-label="Звідки вибув / Обставини СЗЧ" value={cause} onChange={(e) => setCause(e.target.value)} className={`w-full bg-slate-900 border border-slate-800 ${isReturnedForm ? 'focus:border-emerald-500/80' : 'focus:border-fuchsia-500/80'} rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer`}>
+                                                            <option value="">-- Оберіть звідки вибув --</option>
+                                                            {DEFAULT_AWOL_CAUSES.map(c => <option key={c} value={c}>{c}</option>)}
+                                                            {cause && !DEFAULT_AWOL_CAUSES.includes(cause) && <option value={cause}>{cause}</option>}
+                                                        </select>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
+                                            );
+                                        })()}
 
                                         <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
                                             <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-300 hover:text-white cursor-pointer select-none">

@@ -137,6 +137,9 @@ const DocumentJournal = (() => {
                     rows.slice(1).forEach((cells, index) => {
                         if (!cells.some(cell => String(cell ?? '').trim())) return;
                         const input = Object.fromEntries(schemas[tab].fields.map(([key], i) => [key, cells[i] ?? '']));
+                        if (tab === 'positions' && input.newName && String(input.name ?? '').trim().endsWith('→ ' + String(input.newName).trim())) {
+                            input.name = String(input.name).trim().slice(0, -('→ ' + String(input.newName).trim()).length).trim();
+                        }
                         if (workbook.Workbook?.WBProps?.date1904 && typeof input.date === 'number') input.date += 1462;
                         const row = cleanRow(tab, input);
                         const error = rowError(tab, row) || (tab === 'tasks' && !row.task ? 'Заповніть поле «Зміст завдання».' : '') || (tab === 'ovt' && input.time !== '' && !timeValue(input.time) ? 'Некоректний час.' : '');

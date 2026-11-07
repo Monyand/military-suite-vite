@@ -8,11 +8,11 @@ const CATEGORIES = [
     ['Небойове травмування (300)', '300 (Небойові)'], ['Зниклий безвісти (ЗБВ)', 'ЗБВ'], ['СЗЧ', 'СЗЧ'], ['Дезертирство', 'Дезертирство']
 ];
 const SEVERITIES = ['Критичний', 'Важкий', 'Середній', 'Легкий'];
-const category = ep => PVR.has(ep.lossType) ? '200 (від ран)' : ep.lossType || 'Не вказано';
+const category = ep => PVR.has(ep.lossType) ? '200 (від ран)' : ep.lossType === 'Повернення з СЗЧ' ? 'СЗЧ' : ep.lossType || 'Не вказано';
 const is200 = ep => PVR.has(ep.lossType) || ep.lossType?.includes('(200)');
 const is300 = ep => ep.lossType?.includes('(300)');
 const isMia = ep => ep.lossType === 'Зниклий безвісти (ЗБВ)';
-const isAwol = ep => ['СЗЧ', 'Дезертирство'].includes(ep.lossType);
+const isAwol = ep => ['СЗЧ', 'Повернення з СЗЧ', 'Дезертирство'].includes(ep.lossType);
 const sum = values => values.reduce((total, value) => total + value, 0);
 const labelType = ep => PVR.has(ep.lossType) ? '200 (ПВР)' : ep.lossType || 'Не вказано';
 

@@ -15,8 +15,8 @@ export function buildOvtReport(row) {
         const dateStr = D.dateKey(row.date) ? D.dateLabel(row.date) : '[ДАТА]';
         const timeStr = D.timeValue(row.time) ? ` о ${D.timeValue(row.time)}` : '';
         const taskStr = phrase(row.taskText) ? ` під час виконання ${phrase(row.taskText)}` : ' під час виконання [ЗАВДАННЯ]';
-        const crewStr = phrase(row.crewName) ? ` екіпажем 2 мб 125 овмбр ${phrase(row.crewName)}` : ' екіпажем 2 мб 125 овмбр [ЕКІПАЖ]';
-        const reasonStr = phrase(row.eventDescription) ? ` унаслідок ${phrase(row.eventDescription)}` : ' унаслідок [ПРИЧИНА ВТРАТИ]';
+        const crewStr = phrase(row.crewName || row.position) ? ` екіпажем 2 мб 125 овмбр ${phrase(row.crewName || row.position)}` : ' екіпажем 2 мб 125 овмбр [ЕКІПАЖ]';
+        const reasonStr = phrase(row.eventDescription || row.comment) ? ` унаслідок ${phrase(row.eventDescription || row.comment)}` : ' унаслідок [ПРИЧИНА ВТРАТИ]';
         const coordsStr = phrase(row.coordinates) ? ` за координатами ${phrase(row.coordinates)}` : ' за координатами [КООРДИНАТИ]';
         const modelStr = text(row.nomenclature) ? ` БпЛА «${text(row.nomenclature).replace(/^["«'”]+|["»'”]+$/g, '')}»` : ' БпЛА [МОДЕЛЬ]';
         const outcome = { ВТРАЧЕНО: 'втрачено', ЗНИЩЕНО: 'знищено', ПОШКОДЖЕНО: 'пошкоджено', ЗНАЙДЕНО: 'знайдено' }[row.status];

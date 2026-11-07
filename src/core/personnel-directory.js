@@ -15,14 +15,6 @@ const MedicalPersonnelDirectory = (() => {
                     return { entries, warning: entries.length < rows.length ? 'У довіднику О/С є порожні записи або повторні ID; їх пропущено.' : '' };
                 } catch { return { entries: [], warning: 'Не вдалося прочитати довідник О/С. Медична база доступна; перевірте журнал О/С.' }; }
             };
-            const search = (query, medical, roster) => {
-                const q = norm(query);
-                if (q.length < 2) return [];
-                const tokens = q.split(' ');
-                return [...roster, ...medical.map(person => ({ ...person, source: 'medical' }))]
-                    .filter(person => tokens.every(token => norm(person.name).includes(token)) || norm(person.callsign).includes(q))
-                    .slice(0, 50);
-            };
             const resolve = (roster, medical) => {
                 const linked = medical.filter(person => person.sourceRosterId != null && String(person.sourceRosterId) === roster.rosterId);
                 if (linked.length === 1) return { match: linked[0], candidates: [] };
@@ -31,6 +23,22 @@ const MedicalPersonnelDirectory = (() => {
                 const exact = sameName.filter(person => norm(roster.callsign) && norm(person.callsign) === norm(roster.callsign));
                 if (exact.length === 1) return { match: exact[0], candidates: [] };
                 return { match: null, candidates: sameName };
+            };
+            const search = (query, medical, roster) => {
+                const q = norm(query);
+                if (q.length < 2) return [];
+                const tokens = q.split(' ');
+                const matchesQuery = person => tokens.every(token => norm(person.name).includes(token)) || norm(person.callsign).includes(q);
+                const matchedRoster = roster.filter(matchesQuery);
+                const resolvedMedIds = new Set();
+                matchedRoster.forEach(r => {
+                    const res = resolve(r, medical);
+                    if (res.match && res.match.id != null) resolvedMedIds.add(res.match.id);
+                });
+                const matchedMedical = medical
+                    .filter(person => !resolvedMedIds.has(person.id) && matchesQuery(person))
+                    .map(person => ({ ...person, source: 'medical' }));
+                return [...matchedRoster, ...matchedMedical].slice(0, 50);
             };
             const forEpisode = (episode, person) => episode?.personnelSnapshot ? { ...(person || {}), ...episode.personnelSnapshot } : person;
             return { read, search, resolve, forEpisode, norm };

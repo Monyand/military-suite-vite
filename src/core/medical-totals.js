@@ -45,7 +45,7 @@ const MedicalDailyTotals = (() => {
             const classify = lossType => {
                 const type = String(lossType || '').trim().toLocaleLowerCase('uk-UA').replace(/\s+/g, ' ');
                 if (fields.has(type)) return 'included';
-                return ['небойова смерть (200)', 'небойове травмування (300)', 'сзч', 'дезертирство'].includes(type) ? 'excluded' : 'unknown';
+                return ['небойова смерть (200)', 'небойове травмування (300)', 'сзч', 'повернення з сзч', 'дезертирство'].includes(type) ? 'excluded' : 'unknown';
             };
             return { aggregate, read, dateKey, classify };
         })();

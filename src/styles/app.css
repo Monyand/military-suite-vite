@@ -72,6 +72,15 @@ body, html { margin: 0; padding: 0; height: 100%; }
         #soldier-context-menu:not(.hidden) {
             display: flex;
         }
+
+        #app-tactical-container #toast {
+            top: 4.25rem !important;
+            z-index: 10050 !important;
+        }
+        #app-tactical-container #target-mode-banner {
+            top: 3.5rem !important;
+            z-index: 10040 !important;
+        }
         
         /* Тактичний ховер-ефект на картках */
         .tactical-card {

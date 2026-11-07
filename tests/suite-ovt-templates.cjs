@@ -41,6 +41,7 @@ const { createHarness } = require('./suite-backup-unit.cjs');
     assert.ok(buildOvtReport({ ...row, category: 'РЕБ' }).includes('Маршрут: Тест-А'));
     assert.equal(ovtCellText(selected, 'serialNumber'), 'Заводський номер: К-ТЕСТ');
     assert.equal(ovtCellText(row, 'position'), row.routeText);
+    assert.equal(ovtCellText({ category: 'БпЛА', position: '', crewName: 'ТЗ Кент' }, 'position'), 'ТЗ Кент');
     assert.equal(ovtCellText(row, 'comment'), row.eventDescription);
     const learned = T.learnOvtTemplates(templates, row);
     assert.deepEqual(T.learnOvtTemplates(learned, row), learned, 'Learning is idempotent');

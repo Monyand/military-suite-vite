@@ -911,10 +911,14 @@ const createPersonnelModule = () => {
 
     let toastTimer;
     function showToast(msg) {
+        const toastEl = el('toast');
+        if (!toastEl) return;
+        toastEl.classList.remove('top-4');
+        toastEl.classList.add('top-16');
         el('toast-msg').innerText = msg;
-        el('toast').classList.remove('hidden');
+        toastEl.classList.remove('hidden');
         clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => el('toast').classList.add('hidden'), 3000);
+        toastTimer = setTimeout(() => toastEl.classList.add('hidden'), 3000);
     }
 
     // ─── ШВИДКЕ КОПІЮВАННЯ В БУФЕР ───────────────────────────────────────────
@@ -1983,7 +1987,7 @@ const createPersonnelModule = () => {
                 </div>`;
             }).join('');
 
-            return `<div class="bg-slate-900/40 backdrop-blur-sm p-4.5 rounded-2xl border border-slate-800/80 mb-6 shadow-sm">
+            return `<div class="bg-slate-900/40 backdrop-blur-sm p-4 md:p-5 rounded-2xl border border-slate-800/80 mb-6 shadow-sm">
                 <div class="flex justify-between items-center mb-4">
                     <div class="flex items-center min-w-0 flex-1">
                         <h3 class="text-base font-extrabold text-white flex items-center cursor-pointer hover:text-emerald-400 transition-colors overflow-hidden" onclick="if(window.isMovingPosId) handlePosTargetModeDropGroup(${jsEsc(gName)}); else toggleGroup(${jsEsc(gName)});">
@@ -3281,7 +3285,11 @@ const createPersonnelModule = () => {
         window.isMovingPosId = null;
         window.isMovingSoldierId = soldier.id;
         document.body.classList.add('target-mode-active');
-        el('target-mode-banner').classList.remove('hidden');
+        const banner = el('target-mode-banner');
+        if (banner) {
+            banner.classList.remove('top-0', 'hidden');
+            banner.classList.add('top-14');
+        }
         el('target-mode-text').innerText = `Клікніть на позицію, щоб перемістити туди: ${soldier.fullName || 'Бійця'}`;
     }
 
@@ -3298,7 +3306,11 @@ const createPersonnelModule = () => {
         window.isMovingPosId = posId;
         const p = positions.find(x => x.id === posId);
         document.body.classList.add('target-mode-active');
-        el('target-mode-banner').classList.remove('hidden');
+        const banner = el('target-mode-banner');
+        if (banner) {
+            banner.classList.remove('top-0', 'hidden');
+            banner.classList.add('top-14');
+        }
         el('target-mode-text').innerText = `Клікніть на іншу позицію чи заголовок групи для переміщення: ${p ? p.name : 'Позиції'}`;
         showToast(`Виберіть куди перемістити «${p ? p.name : 'позицію'}»`);
         renderPositions();
