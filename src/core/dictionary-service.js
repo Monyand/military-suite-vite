@@ -35,7 +35,7 @@ export const SharedDictionaries = {
     read() { if (loadError) throw new Error(loadError); return structuredClone(cached); },
     ovtTemplates() { return structuredClone(cached.ovtTemplates ?? emptyDictionaries().ovtTemplates); },
     options(kind, base = [], current = '') {
-        if (kind === 'docPlaces' && useDocumentRegister) return [...new Set([...documentNames, current].filter(Boolean))].sort((a, b) => a.localeCompare(b, 'uk'));
+        if (kind === 'docPlaces' && useDocumentRegister) return [...new Set([...cached.dictionaries.docPlaces.canonical, ...documentNames, current].filter(Boolean))].sort((a, b) => a.localeCompare(b, 'uk'));
         const names = [...cached.dictionaries[kind].canonical, ...(kind === 'docPlaces' ? documentNames : []), ...base];
         const options = names.filter(value => typeof value === 'string' && value.trim()).map(value => canonicalLabel(cached, kind, value) || value.trim());
         // Never blank a legacy select or silently replace an already-open form.

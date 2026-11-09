@@ -83,6 +83,7 @@ const { readSource } = require('./source.cjs');
     assert.ok(!service.options('units', ['старий']).includes('старий'));
     assert.ok(service.options('units', ['старий'], 'старий').includes('старий'), 'Already selected raw value preserved');
     assert.ok(service.options('docPlaces').includes('архів а'), 'Document registry spelling is authoritative until a correction is confirmed');
+    assert.ok(service.options('docPlaces').includes('Архів А'), 'Canonical docPlaces standards from SharedDictionaries remain available alongside position register');
     const preview = await service.preview(config, ['units']);
     await assert.rejects(service.apply(preview, 'short', () => {}), /12 символів/);
     assert.equal(frozen, false, 'Password validation before suspension');

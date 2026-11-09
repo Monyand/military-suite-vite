@@ -4655,7 +4655,7 @@ const MedicalApp = (function() {
                     </header>
 
                     {notification && (
-                        <div className="fixed top-20 right-6 z-[100] animate-in fade-in slide-in-from-top-4 duration-200">
+                        <div className="fixed top-20 right-6 z-[25000] animate-in fade-in slide-in-from-top-4 duration-200">
                             <div className={`px-4 py-3 rounded-xl shadow-2xl border flex items-center gap-2.5 text-xs font-semibold ${notification.type === 'error' ? 'bg-red-950 border-red-700 text-red-200 shadow-red-950/50' : 'bg-slate-900 border-slate-700 text-slate-100 shadow-slate-950/50'}`}>
                                 <Icon name={notification.type === 'error' ? 'alert-octagon' : 'check-circle'} className={`w-4 h-4 ${notification.type === 'error' ? 'text-red-400' : 'text-emerald-400'}`} />
                                 <span>{notification.text}</span>
