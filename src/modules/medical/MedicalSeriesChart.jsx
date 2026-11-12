@@ -54,10 +54,10 @@ export function MedicalSeriesChart({ id, title, exportTitle, buckets, rows, pref
                 className="med-series-canvas"
                 options={{
                     interaction: { mode: 'index', intersect: false },
-                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', usePointStyle: false, boxWidth: 12, boxHeight: 10, padding: 10, font: { size: 11 } } }, tooltip: { mode: 'index', intersect: false } },
+                    plugins: { legend: { position: 'bottom', labels: { color: '#b8bec8', usePointStyle: false, boxWidth: 12, boxHeight: 10, padding: 10, font: { size: 11, family: "'Segoe UI Variable Text', Inter, system-ui, sans-serif" } } }, tooltip: { mode: 'index', intersect: false } },
                     scales: {
-                        x: { grid: { color: 'rgba(51,65,85,0.35)' }, ticks: { color: '#64748b', maxRotation: 0, autoSkip: true, maxTicksLimit: 12, ...(daily ? { callback: function(value) { return this.getLabelForValue(value).slice(0, 5); } } : {}) } },
-                        y: { beginAtZero: true, grace: '12%', grid: { color: 'rgba(51,65,85,0.35)' }, ticks: { color: '#64748b', precision: 0 }, title: { display: true, text: 'Кількість', color: '#64748b' } },
+                        x: { grid: { color: '#2e3138' }, ticks: { color: '#989fa9', maxRotation: 0, autoSkip: true, maxTicksLimit: 12, ...(daily ? { callback: function(value) { return this.getLabelForValue(value).slice(0, 5); } } : {}) } },
+                        y: { beginAtZero: true, grace: '12%', grid: { color: '#2e3138' }, ticks: { color: '#989fa9', precision: 0 }, title: { display: true, text: 'Кількість', color: '#b4c0d0' } },
                     },
                 }}
             /> : <div className="med-chart-empty" role="status">{buckets.length ? 'Оберіть окремі типи або увімкніть зведення, щоб побудувати діаграму.' : 'За вибраний період немає даних. Спробуйте змінити фільтри.'}</div>}

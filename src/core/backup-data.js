@@ -42,7 +42,11 @@ export function validateBackupRecords(data) {
 export function backupSummary(incoming, current) {
     const lists = snapshot => {
         const lf = snapshot.localforage, ls = snapshot.localstorage;
-        const legacy = key => ls[key] == null ? [] : JSON.parse(ls[key]);
+        const legacy = key => {
+            if (ls[key] == null) return [];
+            try { const parsed = JSON.parse(ls[key]); return Array.isArray(parsed) ? parsed : []; }
+            catch { return []; }
+        };
         return [
             ['Події', lf.enemy_events_v2 ?? lf.enemy_events_v1 ?? []],
             ['Реєстр осіб у подіях', lf.enemy_personnel_v1 ?? []],

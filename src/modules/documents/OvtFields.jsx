@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { DocumentJournal as D } from '../../core/documents.js';
 import { useSharedDictionaries, useOvtTemplates } from '../../core/use-shared-dictionaries.js';
 import { OVT_STATUSES, ovtTemplateOptions } from '../../core/ovt-templates.js';
@@ -21,8 +21,9 @@ export function OvtFields({ draft: source, setDraft, rows, modelOptions, busy })
         }
         setDraft(prepareOvtDraft(next));
     };
+    const resolvedModelOptions = useMemo(() => modelOptions ?? [...new Set((templates.models || []).filter(m => (m.category || 'Транспорт') === draft.category).map(m => typeof m === 'string' ? m : m.name))], [modelOptions, templates.models, draft.category]);
     const field = (key, title, { type = 'text', choices, wide = false, required = false } = {}) => {
-        if (choices === undefined) choices = key === 'position' ? options('docPlaces', rows.map(row => row.position), draft.position) : key === 'nomenclature' && !isTransport ? modelOptions : lists[key] ? ovtTemplateOptions(templates, lists[key], draft) : null;
+        if (choices === undefined) choices = key === 'position' ? options('docPlaces', rows.map(row => row.position), draft.position) : key === 'nomenclature' && !isTransport ? resolvedModelOptions : lists[key] ? ovtTemplateOptions(templates, lists[key], draft) : null;
         const id = 'ovt-field-' + key;
         return <label key={key} className={'ovt-field' + (wide ? ' ovt-wide' : '')}>
             <span>{title}{required ? ' *' : ''}</span>
@@ -73,12 +74,12 @@ export function OvtFields({ draft: source, setDraft, rows, modelOptions, busy })
             {!!(hiddenIds.length || legacyComment) && <details className="ovt-legacy"><summary>Додаткові раніше збережені дані</summary><p>Збережені без видалення. У донесення входять лише вибрані вище номери.</p>{hiddenIds.map(([label, value]) => <p key={label}>{label}: {value}</p>)}{legacyComment && <label>Попередній коментар<textarea aria-label="Попередній коментар" className="dj-input" rows={2} value={draft.comment} disabled={busy} onChange={event => change('comment', event.target.value)} /></label>}</details>}
         </div>
         <aside className="ovt-preview">
-            <div className="ovt-preview-heading"><div><span className="ovt-eyebrow">ПОЗАТЕРМІНОВЕ ДОНЕСЕННЯ</span><h3>Попередній перегляд</h3></div><span className="ovt-live">● Наживо</span></div>
+            <div className="ovt-preview-heading"><h3>Попередній перегляд донесення</h3><span className="ovt-live">Наживо</span></div>
             <textarea ref={preview} aria-label="Попередній перегляд донесення" readOnly value={buildOvtReport(draft)} />
             <p className="ovt-help">Текст змінюється разом із полями. Квадратні дужки позначають пропущені відомості.</p>
             {(isTransport || isUav) && <p className="ovt-help">Власні моделі й фрази запам’ятовуються після збереження за типом. Номери й координати в шаблони не записуються.</p>}
             {message && <p role="status" className="ovt-message">{message}</p>}
-            <button type="button" className="dj-button dj-indigo" onClick={async () => {
+            <button type="button" className="dj-button dj-primary" onClick={async () => {
                 try { await navigator.clipboard.writeText(buildOvtReport(draft)); setMessage('Текст скопійовано.'); }
                 catch { preview.current?.focus(); preview.current?.select(); setMessage('Натисніть Ctrl+C — текст виділено.'); }
             }}>Копіювати текст</button>

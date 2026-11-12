@@ -52,17 +52,17 @@ export function PositionPicker({ label, entries, value, fallbackName = '', onSel
                 onClick={() => { choose(null); input.current?.focus(); }}>×</button>}
         </div>
         {open && <div ref={list} id={listId} role="listbox" aria-label={'Варіанти: ' + label}
-            className="absolute z-50 left-0 right-0 max-h-56 overflow-y-auto rounded-xl border border-slate-600 bg-slate-900 shadow-2xl p-1">
+            className="absolute z-50 left-0 right-0 max-h-56 overflow-y-auto rounded-sm border border-[#3c404a] bg-[#17181b] p-1 overscroll-contain">
             {matches.map((entry, index) => <button type="button" role="option" tabIndex={-1} id={listId + '-' + index} key={entry.id}
                 data-position-id={entry.id} data-index={index} aria-selected={entry.id === value}
-                className={`block w-full text-left rounded-lg px-3 py-2 ${index === activeIndex ? 'bg-teal-900 text-teal-100' : 'text-slate-200 hover:bg-slate-800'}`}
+                className={`block w-full text-left rounded-sm px-2.5 py-1.5 ${index === activeIndex ? 'bg-[#2b67ab] text-white' : 'text-[#f3f4f6] hover:bg-[#222429]'}`}
                 onMouseDown={event => event.preventDefault()} onClick={() => choose(entry)}>
                 <span className="block font-semibold break-words">{entry.name}</span>
-                <span className="block text-xs text-slate-400">{entry.category || 'Без категорії'} · {entry.futureDocument ? 'пізніший документ' : entry.status} · {D.dateLabel(entry.records[0]?.date || entry.date)}{entry.records[0]?.docNumber ? ' · № ' + entry.records[0].docNumber : ''}</span>
+                <span className="block text-xs text-[#b8bec8] tabular-nums">{entry.category || 'Без категорії'} · {entry.futureDocument ? 'пізніший документ' : entry.status} · {D.dateLabel(entry.records[0]?.date || entry.date)}{entry.records[0]?.docNumber ? ' · № ' + entry.records[0].docNumber : ''}</span>
             </button>)}
-            {!matches.length && <p className="px-3 py-3 text-slate-400">Збігів немає. Перевірте назву та дату документа.</p>}
+            {!matches.length && <p className="px-3 py-2.5 text-[#b8bec8]">Збігів немає. Перевірте назву та дату документа.</p>}
         </div>}
-        <p id={listId + '-hint'} className={`text-xs ${unresolved || unavailable ? 'text-amber-300' : 'text-slate-400'}`}>
+        <p id={listId + '-hint'} className={`text-xs ${unresolved || unavailable ? 'text-[#d99b26]' : 'text-[#b8bec8]'}`}>
             {unresolved ? 'Натисніть на потрібну підказку — введений текст ще не є вибраною позицією.' : unavailable ? 'Зв’язок недоступний на цю дату — перевірте історію.' : selected ? 'Вибрано запис реєстру. Можна почати вводити іншу назву.' : 'Пошук за частиною назви · ↑ ↓ та Enter або натискання на підказку.'}
         </p>
     </div>;

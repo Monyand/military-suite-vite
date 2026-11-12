@@ -1,13 +1,25 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { SuiteBackup } from '../core/backup.js';
+import { bindDialogFocusTrap } from './dialog-focus.js';
+
+const SEARCH_HOMOGLYPHS = { a: 'а', c: 'с', e: 'е', i: 'і', o: 'о', p: 'р', x: 'х', y: 'у' };
+const MAX_VISIBLE_RESULTS = 150;
+
+const normSearchText = (value) => String(value ?? '')
+    .normalize('NFKC')
+    .trim()
+    .toLocaleLowerCase('uk-UA')
+    .replace(/[’ʼ`′]/g, "'")
+    .replace(/[aceiopxy]/g, ch => SEARCH_HOMOGLYPHS[ch] || ch)
+    .replace(/\s+/g, ' ');
 
 const MODULE_META = {
-    tactical:  { label: 'Журнал О/С',         badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40', icon: 'users' },
-    med:       { label: 'Наші втрати о/с',     badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',     icon: 'heart-pulse' },
-    tasks:     { label: 'Завдання',            badgeColor: 'bg-teal-500/20 text-teal-300 border-teal-500/40',     icon: 'clipboard' },
-    ovt:       { label: 'Втрати ОВТ',          badgeColor: 'bg-amber-600/20 text-amber-300 border-amber-500/40',   icon: 'truck' },
-    positions: { label: 'Статус позицій',      badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40', icon: 'map-pin' },
-    enemy:     { label: 'Втрати Противника',   badgeColor: 'bg-red-500/20 text-red-300 border-red-500/40',         icon: 'crosshair' },
+    tactical:  { label: 'Журнал О/С',         badgeColor: 'bg-[#4c8ed9]/12 text-[#93c5fd] border-[#4c8ed9]/45', icon: 'users' },
+    med:       { label: 'Наші втрати о/с',     badgeColor: 'bg-[#e05252]/12 text-[#fca5a5] border-[#e05252]/45', icon: 'heart-pulse' },
+    tasks:     { label: 'Завдання',            badgeColor: 'bg-[#34a873]/12 text-[#6ee7b7] border-[#34a873]/45', icon: 'clipboard' },
+    ovt:       { label: 'Втрати ОВТ',          badgeColor: 'bg-[#d99b26]/12 text-[#fcd34d] border-[#d99b26]/45', icon: 'truck' },
+    positions: { label: 'Статус позицій',      badgeColor: 'bg-[#34a873]/12 text-[#6ee7b7] border-[#34a873]/45', icon: 'map-pin' },
+    enemy:     { label: 'Втрати Противника',   badgeColor: 'bg-[#e05252]/12 text-[#fca5a5] border-[#e05252]/45', icon: 'crosshair' },
 };
 
 export function GlobalSearchModal({ onClose, onNavigate }) {
@@ -18,6 +30,7 @@ export function GlobalSearchModal({ onClose, onNavigate }) {
     const [dataSnapshot, setDataSnapshot] = useState(null);
     const inputRef = useRef(null);
     const listRef = useRef(null);
+    const dialogRef = useRef(null);
 
     // Завантаження актуальних даних при відкритті
     useEffect(() => {
@@ -41,11 +54,16 @@ export function GlobalSearchModal({ onClose, onNavigate }) {
         return () => { isMounted = false; };
     }, []);
 
+    // Focus trap, Escape та відновлення фокусу при закритті
+    useEffect(() => {
+        return bindDialogFocusTrap(dialogRef, onClose);
+    }, [onClose]);
+
     // Фокус на полі вводу
     useEffect(() => {
         const timer = setTimeout(() => {
             if (inputRef.current) inputRef.current.focus();
-        }, 50);
+        }, 20);
         return () => clearTimeout(timer);
     }, []);
 
@@ -69,7 +87,7 @@ export function GlobalSearchModal({ onClose, onNavigate }) {
                     module: 'tactical',
                     title: `${p.rank ? p.rank + ' ' : ''}${p.fullName || 'Без імені'}${p.callsign ? ` («${p.callsign}»)` : ''}`,
                     meta: `Підрозділ: ${p.unit || '—'} · Стан: ${p.status || 'ok'} · Завдання: ${p.currentTask || '—'}${p.note ? ` · Примітка: ${p.note}` : ''}`,
-                    searchStr: `${p.fullName || ''} ${p.callsign || ''} ${p.rank || ''} ${p.unit || ''} ${p.currentTask || ''} ${p.note || ''} ${p.id || ''}`.toLowerCase(),
+                    searchStr: normSearchText(`${p.fullName || ''} ${p.callsign || ''} ${p.rank || ''} ${p.unit || ''} ${p.status || ''} ${p.currentTask || ''} ${p.note || ''} ${p.id || ''}`),
                     raw: p,
                 });
             }
@@ -88,17 +106,19 @@ export function GlobalSearchModal({ onClose, onNavigate }) {
             for (const ep of episodes) {
                 if (!ep || typeof ep !== 'object') continue;
                 const soldier = soldierMap.get(String(ep.soldierId)) || {};
-                const name = ep.name || soldier.name || ep.fullName || 'Без імені';
-                const callsign = ep.callsign || soldier.callsign || '';
-                const rank = ep.rank || soldier.rank || '';
-                const unit = ep.unit || soldier.unit || '';
-                const dateStr = ep.date ? ep.date.replace('T', ' ') : '';
+                const snap = ep.personnelSnapshot || {};
+                const name = ep.soldierName || ep.name || snap.name || soldier.name || ep.fullName || 'Без імені';
+                const callsign = ep.callsign || snap.callsign || soldier.callsign || '';
+                const rank = ep.rank || snap.rank || soldier.rank || '';
+                const unit = ep.unit || snap.unit || soldier.unit || '';
+                const rawDate = ep.lossDate || ep.date || '';
+                const dateStr = rawDate ? String(rawDate).replace('T', ' ') : '';
                 records.push({
                     id: String(ep.id),
                     module: 'med',
                     title: `${rank ? rank + ' ' : ''}${name}${callsign ? ` («${callsign}»)` : ''} — ${ep.lossType || 'Втрата'}`,
                     meta: `${dateStr ? dateStr + ' · ' : ''}${ep.severity ? 'Важкість: ' + ep.severity + ' · ' : ''}${ep.evacStatus ? 'Статус: ' + ep.evacStatus + ' · ' : ''}Підрозділ: ${unit || '—'}${ep.cause ? ' · Причина: ' + ep.cause : ''}${ep.notes ? ' · ' + ep.notes : ''}`,
-                    searchStr: `${name} ${callsign} ${rank} ${unit} ${ep.lossType || ''} ${ep.severity || ''} ${ep.cause || ''} ${ep.evacStatus || ''} ${ep.actualLoc || ''} ${ep.docLoc || ''} ${ep.notes || ''} ${dateStr} ${ep.id || ''}`.toLowerCase(),
+                    searchStr: normSearchText(`${name} ${callsign} ${rank} ${unit} ${ep.lossType || ''} ${ep.severity || ''} ${ep.cause || ''} ${ep.evacStatus || ''} ${ep.actualLoc || ''} ${ep.docLoc || ''} ${ep.notes || ''} ${dateStr} ${ep.id || ''}`),
                     raw: ep,
                 });
             }
@@ -111,13 +131,15 @@ export function GlobalSearchModal({ onClose, onNavigate }) {
             if (Array.isArray(docJournal.tasks)) {
                 for (const t of docJournal.tasks) {
                     if (!t || typeof t !== 'object') continue;
-                    const num = t.number || t.id || '';
+                    const taskText = t.task || t.text || '';
+                    const comment = t.comment || t.notes || '';
+                    const headline = taskText ? (taskText.length > 72 ? taskText.slice(0, 72) + '…' : taskText) : `№${t.number || t.id || '—'}`;
                     records.push({
                         id: String(t.id),
                         module: 'tasks',
-                        title: `БР / Завдання №${num}${t.date ? ' від ' + t.date : ''}`,
-                        meta: `Підрозділ: ${t.unit || '—'} · Виконавець: ${t.executor || '—'}${t.text ? ' · ' + (t.text.length > 90 ? t.text.slice(0, 90) + '…' : t.text) : ''}`,
-                        searchStr: `${num} ${t.date || ''} ${t.unit || ''} ${t.executor || ''} ${t.text || ''} ${t.status || ''} ${t.notes || ''} ${t.id || ''}`.toLowerCase(),
+                        title: `Завдання${t.date ? ' від ' + t.date : ''}: ${headline}`,
+                        meta: `Статус: ${t.status || '—'}${t.reportedInPbd ? ' · Подано в ПБД' : ''}${t.unit ? ' · Підрозділ: ' + t.unit : ''}${t.executor ? ' · Виконавець: ' + t.executor : ''}${comment ? ' · ' + (comment.length > 90 ? comment.slice(0, 90) + '…' : comment) : ''}`,
+                        searchStr: normSearchText(`${taskText} ${t.date || ''} ${t.status || ''} ${comment} ${t.reportedInPbd ? 'пбд' : ''} ${t.number || ''} ${t.unit || ''} ${t.executor || ''} ${t.id || ''}`),
                         raw: t,
                     });
                 }
@@ -127,12 +149,15 @@ export function GlobalSearchModal({ onClose, onNavigate }) {
             if (Array.isArray(docJournal.ovt)) {
                 for (const o of docJournal.ovt) {
                     if (!o || typeof o !== 'object') continue;
+                    const titleName = o.nomenclature || o.equipmentType || o.name || 'ОВТ';
+                    const loc = o.position || o.unit || '—';
+                    const noteText = o.comment || o.eventDescription || o.consequence || o.notes || '';
                     records.push({
                         id: String(o.id),
                         module: 'ovt',
-                        title: `${o.name || o.nomenclature || 'ОВТ'}${o.status ? ' [' + o.status + ']' : ''}`,
-                        meta: `Категорія: ${o.category || '—'} · Дата: ${o.date || '—'} · Підрозділ: ${o.unit || '—'}${o.notes ? ' · ' + o.notes : ''}`,
-                        searchStr: `${o.name || ''} ${o.nomenclature || ''} ${o.category || ''} ${o.status || ''} ${o.unit || ''} ${o.date || ''} ${o.notes || ''} ${o.id || ''}`.toLowerCase(),
+                        title: `${titleName}${o.status ? ' [' + o.status + ']' : ''}`,
+                        meta: `Категорія: ${o.category || '—'} · Дата: ${o.date || '—'}${o.time ? ' ' + o.time : ''} · Позиція: ${loc}${o.serialNumber ? ' · Сер. № ' + o.serialNumber : ''}${o.plateNumber ? ' · НЗ ' + o.plateNumber : ''}${noteText ? ' · ' + (noteText.length > 80 ? noteText.slice(0, 80) + '…' : noteText) : ''}`,
+                        searchStr: normSearchText(`${titleName} ${o.name || ''} ${o.equipmentType || ''} ${o.category || ''} ${o.status || ''} ${o.position || ''} ${o.unit || ''} ${o.date || ''} ${o.time || ''} ${o.serialNumber || ''} ${o.plateNumber || ''} ${o.factoryNumber || ''} ${o.boardNumber || ''} ${o.urgentDocNo || ''} ${o.crewName || ''} ${o.taskText || ''} ${o.routeText || ''} ${o.coordinates || ''} ${o.eventDescription || ''} ${o.consequence || ''} ${o.reportSubject || ''} ${o.comment || ''} ${o.notes || ''} ${o.id || ''}`),
                         raw: o,
                     });
                 }
@@ -142,12 +167,14 @@ export function GlobalSearchModal({ onClose, onNavigate }) {
             if (Array.isArray(docJournal.positions)) {
                 for (const pos of docJournal.positions) {
                     if (!pos || typeof pos !== 'object') continue;
+                    const baseName = pos.name || pos.newName || pos.callsign || pos.id;
+                    const renamePart = pos.newName && pos.name && pos.newName !== pos.name ? ` → «${pos.newName}»` : '';
                     records.push({
                         id: String(pos.id),
                         module: 'positions',
-                        title: `Позиція «${pos.name || pos.callsign || pos.id}»`,
-                        meta: `Рубіж: ${pos.rubizh || '—'} · Підрозділ: ${pos.unit || '—'} · Статус: ${pos.status || '—'}${pos.coordinates ? ' · Координати: ' + pos.coordinates : ''}`,
-                        searchStr: `${pos.name || ''} ${pos.callsign || ''} ${pos.rubizh || ''} ${pos.unit || ''} ${pos.status || ''} ${pos.coordinates || ''} ${pos.id || ''}`.toLowerCase(),
+                        title: `Позиція «${baseName}»${renamePart}`,
+                        meta: `Категорія: ${pos.category || '—'} · Дата: ${pos.date || '—'} · Статус: ${pos.status || '—'}${pos.docNumber ? ' · Док. № ' + pos.docNumber : ''}${pos.details ? ' · ' + (pos.details.length > 80 ? pos.details.slice(0, 80) + '…' : pos.details) : ''}`,
+                        searchStr: normSearchText(`${pos.name || ''} ${pos.newName || ''} ${pos.destinationName || ''} ${pos.category || ''} ${pos.status || ''} ${pos.date || ''} ${pos.docNumber || ''} ${pos.details || ''} ${pos.reportedInPbd ? 'пбд' : ''} ${pos.callsign || ''} ${pos.rubizh || ''} ${pos.unit || ''} ${pos.coordinates || ''} ${pos.id || ''}`),
                         raw: pos,
                     });
                 }
@@ -160,13 +187,29 @@ export function GlobalSearchModal({ onClose, onNavigate }) {
             for (const ev of enemyEvents) {
                 if (!ev || typeof ev !== 'object') continue;
                 const typesStr = Array.isArray(ev.types) ? ev.types.join(', ') : '';
-                const dateStr = ev.createdAt ? ev.createdAt.replace('T', ' ').slice(0, 16) : '';
+                const ad = ev.actionDetails || {};
+                const dateStr = ad.startDate
+                    ? `${ad.startDate}${ad.startTime ? ' ' + ad.startTime : ''}`
+                    : (ev.createdAt ? ev.createdAt.replace('T', ' ').slice(0, 16) : '');
+                const dirStr = ad.direction || ev.direction || '—';
+                const locStr = ad.factLoc || ad.docLoc || ad.position || ev.unit || '—';
+                const enemyLosses = Array.isArray(ev.enemyLosses) ? ev.enemyLosses : [];
+                const callsigns = enemyLosses.flatMap(l => [
+                    l?.callsign || '',
+                    ...(Array.isArray(l?.callsigns200) ? l.callsigns200 : []),
+                    ...(Array.isArray(l?.callsigns200Unconfirmed) ? l.callsigns200Unconfirmed : []),
+                    ...(Array.isArray(l?.callsigns200Discovered) ? l.callsigns200Discovered : []),
+                    ...(Array.isArray(l?.callsigns300) ? l.callsigns300 : []),
+                    ...(Array.isArray(l?.callsignsPOW) ? l.callsignsPOW : []),
+                    ...(Array.isArray(l?.callsigns200POW) ? l.callsigns200POW : []),
+                ]).filter(Boolean);
+                const weapons = enemyLosses.flatMap(l => [l?.weapon || '', l?.inflicter || '']).filter(Boolean);
                 records.push({
                     id: String(ev.id),
                     module: 'enemy',
                     title: `${ev.title || typesStr || 'Подія противника'}${dateStr ? ' (' + dateStr + ')' : ''}`,
-                    meta: `Напрямок: ${ev.direction || '—'} · Підрозділ: ${ev.unit || '—'}${ev.description ? ' · ' + (ev.description.length > 90 ? ev.description.slice(0, 90) + '…' : ev.description) : ''}`,
-                    searchStr: `${ev.title || ''} ${typesStr} ${ev.direction || ''} ${ev.unit || ''} ${ev.description || ''} ${dateStr} ${ev.id || ''}`.toLowerCase(),
+                    meta: `Напрямок: ${dirStr} · Місце: ${locStr}${ad.conductedBy ? ' · ' + ad.conductedBy : ''}${ev.description ? ' · ' + (ev.description.length > 90 ? ev.description.slice(0, 90) + '…' : ev.description) : ''}`,
+                    searchStr: normSearchText(`${ev.title || ''} ${typesStr} ${ad.startDate || ''} ${ad.startTime || ''} ${ad.endTime || ''} ${ad.conductedBy || ''} ${ad.docLoc || ''} ${ad.factLoc || ''} ${ad.direction || ''} ${ad.position || ''} ${ad.vehicleDetails || ''} ${callsigns.join(' ')} ${weapons.join(' ')} ${ev.friendlyLosses?.details || ''} ${ev.direction || ''} ${ev.unit || ''} ${ev.description || ''} ${dateStr} ${ev.id || ''}`),
                     raw: ev,
                 });
             }
@@ -175,55 +218,55 @@ export function GlobalSearchModal({ onClose, onNavigate }) {
         return records;
     }, [dataSnapshot]);
 
-    // Фільтрація за пошуковим рядком і категорією
-    const filteredResults = useMemo(() => {
-        const q = query.trim().toLowerCase();
-        if (!q) return [];
-        
-        // Розбиваємо запит на слова (щоб "сокіл 300" шукало записи, де є і те, і інше)
-        const terms = q.split(/\s+/).filter(Boolean);
-
-        return allRecords.filter(rec => {
-            if (activeCategory !== 'all' && rec.module !== activeCategory) return false;
-            return terms.every(term => rec.searchStr.includes(term));
-        });
-    }, [allRecords, query, activeCategory]);
-
-    // Підрахунок за категоріями для поточного запиту
-    const categoryCounts = useMemo(() => {
-        const q = query.trim().toLowerCase();
+    // Однопрохідна фільтрація та підрахунок категорій для поточного запиту
+    const { matchingAll, categoryCounts } = useMemo(() => {
         const counts = { all: 0, tactical: 0, med: 0, tasks: 0, ovt: 0, positions: 0, enemy: 0 };
-        if (!q) return counts;
+        const q = normSearchText(query);
+        if (!q) return { matchingAll: [], categoryCounts: counts };
 
         const terms = q.split(/\s+/).filter(Boolean);
+        const matched = [];
         for (const rec of allRecords) {
             if (terms.every(term => rec.searchStr.includes(term))) {
+                matched.push(rec);
                 counts.all++;
                 if (counts[rec.module] !== undefined) counts[rec.module]++;
             }
         }
-        return counts;
+        return { matchingAll: matched, categoryCounts: counts };
     }, [allRecords, query]);
 
-    // Керування вибором з клавіатури
+    const filteredResults = useMemo(() => {
+        if (activeCategory === 'all') return matchingAll;
+        return matchingAll.filter(rec => rec.module === activeCategory);
+    }, [matchingAll, activeCategory]);
+
+    const visibleResults = useMemo(
+        () => filteredResults.slice(0, MAX_VISIBLE_RESULTS),
+        [filteredResults]
+    );
+
+    // Керування вибором з клавіатури та прокрутка активного рядка
     useEffect(() => {
         setSelectedIndex(0);
-    }, [filteredResults.length, activeCategory]);
+    }, [filteredResults.length, activeCategory, query]);
+
+    useEffect(() => {
+        const el = listRef.current?.querySelector(`[data-search-index="${selectedIndex}"]`);
+        el?.scrollIntoView({ block: 'nearest' });
+    }, [selectedIndex, visibleResults.length]);
 
     const handleKeyDown = (e) => {
-        if (e.key === 'Escape') {
+        if (e.key === 'ArrowDown') {
             e.preventDefault();
-            onClose();
-        } else if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            setSelectedIndex(prev => (prev < filteredResults.length - 1 ? prev + 1 : prev));
+            setSelectedIndex(prev => (prev < visibleResults.length - 1 ? prev + 1 : prev));
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             setSelectedIndex(prev => (prev > 0 ? prev - 1 : 0));
         } else if (e.key === 'Enter') {
             e.preventDefault();
-            if (filteredResults[selectedIndex]) {
-                handleSelect(filteredResults[selectedIndex]);
+            if (visibleResults[selectedIndex]) {
+                handleSelect(visibleResults[selectedIndex]);
             }
         }
     };
@@ -234,20 +277,21 @@ export function GlobalSearchModal({ onClose, onNavigate }) {
     };
 
     return (
-        <div 
-            className="fixed inset-0 z-[22000] bg-black/80 backdrop-blur-sm flex items-start justify-center p-3 sm:p-6 overflow-y-auto"
+        <div
+            className="fixed inset-0 z-[22000] bg-black/80 flex items-start justify-center p-3 sm:p-6 overflow-y-auto overscroll-contain"
             onClick={e => { if (e.target === e.currentTarget) onClose(); }}
         >
-            <section 
-                role="dialog" 
-                aria-modal="true" 
+            <section
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
                 aria-label="Наскрізний пошук по всіх базах"
-                className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col text-slate-200 mt-4 sm:mt-10 animate-fade-in"
+                className="bg-[#17181b] border border-[#2e3138] rounded-sm w-full max-w-3xl overflow-hidden flex flex-col text-[#f3f4f6] mt-4 sm:mt-10 animate-fade-in overscroll-contain"
                 onKeyDown={handleKeyDown}
             >
                 {/* 1. Пошуковий ввід */}
-                <div className="p-4 border-b border-slate-800 bg-slate-950/70 flex items-center gap-3">
-                    <svg className="w-5 h-5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <div className="px-4 py-3 border-b border-[#2e3138] bg-[#101113] flex items-center gap-3">
+                    <svg className="w-4 h-4 text-[#4c8ed9] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                     </svg>
                     <input
@@ -255,34 +299,37 @@ export function GlobalSearchModal({ onClose, onNavigate }) {
                         type="text"
                         value={query}
                         onChange={e => setQuery(e.target.value)}
-                        placeholder="Пошук позивного, ПІБ, номеру наказу, дати, позиції, типу втрат..."
-                        className="bg-transparent text-slate-100 placeholder-slate-500 text-sm sm:text-base w-full focus:outline-none font-medium"
+                        placeholder="Пошук позивного, ПІБ, номера розпорядження, дати, позиції, типу втрат..."
+                        className="bg-transparent text-[#f1f5f9] placeholder-[#989fa9] text-sm sm:text-[15px] w-full focus:outline-none font-medium"
                     />
                     {query && (
-                        <button 
+                        <button
                             type="button"
+                            aria-label="Очистити пошук"
                             onClick={() => { setQuery(''); inputRef.current?.focus(); }}
-                            className="p-1 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors text-xs"
+                            className="p-1 rounded-sm text-[#b8bec8] hover:text-[#f3f4f6] hover:bg-[#222429] border border-transparent hover:border-[#2e3138] transition-colors inline-flex items-center justify-center"
                             title="Очистити"
                         >
-                            ✕
+                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
                         </button>
                     )}
-                    <kbd className="hidden sm:inline-block text-[10px] font-mono bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">
+                    <kbd className="hidden sm:inline-block text-[10px] font-mono bg-[#222429] text-[#b8bec8] px-1.5 py-0.5 rounded-sm border border-[#2e3138]">
                         ESC
                     </kbd>
                 </div>
 
                 {/* 2. Категорії-фільтри (таби) */}
                 {query.trim() && (
-                    <div className="flex items-center gap-1.5 px-4 py-2 border-b border-slate-800/80 bg-slate-900/50 overflow-x-auto text-xs no-scrollbar">
+                    <div className="flex items-center flex-wrap gap-1.5 px-4 py-2 border-b border-[#2e3138] bg-[#17181b] text-xs">
                         <button
                             type="button"
                             onClick={() => setActiveCategory('all')}
-                            className={`px-2.5 py-1 rounded-lg font-semibold transition-all shrink-0 ${
+                            className={`px-2.5 py-1 rounded-sm font-medium transition-colors shrink-0 border tabular-nums ${
                                 activeCategory === 'all'
-                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-transparent'
+                                    ? 'bg-[#2b67ab]/25 text-[#f3f4f6] border-[#4c8ed9]'
+                                    : 'text-[#b8bec8] hover:text-[#f3f4f6] hover:bg-[#222429] border-transparent'
                             }`}
                         >
                             Усі ({categoryCounts.all})
@@ -292,71 +339,72 @@ export function GlobalSearchModal({ onClose, onNavigate }) {
                                 key={key}
                                 type="button"
                                 onClick={() => setActiveCategory(key)}
-                                className={`px-2.5 py-1 rounded-lg font-semibold transition-all shrink-0 flex items-center gap-1.5 ${
+                                className={`px-2.5 py-1 rounded-sm font-medium transition-colors shrink-0 flex items-center gap-1.5 border tabular-nums ${
                                     activeCategory === key
-                                        ? 'bg-slate-800 text-white border border-slate-600 shadow-sm'
-                                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
+                                        ? 'bg-[#222429] text-[#f3f4f6] border-[#4c8ed9]'
+                                        : 'text-[#b8bec8] hover:text-[#f3f4f6] hover:bg-[#222429] border-transparent'
                                 }`}
                             >
                                 <span>{meta.label}</span>
-                                <span className="text-[10px] opacity-75 font-mono">({categoryCounts[key] || 0})</span>
+                                <span className="text-[11px] text-[#b8bec8] font-mono">({categoryCounts[key] || 0})</span>
                             </button>
                         ))}
                     </div>
                 )}
 
                 {/* 3. Список знайдених результатів */}
-                <div ref={listRef} className="max-h-[60vh] min-h-[160px] overflow-y-auto divide-y divide-slate-800/50 p-2">
+                <div ref={listRef} className="max-h-[60vh] min-h-[160px] overflow-y-auto divide-y divide-[#2e3138] bg-[#101113]">
                     {loading && (
-                        <div className="flex items-center justify-center p-12 text-slate-400 gap-2">
-                            <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                        <div className="flex items-center justify-center p-12 text-[#b8bec8] gap-2.5 text-sm">
+                            <span className="w-4 h-4 border-2 border-[#4c8ed9] border-t-transparent rounded-full animate-spin" aria-hidden="true" />
                             <span>Індексація баз даних...</span>
                         </div>
                     )}
 
                     {!loading && !query.trim() && (
-                        <div className="p-8 text-center text-slate-400 space-y-2">
-                            <p className="text-sm font-medium">Введіть пошуковий запит для наскрізного пошуку по системі.</p>
-                            <p className="text-xs text-slate-500">
-                                Шукає за позивним, прізвищем, номером бойового розпорядження (БР), технікою, позицією або типом втрати (наприклад: <code className="text-amber-400">Сокіл</code>, <code className="text-amber-400">300 важкий</code>, <code className="text-amber-400">БР 45</code>, <code className="text-amber-400">БТР</code>).
+                        <div className="p-8 text-center text-[#b8bec8] space-y-2">
+                            <p className="text-sm font-medium text-[#f1f5f9]">Введіть пошуковий запит для наскрізного пошуку по системі.</p>
+                            <p className="text-xs text-[#989fa9]">
+                                Шукає за позивним, прізвищем, номером бойового розпорядження (БР), технікою, позицією або типом запису (наприклад: <code className="text-[#93c5fd] font-mono">Сокіл</code>, <code className="text-[#93c5fd] font-mono">300</code>, <code className="text-[#93c5fd] font-mono">БР 45</code>, <code className="text-[#93c5fd] font-mono">БТР</code>).
                             </p>
                         </div>
                     )}
 
                     {!loading && query.trim() && filteredResults.length === 0 && (
-                        <div className="p-10 text-center text-slate-400">
-                            <p className="text-sm">За запитом <span className="text-amber-300 font-semibold">«{query}»</span> нічого не знайдено.</p>
-                            <p className="text-xs text-slate-500 mt-1">Спробуйте змінити слово або вибрати вкладку «Усі».</p>
+                        <div className="p-10 text-center text-[#b8bec8]">
+                            <p className="text-sm">За запитом <span className="text-[#f1f5f9] font-semibold">«{query}»</span> нічого не знайдено.</p>
+                            <p className="text-xs text-[#989fa9] mt-1">Спробуйте змінити слово або вибрати вкладку «Усі».</p>
                         </div>
                     )}
 
-                    {!loading && query.trim() && filteredResults.map((item, idx) => {
-                        const meta = MODULE_META[item.module] || { label: item.module, badgeColor: 'bg-slate-800 text-slate-300 border-slate-700' };
+                    {!loading && query.trim() && visibleResults.map((item, idx) => {
+                        const meta = MODULE_META[item.module] || { label: item.module, badgeColor: 'bg-[#222429] text-[#b8bec8] border-[#2e3138]' };
                         const isSelected = idx === selectedIndex;
                         return (
                             <div
                                 key={`${item.module}_${item.id}_${idx}`}
+                                data-search-index={idx}
                                 onClick={() => handleSelect(item)}
                                 onMouseEnter={() => setSelectedIndex(idx)}
-                                className={`p-3 rounded-xl cursor-pointer transition-all flex items-start gap-3 select-none ${
-                                    isSelected 
-                                        ? 'bg-slate-800/90 border border-slate-700 shadow-md translate-x-1' 
-                                        : 'hover:bg-slate-800/40 border border-transparent'
+                                className={`px-4 py-2.5 cursor-pointer transition-colors flex items-start gap-3 select-none border-l-2 ${
+                                    isSelected
+                                        ? 'bg-[#222429] border-l-[#4c8ed9]'
+                                        : 'bg-transparent hover:bg-[#17181b] border-l-transparent'
                                 }`}
                             >
-                                <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded border ${meta.badgeColor}`}>
+                                <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-sm border mt-0.5 ${meta.badgeColor}`}>
                                     {meta.label}
                                 </span>
                                 <div className="flex-1 min-w-0">
-                                    <div className="font-bold text-sm text-slate-100 truncate flex items-center justify-between gap-2">
-                                        <span>{item.title}</span>
+                                    <div className="font-semibold text-[13px] text-[#f1f5f9] truncate flex items-center justify-between gap-2">
+                                        <span className="truncate">{item.title}</span>
                                         {isSelected && (
-                                            <span className="text-[11px] text-amber-400 font-normal shrink-0 hidden sm:inline">
-                                                Перейти ↵
+                                            <span className="text-[11px] text-[#93c5fd] font-medium shrink-0 hidden sm:inline font-mono">
+                                                Перейти [Enter]
                                             </span>
                                         )}
                                     </div>
-                                    <div className="text-xs text-slate-400 truncate mt-0.5">
+                                    <div className="text-xs text-[#b4c0d0] truncate mt-0.5 tabular-nums">
                                         {item.meta}
                                     </div>
                                 </div>
@@ -366,15 +414,17 @@ export function GlobalSearchModal({ onClose, onNavigate }) {
                 </div>
 
                 {/* 4. Підвал із підказками */}
-                <div className="p-3 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between text-[11px] text-slate-400 px-4">
-                    <div className="flex items-center gap-3">
-                        <span>Навігація: <kbd className="font-mono bg-slate-800 px-1 py-0.5 rounded border border-slate-700 text-slate-300">↑</kbd> <kbd className="font-mono bg-slate-800 px-1 py-0.5 rounded border border-slate-700 text-slate-300">↓</kbd></span>
-                        <span>Відкрити: <kbd className="font-mono bg-slate-800 px-1 py-0.5 rounded border border-slate-700 text-slate-300">Enter</kbd></span>
-                        <span>Закрити: <kbd className="font-mono bg-slate-800 px-1 py-0.5 rounded border border-slate-700 text-slate-300">Esc</kbd></span>
+                <div className="px-4 py-2.5 border-t border-[#2e3138] bg-[#17181b] flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#b8bec8]">
+                    <div className="flex items-center gap-3 flex-wrap">
+                        <span>Навігація: <kbd className="font-mono bg-[#222429] px-1.5 py-0.5 rounded-sm border border-[#2e3138] text-[#f3f4f6]">↑</kbd> <kbd className="font-mono bg-[#222429] px-1.5 py-0.5 rounded-sm border border-[#2e3138] text-[#f3f4f6]">↓</kbd></span>
+                        <span>Відкрити: <kbd className="font-mono bg-[#222429] px-1.5 py-0.5 rounded-sm border border-[#2e3138] text-[#f3f4f6]">Enter</kbd></span>
+                        <span>Закрити: <kbd className="font-mono bg-[#222429] px-1.5 py-0.5 rounded-sm border border-[#2e3138] text-[#f3f4f6]">Esc</kbd></span>
                     </div>
                     {filteredResults.length > 0 && (
-                        <div className="font-mono text-slate-500">
-                            Знайдено: {filteredResults.length}
+                        <div className="font-mono text-[#b8bec8] tabular-nums">
+                            {filteredResults.length > MAX_VISIBLE_RESULTS
+                                ? `Показано ${MAX_VISIBLE_RESULTS} з ${filteredResults.length}`
+                                : `Знайдено: ${filteredResults.length}`}
                         </div>
                     )}
                 </div>

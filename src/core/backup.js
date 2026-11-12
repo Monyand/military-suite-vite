@@ -118,7 +118,8 @@ const SuiteBackup = (() => {
                 const url = URL.createObjectURL(new Blob([JSON.stringify(envelope)], { type: 'application/octet-stream' }));
                 const anchor = document.createElement('a');
                 anchor.href = url;
-                anchor.download = prefix + '_' + window.SuiteDates.fileTimestamp() + '.mils.enc';
+                const stamp = window.SuiteDates?.fileTimestamp?.() || new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+                anchor.download = prefix + '_' + stamp + '.mils.enc';
                 document.body.appendChild(anchor);
                 anchor.click();
                 anchor.remove();

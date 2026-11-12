@@ -16,7 +16,17 @@ export function PersonNamesEditor({ onBusyChange, onPendingChange, onSuspend, on
     const items = useMemo(() => snapshot ? inventoryPersonNames(snapshot) : [], [snapshot]);
     const formatCount = useMemo(() => items.filter(item => item.value !== formatPersonName(item.value)).length, [items]);
     const groups = useMemo(() => duplicateNameGroups(items).filter(group => new Set(group.entries.map(item => formatPersonName(item.value))).size > 1), [items]);
-    const visible = (showAll ? [{ key: 'all', entries: items }] : groups).filter(group => !ignored.includes(group.key) && group.entries.some(item => normalizePersonName(item.value).includes(normalizePersonName(search))));
+    const visible = useMemo(() => {
+        const query = normalizePersonName(search);
+        return (showAll ? [{ key: 'all', entries: items }] : groups)
+            .filter(group => !ignored.includes(group.key))
+            .map(group => {
+                if (!showAll) return group;
+                const filtered = query ? group.entries.filter(item => normalizePersonName(item.value).includes(query)) : group.entries;
+                return { ...group, totalCount: filtered.length, entries: filtered.slice(0, 100) };
+            })
+            .filter(group => group.entries.length > 0 && (showAll || !query || group.entries.some(item => normalizePersonName(item.value).includes(query))));
+    }, [showAll, items, groups, ignored, search]);
     const toggle = key => { setSelected(value => value.includes(key) ? value.filter(item => item !== key) : [...value, key]); setPlan(null); };
     return <section className="sd-card">
         <h3>Єдиний формат ПІБ для всієї бази</h3>
@@ -31,16 +41,16 @@ export function PersonNamesEditor({ onBusyChange, onPendingChange, onSuspend, on
             <p className="sd-note">Тут лише написання, що відрізняються не тільки регістром або пробілами. Схожі ПІБ знайдено за алгоритмом «Додатка 6», але вони можуть належати різним людям. Оберіть потрібні записи лише якщо хочете виправити самі літери або склад ПІБ.</p>
             <label>Пошук ПІБ<input value={search} onChange={event => setSearch(event.target.value)} /></label>
             <label className="sd-check"><input type="checkbox" checked={showAll} onChange={event => setShowAll(event.target.checked)} />Показати всі імена для ручної стандартизації</label>
-            <div style={{ maxHeight: '42vh', overflow: 'auto' }}>{visible.slice(0, 100).map(group => <section className="sd-card" key={group.key}>
+            <div style={{ maxHeight: '42vh', overflow: 'auto' }}>{visible.slice(0, 100).map(group => <section className="sd-group" key={group.key}>
                 <div className="sd-actions"><strong>{group.entries[0]?.value}</strong><button onClick={() => { setSelected(value => [...new Set([...value, ...group.entries.map(slotKey)])]); setPlan(null); }}>Обрати всю групу</button>{!showAll && <button onClick={() => setIgnored(value => [...value, group.key])}>Пропустити групу</button>}</div>
                 {group.entries.map(item => <label key={slotKey(item)} className="sd-check"><input type="checkbox" checked={selected.includes(slotKey(item))} onChange={() => toggle(slotKey(item))} /><span>{item.value}<small style={{ display: 'block' }}>{item.module} · {item.callsign || 'без позивного'} · {item.unit || 'без підрозділу'} · ID: {item.personId} · {item.key}/{item.path}</small></span><button type="button" onClick={event => { event.preventDefault(); setTarget(formatPersonName(item.value)); setPlan(null); }}>Як стандарт</button></label>)}
             </section>)}</div>
-            {visible.length > 100 && <p>Показано перші 100 груп. Уточніть пошук.</p>}
+            {showAll ? (visible[0]?.totalCount > 100 && <p>Показано перші 100 із {visible[0].totalCount} записів. Уточніть пошук.</p>) : (visible.length > 100 && <p>Показано перші 100 груп. Уточніть пошук.</p>)}
             {ignored.length > 0 && <button onClick={() => setIgnored([])}>Повернути пропущені групи ({ignored.length})</button>}
             <label>Стандартне ПІБ<input value={target} onChange={event => { setTarget(event.target.value); setPlan(null); }} placeholder="ПРІЗВИЩЕ Ім’я По батькові" /></label>
             <div className="sd-actions"><span>Обрано полів: {selected.length}</span><button onClick={() => { setSelected([]); setPlan(null); }}>Зняти вибір</button><button className="sd-primary" onClick={() => invoke(async () => { const next = planPersonNames(snapshot, selected, target); if (!next.changes.length) throw new Error('Написання вже однакові. ID не об’єднуються.'); setPlan(next); setAck(false); })}>Переглянути заміни ПІБ</button></div>
             </details>
-            {plan && <section className="sd-card"><h3>Буде змінено {plan.changes.length} полів</h3>
+            {plan && <section className="sd-group sd-preview"><h3>Буде змінено {plan.changes.length} полів</h3>
                 {plan.automatic && <p>Усі зміни застосуються разом. Підтверджувати кожен ПІБ окремо не потрібно. Перед записом автоматично створиться зашифрована захисна копія.</p>}
                 <details open={!plan.automatic}><summary>{plan.automatic ? `Приклади замін (перші ${Math.min(plan.changes.length, 50)} із ${plan.changes.length})` : 'Усі вибрані заміни'}</summary><div className="sd-list">{(plan.automatic ? plan.changes.slice(0, 50) : plan.changes).map(change => <p key={change.storage + change.key + change.path}>{change.module}: {change.before} → <strong>{change.after}</strong></p>)}</div></details>
                 <label>Пароль захисної копії<input type="password" value={password} onChange={event => setPassword(event.target.value)} /></label><label>Повторіть пароль<input type="password" value={confirmation} onChange={event => setConfirmation(event.target.value)} /></label>

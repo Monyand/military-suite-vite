@@ -5,16 +5,17 @@ const PVR = new Set(['200 (від ран)', '200 (ПВР)', '200 ПВР']);
 const CATEGORIES = [
     ['Загибель (200)', '200 (Бойові)'], ['200 (від ран)', '200 (ПВР)'], ['Небойова смерть (200)', '200 (Небойові)'],
     ['Поранення (300)', '300 (Поранення)'], ['Бойове травмування (300)', '300 (Бойові травми)'],
-    ['Небойове травмування (300)', '300 (Небойові)'], ['Зниклий безвісти (ЗБВ)', 'ЗБВ'], ['СЗЧ', 'СЗЧ'], ['Дезертирство', 'Дезертирство']
+    ['Небойове травмування (300)', '300 (Небойові)'], ['Зниклий безвісти (ЗБВ)', 'ЗБВ'], ['СЗЧ', 'СЗЧ'], ['Повернення з СЗЧ', 'Повернення з СЗЧ'], ['Дезертирство', 'Дезертирство']
 ];
 const SEVERITIES = ['Критичний', 'Важкий', 'Середній', 'Легкий'];
-const category = ep => PVR.has(ep.lossType) ? '200 (від ран)' : ep.lossType === 'Повернення з СЗЧ' ? 'СЗЧ' : ep.lossType || 'Не вказано';
 const is200 = ep => PVR.has(ep.lossType) || ep.lossType?.includes('(200)');
 const is300 = ep => ep.lossType?.includes('(300)');
 const isMia = ep => ep.lossType === 'Зниклий безвісти (ЗБВ)';
 const isAwol = ep => ['СЗЧ', 'Повернення з СЗЧ', 'Дезертирство'].includes(ep.lossType);
+const isReturnedAwol = ep => Boolean(ep && (ep.lossType === 'Повернення з СЗЧ' || (isAwol(ep) && ep.awolStatus === 'Повернувся')));
+const category = ep => PVR.has(ep.lossType) ? '200 (від ран)' : isReturnedAwol(ep) ? 'Повернення з СЗЧ' : ep.lossType || 'Не вказано';
 const sum = values => values.reduce((total, value) => total + value, 0);
-const labelType = ep => PVR.has(ep.lossType) ? '200 (ПВР)' : ep.lossType || 'Не вказано';
+const labelType = ep => PVR.has(ep.lossType) ? '200 (ПВР)' : isReturnedAwol(ep) ? 'Повернення з СЗЧ' : ep.lossType || 'Не вказано';
 
 function bound(value, end = false) {
     if (!value) return 0;
@@ -267,13 +268,14 @@ export function createMedicalWorkbook(ExcelJS, options) {
 
     // 6. Restore original register fields; retain date in A and type in F.
     const register = sheet('Детальний реєстр', [15, 8, 10, 32, 18, 26, 17, 23, 16, 26, 27, 27, 9, 24, 21, 21, 23, 42, 45, 23, 23], 1);
-    row(register, ['Дата події', '№ з/п', 'Час', 'ПІБ', 'Позивний', 'Тип втрати', 'Звання', 'Підрозділ', 'Важкість', 'Причина / Зброя', 'Фактичне місце', 'Місце за док.', 'УПД', 'Статус евакуації / СЗЧ', 'Дата евакуації', 'Зброя в наявності', 'Рапорт', 'Ураження (детально)', 'Примітки / Опис', 'ID епізоду', 'ID особи'], { header: true });
+    row(register, ['Дата події', '№ з/п', 'Час', 'ПІБ', 'Позивний', 'Тип втрати', 'Звання', 'Підрозділ', 'Важкість', 'Причина / Зброя', 'Фактичне місце', 'Місце за док.', 'УПД', 'Статус евакуації / СЗЧ', 'Дата евакуації / повернення', 'Зброя в наявності', 'Рапорт', 'Ураження (детально)', 'Примітки / Опис', 'ID епізоду', 'ID особи'], { header: true });
     episodes.forEach((ep, index) => {
-        const s = person(ep), status = isAwol(ep) ? ep.awolStatus || '' : ep.evacStatus || '';
+        const s = person(ep), status = isAwol(ep) ? (isReturnedAwol(ep) ? 'Повернувся' : (ep.awolStatus || 'В розшуку')) : ep.evacStatus || '';
         const report = ep.hasReport ? 'Складено' + (ep.reportDate ? ' (' + (localMedicalInput(ep.reportDate).replace('T', ' ') || ep.reportDate) + ')' : ' (дату не вказано)') : 'Ні';
-        const current = row(register, [excelDate(ep.date, true), index + 1, excelTime(ep.date), s.name || ep.soldierName || '', s.callsign || '', labelType(ep), ep.rank || s.rank || '', ep.unit || s.unit || '', ep.severity || '', ep.cause || '', ep.actualLoc || '', ep.docLoc || '', ep.inUdp ? 'Так' : 'Ні', status, excelDate(ep.evacTime || ep.evacDate), ep.weaponStatus || '—', report, describeInjuries(ep.injuries, regions), ep.notes || ep.description || '', ep.id, ep.soldierId], { fill: rowColor(ep) });
+        const current = row(register, [excelDate(ep.date, true), index + 1, excelTime(ep.date), s.name || ep.soldierName || '', s.callsign || '', labelType(ep), ep.rank || s.rank || '', ep.unit || s.unit || '', ep.severity || '', ep.cause || '', ep.actualLoc || '', ep.docLoc || '', ep.inUdp ? 'Так' : 'Ні', status, excelDate(ep.evacTime || ep.evacDate, true), ep.weaponStatus || '—', report, describeInjuries(ep.injuries, regions), ep.notes || ep.description || '', ep.id, ep.soldierId], { fill: rowColor(ep) });
         current.getCell(1).numFmt = 'dd.mm.yyyy'; current.getCell(3).numFmt = 'hh:mm';
-        if (status === 'Не евакуйований' || status.includes('Розшук')) current.getCell(14).font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFDC2626' } };
+        if (current.getCell(15).value instanceof Date) current.getCell(15).numFmt = 'dd.mm.yyyy';
+        if (status === 'Не евакуйований' || status.toLowerCase().includes('розшук')) current.getCell(14).font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFDC2626' } };
         else if (status === 'Евакуйований' || status.includes('Повернувся')) current.getCell(14).font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF15803D' } };
     });
     register.autoFilter = { from: 'A1', to: `U${Math.max(1, episodes.length + 1)}` }; register.pageSetup.printTitlesRow = '1:1';

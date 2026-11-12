@@ -1,6 +1,6 @@
 import { default as React, useState, useRef, useEffect, useMemo } from 'react';
 import { DocumentJournal } from '../../core/documents.js';
-import { localforage, XLSX } from '../../core/vendor.js';
+import { ExcelJS, localforage, XLSX } from '../../core/vendor.js';
 import { POSITION_CATEGORIES, buildPositionRegister, positionChangeError, withPositionAudit } from './position-register.js';
 import { PositionFields } from './PositionFields.jsx';
 import { PositionHistory } from './PositionHistory.jsx';
@@ -12,7 +12,22 @@ import { OvtFields } from './OvtFields.jsx';
 import { buildOvtReport } from './ovt-report.js';
 import { prepareOvtDraft, ovtCellText } from './ovt-form.js';
 import { OVT_STATUSES } from '../../core/ovt-templates.js';
-import { SharedDictionaries } from '../../core/dictionary-service.js';
+
+const bindDialogFocusTrap = (dialogRef, lockRef, onClose) => {
+    const last = document.activeElement;
+    dialogRef.current?.querySelector('input, select, textarea, button')?.focus();
+    const keydown = event => {
+        if (event.key === 'Escape' && !lockRef.current) onClose();
+        if (event.key === 'Tab' && dialogRef.current) {
+            const items = [...dialogRef.current.querySelectorAll('button, input, select, textarea')].filter(el => !el.disabled && el.offsetParent !== null);
+            const first = items[0], lastItem = items[items.length - 1];
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); lastItem?.focus(); }
+            else if (!event.shiftKey && document.activeElement === lastItem) { event.preventDefault(); first?.focus(); }
+        }
+    };
+    document.addEventListener('keydown', keydown);
+    return () => { document.removeEventListener('keydown', keydown); if (last?.isConnected) last.focus(); };
+};
 
 const DocumentJournalIcon = ({ name, size = 16 }) => {
     const nodes = window.lucide?.icons?.[name];
@@ -21,25 +36,26 @@ const DocumentJournalIcon = ({ name, size = 16 }) => {
     return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">{children.map(([tag, attrs], i) => React.createElement(tag, { ...attrs, key: i }))}</svg>;
 };
 
-const TaskInlineEditor = ({ row, fieldKey, type, options, onSave, disabled, getStyle, autoFocus }) => {
+const TaskInlineEditor = ({ row, fieldKey, type, options, onSave, disabled, getStyle, autoFocus, onAutoFocusDone }) => {
     const [val, setVal] = useState(row[fieldKey] || '');
     const inputRef = useRef(null);
     useEffect(() => setVal(row[fieldKey] || ''), [row[fieldKey]]);
     useEffect(() => {
         if (autoFocus && inputRef.current) {
             inputRef.current.focus();
+            onAutoFocusDone?.();
         }
     }, [autoFocus]);
 
     if (type === 'checkbox') {
-        return <label className="inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"><input type="checkbox" disabled={disabled} checked={!!val} onChange={e => { setVal(e.target.checked); onSave(row, fieldKey, e.target.checked); }} /><span className="dj-tag" style={val ? { background: '#059669', color: '#ecfdf5' } : { background: '#334155', color: '#f8fafc' }}>{val ? 'Подано' : 'Не подано'}</span></label>;
+        return <label className="inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"><input type="checkbox" disabled={disabled} checked={!!val} onChange={e => { setVal(e.target.checked); onSave(row, fieldKey, e.target.checked); }} /><span className="dj-tag" style={val ? { background: 'rgba(61, 163, 114, 0.14)', borderColor: 'rgba(61, 163, 114, 0.42)', color: '#3da372' } : { background: '#222429', borderColor: '#2e3138', color: '#b8bec8' }}>{val ? 'Подано' : 'Не подано'}</span></label>;
     }
     if (Array.isArray(type)) {
-        const customStyle = getStyle ? getStyle(val) : { background: '#1e293b', color: '#e2e8f0', borderColor: '#334155' };
-        return <select disabled={disabled} className="dj-tag outline-none cursor-pointer font-bold appearance-none px-2 pr-4 w-full max-w-[140px]" style={{ ...customStyle, backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center', backgroundSize: '12px' }} value={val} onChange={e => { setVal(e.target.value); onSave(row, fieldKey, e.target.value); }}>{options.map(opt => <option key={opt} value={opt} className="bg-slate-900 text-slate-200">{opt}</option>)}</select>;
+        const customStyle = getStyle ? getStyle(val) : { background: '#222429', color: '#f3f4f6', borderColor: '#2e3138' };
+        return <select disabled={disabled} className="dj-tag outline-none cursor-pointer font-semibold appearance-none px-2 pr-4 w-full max-w-[140px]" style={{ ...customStyle, backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center', backgroundSize: '12px' }} value={val} onChange={e => { setVal(e.target.value); onSave(row, fieldKey, e.target.value); }}>{options.map(opt => <option key={opt} value={opt} className="bg-[#17181b] text-[#f3f4f6]">{opt}</option>)}</select>;
     }
     if (type === 'textarea') {
-        return <textarea ref={inputRef} disabled={disabled} className="dj-input px-2 py-1 text-xs w-full leading-snug resize-y bg-slate-900 focus:bg-slate-800" rows={1} style={{ minHeight: '28px' }} value={val} onFocus={() => { if (val === 'Нове завдання') setVal(''); }} onChange={e => setVal(e.target.value)} onBlur={() => { const cleaned = val === 'Нове завдання' ? '' : val; if (cleaned !== (row[fieldKey] || '')) onSave(row, fieldKey, cleaned); }} placeholder={fieldKey === 'task' ? 'Введіть зміст завдання…' : 'Коментар…'} />;
+        return <textarea ref={inputRef} disabled={disabled} className="dj-input px-2 py-1 text-xs w-full leading-snug resize-y bg-[#101113] focus:bg-[#222429]" rows={1} style={{ minHeight: '28px' }} value={val} onFocus={() => { if (val === 'Нове завдання') setVal(''); }} onChange={e => setVal(e.target.value)} onBlur={() => { const cleaned = val === 'Нове завдання' ? '' : val; if (cleaned !== (row[fieldKey] || '')) onSave(row, fieldKey, cleaned); }} placeholder={fieldKey === 'task' ? 'Введіть зміст завдання…' : 'Коментар…'} />;
     }
     if (type === 'date') {
         const commitDate = () => {
@@ -53,9 +69,9 @@ const TaskInlineEditor = ({ row, fieldKey, type, options, onSave, disabled, getS
             if (next !== val) setVal(next);
             if (next !== (row[fieldKey] || '')) onSave(row, fieldKey, next);
         };
-        return <input type="date" disabled={disabled} className="dj-input px-1.5 py-1 text-xs w-full font-mono bg-slate-900 focus:bg-slate-800" value={val} onChange={e => setVal(e.target.value)} onBlur={commitDate} onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); else if (e.key === 'Escape') { setVal(row[fieldKey] || ''); e.currentTarget.blur(); } }} />;
+        return <input type="date" disabled={disabled} className="dj-input px-1.5 py-1 text-xs w-full font-mono tabular-nums bg-[#101113] focus:bg-[#222429]" value={val} onChange={e => setVal(e.target.value)} onBlur={commitDate} onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); else if (e.key === 'Escape') { setVal(row[fieldKey] || ''); e.currentTarget.blur(); } }} />;
     }
-    return <input ref={inputRef} type="text" disabled={disabled} className="dj-input px-1.5 py-1 text-xs w-full bg-slate-900 focus:bg-slate-800" value={val} onChange={e => setVal(e.target.value)} onBlur={() => { if (val !== (row[fieldKey] || '')) onSave(row, fieldKey, val); }} placeholder="..." />;
+    return <input ref={inputRef} type="text" disabled={disabled} className="dj-input px-1.5 py-1 text-xs w-full bg-[#101113] focus:bg-[#222429]" value={val} onChange={e => setVal(e.target.value)} onBlur={() => { if (val !== (row[fieldKey] || '')) onSave(row, fieldKey, val); }} placeholder="..." />;
 };
 
 const DocumentJournalApp = ({ onBackup, activeTab }) => {
@@ -90,12 +106,14 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
     const periodRows = useMemo(() => D.filtered(tab, data?.[tab] || [], { ...D.filters(), from: viewFilters[tab].from, to: viewFilters[tab].to }).filter(row => {
         if (tab !== 'positions' || !viewFilters[tab].onlyActual) return true;
         const entry = positionEntries.get(positionRegister.links.get(row.id) || row.positionId || row.id);
-        return entry && entry.latest.id === row.id;
+        return !entry || entry.latest.id === row.id;
     }), [tab, data?.[tab], viewFilters[tab].from, viewFilters[tab].to, viewFilters[tab].onlyActual, positionRegister, positionEntries]);
-    const [periodOpen, setPeriodOpen] = useState(false);
+    const missingDocCount = useMemo(() => (data?.positions || []).filter(row => !D.hasDoc(row)).length, [data?.positions]);
+    const uncategorizedCount = useMemo(() => periodRows.filter(row => !row.category).length, [periodRows]);
+    const positionCategoryCounts = useMemo(() => Object.fromEntries(D.positionCategoryCards.map(cat => [cat, periodRows.filter(row => D.matchesPositionCategory(row.category, cat)).length])), [periodRows]);
     const [page, setPage] = useState(1);
     const dataRef = useRef(null), lock = useRef(false), fileRef = useRef(null), lastAddedTaskIdRef = useRef(null);
-    const prefsRef = useRef(D.empty().settings), modalRef = useRef(null);
+    const prefsRef = useRef(D.empty().settings), modalRef = useRef(null), ovtSettingsRef = useRef(null);
     const control = 'dj-input w-full';
     const button = 'dj-button';
 
@@ -170,20 +188,12 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
     const changeFilter = patch => changePrefs(tab, { ...viewFilters, [tab]: { ...viewFilters[tab], ...patch } });
     useEffect(() => {
         if (!draft && !pendingDelete && !importPreview && !report && !historyRow && !batchOpen) return;
-        const last = document.activeElement;
-        modalRef.current?.querySelector('input, select, textarea, button')?.focus();
-        const keydown = event => {
-            if (event.key === 'Escape' && !lock.current) { setDraft(null); setPendingDelete(null); setImportPreview(null); setReport(null); setHistoryRow(null); setBatchOpen(false); }
-            if (event.key === 'Tab' && modalRef.current) {
-                const items = [...modalRef.current.querySelectorAll('button, input, select, textarea')].filter(el => !el.disabled && el.offsetParent !== null);
-                const first = items[0], lastItem = items[items.length - 1];
-                if (event.shiftKey && document.activeElement === first) { event.preventDefault(); lastItem?.focus(); }
-                else if (!event.shiftKey && document.activeElement === lastItem) { event.preventDefault(); first?.focus(); }
-            }
-        };
-        document.addEventListener('keydown', keydown);
-        return () => { document.removeEventListener('keydown', keydown); if (last?.isConnected) last.focus(); };
+        return bindDialogFocusTrap(modalRef, lock, () => { setDraft(null); setPendingDelete(null); setImportPreview(null); setReport(null); setHistoryRow(null); setBatchOpen(false); });
     }, [!!draft, !!pendingDelete, !!importPreview, !!report, !!historyRow, batchOpen]);
+    useEffect(() => {
+        if (!ovtSettingsOpen) return;
+        return bindDialogFocusTrap(ovtSettingsRef, lock, () => setOvtSettingsOpen(false));
+    }, [ovtSettingsOpen]);
 
     const openRecord = row => {
         const today = new Date();
@@ -319,20 +329,64 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
             setImportPreview(null); setPage(1);
         }
     };
-    const exportExcel = onlyFiltered => {
+    const exportExcel = async onlyFiltered => {
+        if (lock.current) return;
+        lock.current = true; setBusy(true);
         try {
-            if (!window.XLSX) throw new Error('Бібліотека Excel не завантажена.');
-            const workbook = XLSX.utils.book_new();
+            const ExcelLib = ExcelJS || window.ExcelJS;
+            if (!ExcelLib) throw new Error('Бібліотека Excel не завантажена.');
+            const workbook = new ExcelLib.Workbook();
+            workbook.creator = 'Military Suite';
+            workbook.created = new Date();
+            const border = { top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } }, bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+            const headBorder = { top: { style: 'thin', color: { argb: 'FF334155' } }, left: { style: 'thin', color: { argb: 'FF334155' } }, bottom: { style: 'medium', color: { argb: 'FF334155' } }, right: { style: 'thin', color: { argb: 'FF334155' } } };
             (onlyFiltered ? [tab] : D.tabs).forEach(key => {
                 const fields = D.schemas[key].fields, records = onlyFiltered ? filteredRecords(key) : D.filtered(key, data[key], D.filters());
-                const rows = [fields.map(([, title]) => title), ...records.map(row => fields.map(([field, , type]) => field === 'positionId' ? (positionRegister.links.get(row.id) || row.positionId || '') : key === 'positions' && field === 'name' && row.newName ? `${row.name} → ${row.newName}` : key === 'ovt' && (field === 'position' || field === 'comment') ? (row[field] || ovtCellText(row, field)) : type === 'checkbox' ? (row[field] ? 'Так' : 'Ні') : type === 'date' ? D.dateLabel(row[field]) : row[field]))];
-                const sheet = XLSX.utils.aoa_to_sheet(rows);
-                sheet['!cols'] = fields.map(([, , type]) => ({ wch: type === 'textarea' ? 48 : 25 }));
-                XLSX.utils.book_append_sheet(workbook, sheet, D.schemas[key].title);
+                const headers = fields.map(([, title]) => title);
+                const dataRows = records.map(row => fields.map(([field, , type]) => field === 'positionId' ? (positionRegister.links.get(row.id) || row.positionId || '') : key === 'positions' && field === 'name' && row.newName ? `${row.name} → ${row.newName}` : key === 'ovt' && (field === 'position' || field === 'comment') ? (row[field] || ovtCellText(row, field)) : type === 'checkbox' ? (row[field] ? 'Так' : 'Ні') : type === 'date' ? D.dateLabel(row[field]) : (row[field] ?? '')));
+                const ws = workbook.addWorksheet(D.schemas[key].title, { views: [{ state: 'frozen', ySplit: 1 }] });
+                ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9, margins: { left: 0.25, right: 0.25, top: 0.4, bottom: 0.4, header: 0.15, footer: 0.15 } };
+                ws.columns = fields.map(([, title, type], colIdx) => {
+                    const maxLen = Math.max(String(title || '').length, ...dataRows.map(r => Math.max(0, ...String(r[colIdx] ?? '').split(/\r?\n/).map(line => line.length))));
+                    const minW = type === 'date' || type === 'time' || type === 'checkbox' ? 13 : 16;
+                    const maxW = type === 'textarea' ? 54 : 36;
+                    return { width: Math.min(Math.max(maxLen + 3, minW), maxW) };
+                });
+                const headRow = ws.addRow(headers);
+                headRow.height = 26;
+                headRow.eachCell(cell => {
+                    cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+                    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+                    cell.border = headBorder;
+                });
+                dataRows.forEach((values, rIdx) => {
+                    const row = ws.addRow(values);
+                    let maxLines = 1;
+                    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                        const type = fields[colNumber - 1][2];
+                        const width = Math.max(10, (ws.columns[colNumber - 1].width || 20) - 2);
+                        const lines = String(values[colNumber - 1] ?? '').split(/\r?\n/).reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / width)), 0);
+                        if (lines > maxLines) maxLines = lines;
+                        cell.font = { name: 'Calibri', size: 10, color: { argb: 'FF0F172A' } };
+                        if (rIdx % 2 === 1) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+                        cell.alignment = { vertical: 'middle', horizontal: type === 'date' || type === 'time' || type === 'checkbox' ? 'center' : 'left', wrapText: true };
+                        cell.border = border;
+                    });
+                    row.height = Math.min(220, Math.max(20, maxLines * 14 + 6));
+                });
+                ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: fields.length } };
             });
-            XLSX.writeFile(workbook, 'Документальний_журнал_' + (onlyFiltered ? tab + '_' : '') + window.SuiteDates.localISO() + '.xlsx');
+            const buffer = await workbook.xlsx.writeBuffer();
+            const url = URL.createObjectURL(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'Документальний_журнал_' + (onlyFiltered ? tab + '_' : '') + window.SuiteDates.localISO() + '.xlsx';
+            document.body.appendChild(link); link.click(); link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 30000);
             setNotice('Excel підготовлено. Це незашифрований звіт; для захищеної копії використовуйте єдиний бекап.');
         } catch (error) { setNotice('Експорт не виконано: ' + error.message); }
+        finally { lock.current = false; setBusy(false); }
     };
     const openOvtReport = row => {
         const text = buildOvtReport(row);
@@ -355,8 +409,8 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
     };
 
 
-    if (loadError) return <section id="document-journal" className="p-6 text-slate-100 space-y-3"><h1 className="text-xl font-bold">Документальний журнал</h1><p role="alert" className="text-rose-300">{loadError}</p><p>Редагування вимкнено, щоб не перезаписати наявні дані. Використайте єдиний бекап для відновлення.</p></section>;
-    if (!data) return <p className="p-6 text-slate-300" role="status">Завантаження журналу…</p>;
+    if (loadError) return <section id="document-journal" className="p-6 text-[#f3f4f6] bg-[#101113] space-y-3"><h1 className="text-xl font-bold">Документальний журнал</h1><p role="alert" className="text-[#f3a3a0]">{loadError}</p><p className="text-[#b8bec8]">Редагування вимкнено, щоб не перезаписати наявні дані. Використайте єдиний бекап для відновлення.</p></section>;
+    if (!data) return <p className="p-6 text-[#b8bec8] bg-[#101113]" role="status">Завантаження журналу…</p>;
     const schema = D.schemas[tab], options = viewFilters[tab];
     const filteredRecords = key => filteredByTab[key];
     const rows = filteredRecords(tab), totalPages = Math.max(1, Math.ceil(rows.length / (options.pageSize || 50))), shownPage = Math.min(page, totalPages);
@@ -370,10 +424,10 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
     const ovtOnlyTransport = tab === 'ovt' && (options.category === 'Транспорт' || (rows.length > 0 && rows.every(row => row.category === 'Транспорт')));
     const ovtOrder = ['date', 'time', 'position', 'category', 'nomenclature', 'status', 'serialNumber', 'urgentDocNo', 'comment'];
     const allFields = tab === 'ovt' ? ovtOrder.map(key => schema.fields.find(field => field[0] === key)) : tab === 'positions' ? ['date', 'name', 'category', 'status', 'docNumber', 'details', 'reportedInPbd'].map(key => schema.fields.find(field => field[0] === key)) : schema.fields;
-    const palette = { teal: '#2dd4bf', emerald: '#34d399', blue: '#60a5fa', amber: '#fbbf24', rose: '#fb7185', purple: '#c084fc', slate: '#94a3b8' };
-    const tabTheme = { tasks: ['teal', 'Truck'], ovt: ['amber', 'Flame'], positions: ['emerald', 'MapPin'] };
-    const tone = palette[tabTheme[tab][0]];
-    const tagStyle = color => ({ color: palette[color], background: palette[color] + '18', borderColor: palette[color] + '55' });
+    const palette = { teal: '#2dd4bf', emerald: '#34d399', blue: '#60a5fa', gold: '#facc15', orange: '#fb923c', violet: '#a78bfa', amber: '#fbbf24', rose: '#f87171', purple: '#a78bfa', slate: '#b8bec8' };
+    const tabTheme = { tasks: ['gold', 'Truck'], ovt: ['orange', 'Flame'], positions: ['violet', 'MapPin'] };
+    const tone = palette[tabTheme[tab][0]] || '#4c8ed9';
+    const tagStyle = color => ({ color: palette[color], background: palette[color] + '1a', borderColor: palette[color] + '4d' });
     const statusTone = value => ({ 'Виконано': 'emerald', 'Виконується': 'amber', 'Заплановано': 'blue', 'Не виконано': 'rose', 'ВТРАЧЕНО': 'amber', 'ЗНИЩЕНО': 'rose', 'ПОШКОДЖЕНО': 'amber', 'ЗНАЙДЕНО': 'emerald', 'виставлена': 'emerald', 'облаштовується': 'slate', 'знята': 'blue', 'знищена': 'rose', 'переміщена': 'amber', 'перейменована': 'purple', 'БпЛА': 'amber', 'Зброя': 'rose', 'Транспорт': 'emerald', 'РЕБ': 'purple', 'Зв\'язок': 'blue', 'Інше': 'slate' }[value] || 'slate');
 
     const countStatus = status => periodRows.filter(row => row.status === status).length;
@@ -396,87 +450,104 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
     const columnTitle = key => ({ date: 'Дата', time: 'Час', position: 'Позиція', nomenclature: 'Модель', isEvent: 'Подія (*)', serialNumber: tab === 'ovt' ? (ovtOnlyTransport ? 'VIN / Номер авто' : hasOvtTransport ? 'Серійний № / Авто' : 'Серійний №') : 'Серійний № / VIN', plateNumber: 'Номер авто', urgentDocNo: 'Позатермінове №', docNumber: 'Позатермінове №', status: tab === 'positions' ? 'Статус / Дія' : 'Статус' }[key]);
 
     const copyFilteredTasks = async () => {
-        if (!rows.length) return;
-        const text = rows.map(r => r.task).join('\n');
+        const tasks = rows.map(r => String(r.task || '').trim()).filter(Boolean);
+        if (!tasks.length) { setNotice('У вибірці немає заповненого тексту завдань.'); return; }
+        const text = tasks.join('\n');
         try {
             await navigator.clipboard.writeText(text);
             setNotice('Вибірку завдань скопійовано в буфер обміну.');
         } catch {
-            setNotice('Не вдалося скопіювати автоматично. Ваш браузер блокує буфер.');
+            const area = document.createElement('textarea');
+            area.value = text;
+            area.setAttribute('readonly', '');
+            area.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+            document.body.appendChild(area);
+            try {
+                area.select();
+                if (!document.execCommand('copy')) throw new Error('copy rejected');
+                setNotice('Вибірку завдань скопійовано в буфер обміну.');
+            } catch {
+                setNotice('Не вдалося скопіювати автоматично. Ваш браузер блокує буфер.');
+            } finally {
+                area.remove();
+            }
         }
     };
 
-    return <section id="document-journal" data-tab={tab} data-period-open={periodOpen || options.from !== options.to} style={{ '--dj-accent': tone, '--dj-solid': { tasks: '#0d9488', ovt: '#d97706', positions: '#059669' }[tab] }} className="w-full min-w-0 text-slate-200">
+    return <section id="document-journal" data-tab={tab} style={{ '--dj-accent': tone, '--dj-solid': '#2b67ab' }} className="w-full min-w-0 text-[#f3f4f6]">
         <style>{`
-                    #document-journal{min-height:100%;background:radial-gradient(ellipse at 50% 0%,#0d1b38 0%,#020617 70%);padding:0 20px 16px;font-family:Inter,sans-serif}
-                    #document-journal .dj-header{margin:0 -20px 8px;padding:7px 20px;background:#090e1aeF;backdrop-filter:blur(12px);border-bottom:1px solid #1e293b;box-shadow:0 4px 16px #0003}
+                    #document-journal{min-height:100%;background:#101113;padding:0 20px 16px;font-family:'Segoe UI Variable Text','Inter',system-ui,sans-serif}
+                    #document-journal .dj-header{margin:0 -20px 8px;padding:7px 20px;background:#17181b;border-bottom:1px solid #2e3138}
                     #document-journal .dj-headline{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-                    #document-journal .dj-logo{display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:linear-gradient(135deg,#10b981,#0f766e);border-radius:9px;box-shadow:0 2px 10px #10b98128;color:white}
-                    #document-journal h1{font-size:16px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+                    #document-journal .dj-logo{display:flex;align-items:center;justify-content:center;width:30px;height:30px;background:color-mix(in srgb,var(--dj-accent) 14%,#17181b);border:1px solid color-mix(in srgb,var(--dj-accent) 45%,#2e3138);border-radius:2px;color:var(--dj-accent)}
+                    #document-journal h1{font-size:15px;font-weight:700;letter-spacing:-.01em;line-height:1.2;color:#f3f4f6}
                     #document-journal .dj-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
-                    #document-journal .dj-button{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:5px 10px;border:1px solid #334155;border-radius:9px;background:#172237;color:#cbd5e1;font-size:11px;font-weight:600;white-space:nowrap;transition:background .15s,transform .15s}
-                    #document-journal .dj-button:hover{background:#25334b;color:white}#document-journal button:disabled{opacity:.4;cursor:not-allowed}
-                    #document-journal .dj-blue{background:#2563ebcc;border-color:#3b82f670;color:white}#document-journal .dj-green{background:#059669cc;border-color:#10b98170;color:white}#document-journal .dj-indigo{background:#4f46e5cc;border-color:#6366f170;color:white}
-                    #document-journal .dj-primary{background:var(--dj-solid);border-color:var(--dj-solid);color:white;font-weight:700}
-                    #document-journal .dj-nav{display:flex;gap:8px;overflow-x:auto;padding:12px 0;margin-top:14px;border-top:1px solid #1e293b}
-                    #document-journal .dj-tab{display:flex;align-items:center;gap:10px;white-space:nowrap;padding:11px 16px;border:1px solid #1e293b;border-radius:15px;background:#090e1a;color:#cbd5e1;font-size:12px;font-weight:700;text-transform:uppercase;transition:transform .15s,background .15s}
-                    #document-journal .dj-tab:hover{transform:translateY(-1px);border-color:var(--tab-tone)}
-                    #document-journal .dj-tab[aria-pressed=true]{background:linear-gradient(135deg,var(--tab-tint),#090e1a);border-color:var(--tab-tone);color:var(--tab-tone);box-shadow:0 4px 18px -3px var(--tab-tint)}
-                    #document-journal .dj-tab-count{font-family:'JetBrains Mono',monospace;border-radius:20px;padding:2px 8px;background:var(--tab-tint);color:var(--tab-tone);font-size:11px}
-                    #document-journal .dj-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-bottom:6px}
-                    #document-journal .dj-stat{text-align:left;background:#090e1a;border:1px solid;border-radius:9px;padding:5px 10px;box-shadow:0 2px 6px #0002;min-height:auto}
-                    #document-journal .dj-stat-label{font-size:9.5px;text-transform:uppercase;color:#94a3b8;font-weight:700;letter-spacing:.02em;line-height:1.15}
-                    #document-journal .dj-stat-number{font:800 16px 'JetBrains Mono',monospace;line-height:1.1;margin-top:1px}
-                    #document-journal .dj-stat-hint{font:8.5px 'JetBrains Mono',monospace;color:#64748b;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-                    #document-journal .dj-stat-icon{padding:3px;border-radius:5px;display:flex;align-items:center;justify-content:center}
-                    #document-journal .dj-stat-icon svg{width:12px;height:12px}
-                    #document-journal .dj-position-categories{gap:6px;margin-bottom:6px}
-                    #document-journal .dj-position-categories .dj-stat{padding:5px 9px;min-height:auto}
-                    #document-journal .dj-position-categories .dj-stat .dj-stat-number{font-size:15px;margin-top:1px}
-                    #document-journal .dj-position-categories .dj-stat .dj-stat-hint{font-size:8px;margin-top:1px;color:#64748b}
-                    #document-journal .dj-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 10px;border:1px solid #1e293b;border-radius:11px;background:#090e1a;margin:0 0 6px}
+                    #document-journal .dj-button{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:5px 10px;border:1px solid #2e3138;border-radius:2px;background:#222429;color:#cbd5e1;font-size:11px;font-weight:600;white-space:nowrap;transition:background-color .15s,border-color .15s}
+                    #document-journal .dj-button:hover:not(:disabled){background:#282b31;border-color:#3c404a;color:#ffffff}#document-journal button:disabled{opacity:.45;cursor:not-allowed}
+                    #document-journal .dj-blue{background:#2b67ab;border-color:#4c8ed9;color:#ffffff}#document-journal .dj-blue:hover:not(:disabled){background:#3477c2}
+                    #document-journal .dj-green{background:rgba(61,163,114,.16);border-color:rgba(61,163,114,.45);color:#8ad8b1}#document-journal .dj-green:hover:not(:disabled){background:rgba(61,163,114,.25)}
+                    #document-journal .dj-indigo{background:#222429;border-color:#3c404a;color:#f3f4f6}
+                    #document-journal .dj-primary{background:var(--dj-solid);border-color:#4c8ed9;color:#ffffff;font-weight:600}#document-journal .dj-primary:hover:not(:disabled){background:#3477c2}
+                    #document-journal .dj-nav{display:flex;gap:8px;overflow-x:auto;padding:10px 0;margin-top:12px;border-top:1px solid #2e3138}
+                    #document-journal .dj-tab{display:flex;align-items:center;gap:8px;white-space:nowrap;padding:8px 14px;border:1px solid #2e3138;border-radius:2px;background:#17181b;color:#cbd5e1;font-size:12px;font-weight:600;text-transform:uppercase;transition:background-color .15s,border-color .15s}
+                    #document-journal .dj-tab:hover{border-color:#3c404a;background:#222429}
+                    #document-journal .dj-tab[aria-pressed=true]{background:#222429;border-color:#4c8ed9;color:#f3f4f6}
+                    #document-journal .dj-tab-count{font-family:'Cascadia Mono','JetBrains Mono',monospace;font-variant-numeric:tabular-nums;border-radius:2px;padding:1px 6px;background:#101113;border:1px solid #2e3138;color:#b8bec8;font-size:11px}
+                    #document-journal .dj-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:8px}
+                    #document-journal .dj-stat{text-align:left;background:#1a1c20;border:1px solid #3a3e47;border-radius:2px;padding:8px 12px;min-height:auto;font-variant-numeric:tabular-nums}
+                    #document-journal .dj-stat-label{font-size:11px;text-transform:uppercase;color:#cbd5e1;font-weight:700;letter-spacing:.04em;line-height:1.25}
+                    #document-journal .dj-stat-number{font:700 19px 'Cascadia Mono','JetBrains Mono',monospace;font-variant-numeric:tabular-nums;line-height:1.15;margin-top:3px}
+                    #document-journal .dj-stat-hint{font:11px 'Cascadia Mono','JetBrains Mono',monospace;color:#b8bec8;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+                    #document-journal .dj-stat-icon{padding:4px;border-radius:2px;border:1px solid;display:flex;align-items:center;justify-content:center}
+                    #document-journal .dj-stat-icon svg{width:13px;height:13px}
+                    #document-journal .dj-position-categories{gap:6px;margin-bottom:8px}
+                    #document-journal .dj-position-categories .dj-stat{padding:6px 10px;min-height:auto}
+                    #document-journal .dj-position-categories .dj-stat .dj-stat-number{font-size:16px;margin-top:2px}
+                    #document-journal .dj-position-categories .dj-stat .dj-stat-hint{font-size:10.5px;margin-top:2px;color:#b8bec8}
+                    #document-journal .dj-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 10px;border:1px solid #3a3e47;border-radius:2px;background:#1a1c20;margin:0 0 8px}
                     #document-journal .dj-filter-main,#document-journal .dj-filter-extra{display:contents}
-                    #document-journal .dj-filter-main>label{flex:0 0 auto}#document-journal .dj-filter-main>label:first-child{flex:1 1 130px;max-width:200px;min-width:110px}
-                    #document-journal[data-period-open=false] .dj-filter-main>label:nth-child(2),#document-journal[data-period-open=false] .dj-filter-main>label:nth-child(3){display:none}
+                    #document-journal .dj-filter-main>label{flex:0 0 auto}#document-journal .dj-filter-main>label:first-child{flex:1 1 130px;max-width:210px;min-width:110px}
                     #document-journal .dj-toolbar-actions{display:flex;gap:5px;margin-left:auto;align-items:center;flex-wrap:wrap}
                     #document-journal .dj-filter-main label>span,#document-journal .dj-filter-main>div>span{display:none}
-                    #document-journal .dj-filter-main label:nth-child(2) input,#document-journal .dj-filter-main label:nth-child(3) input,#document-journal .dj-filter-main>div input[type=date]{width:112px}
-                    #document-journal .dj-input{padding:4px 7px;border:1px solid #334155;background:#111b2e;color:#e2e8f0;border-radius:8px;font-size:11px;outline:none}
-                    #document-journal .dj-input:focus{border-color:var(--dj-accent);box-shadow:0 0 0 2px #ffffff08}#document-journal input[type=checkbox]{accent-color:var(--dj-accent);width:14px;height:14px;flex-shrink:0}
-                    #document-journal .dj-table-wrap{overflow:auto;max-height:calc(100vh - 210px);background:#090e1a;border:1px solid #1e293b;border-radius:12px;box-shadow:0 6px 20px #0003;margin-top:4px}
-                    #document-journal .dj-table{width:100%;font-size:12px;text-align:left;border-collapse:separate;border-spacing:0}
-                    #document-journal .dj-table th{position:sticky;top:0;background:#0f172a;z-index:2;padding:7px 10px;color:#94a3b8;font-weight:600;font-size:10.5px;white-space:nowrap;border-bottom:1px solid #26344b}
-                    #document-journal .dj-table td{padding:9px 10px;border-bottom:1px solid #1e293b88;vertical-align:middle}#document-journal .dj-table tr:last-child td{border-bottom:0}
-                    #document-journal[data-tab=tasks] .dj-table td{padding:3px 6px}
-                    #document-journal .dj-table tbody tr:nth-child(odd){background:#080d1a}#document-journal .dj-table tbody tr:nth-child(even){background:#0c1424}#document-journal .dj-table tbody tr:hover{background:#1e293b80}
-                    #document-journal .dj-table tr.dj-marked{background:#3b076424;border-left:2px solid #a855f7}
-                    #document-journal .dj-table td[data-field=name],#document-journal .dj-table td[data-field=position]{color:#34d399;font-weight:600;white-space:nowrap}
-                    #document-journal .dj-table td[data-field=serialNumber]{color:#fcd34d;font-family:'JetBrains Mono',monospace;white-space:nowrap}
-                    #document-journal .dj-table td[data-field=docNumber],#document-journal .dj-table td[data-field=urgentDocNo]{color:#a5b4fc;font-family:'JetBrains Mono',monospace;white-space:nowrap}
-                    #document-journal .dj-table td[data-field=nomenclature]{color:white;font-family:'JetBrains Mono',monospace;font-weight:700;white-space:nowrap}
-                    #document-journal .dj-tag{display:inline-flex;align-items:center;gap:5px;font:600 10px 'JetBrains Mono',monospace;padding:3px 6px;border:1px solid;border-radius:6px;white-space:nowrap}
-                    #document-journal .dj-icon-button{display:inline-flex;align-items:center;justify-content:center;padding:5px;border-radius:7px;color:#94a3b8}#document-journal .dj-icon-button:hover{background:#1e293b;color:var(--dj-accent)}
-                    #document-journal .dj-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding-top:10px;color:#64748b;font:10px 'JetBrains Mono',monospace}
-                    #document-journal .dj-modal{background:#090e1a;border-color:#334155;box-shadow:0 24px 80px #0009}
+                    #document-journal .dj-filter-main>div input[type=date]{width:116px;font-variant-numeric:tabular-nums}
+                    #document-journal .dj-input{padding:4px 7px;border:1px solid #2e3138;background:#101113;color:#f3f4f6;border-radius:2px;font-size:11.5px;outline:none}
+                    #document-journal .dj-input:focus{border-color:#4c8ed9}#document-journal input[type=checkbox]{accent-color:#4c8ed9;width:14px;height:14px;flex-shrink:0}
+                    #document-journal .dj-table-wrap{overflow:auto;max-height:calc(100vh - 210px);background:#17181b;border:1px solid #3c404a;border-radius:2px;margin-top:6px}
+                    #document-journal .dj-table{width:100%;font-size:13px;text-align:left;border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums;color:#f3f4f6}
+                    #document-journal .dj-table th{position:sticky;top:0;background:#222429;z-index:2;padding:8px 10px;color:#f3f4f6;font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;border-bottom:2px solid #424652}
+                    #document-journal .dj-table th:not(:last-child){border-right:1px solid #2e3138}
+                    #document-journal .dj-table td{padding:8px 10px;border-bottom:1px solid #32363e;vertical-align:middle}
+                    #document-journal .dj-table td:not(:last-child){border-right:1px solid #262930}
+                    #document-journal .dj-table tr:last-child td{border-bottom:0}
+                    #document-journal[data-tab=tasks] .dj-table td{padding:4px 6px}
+                    #document-journal .dj-table tbody tr:nth-child(odd){background:#131417}#document-journal .dj-table tbody tr:nth-child(even){background:#1a1c20}#document-journal .dj-table tbody tr:hover{background:#25272d}
+                    #document-journal .dj-table tr.dj-marked{background:#25272d;border-left:2px solid var(--dj-accent)}
+                    #document-journal .dj-table td[data-field=name],#document-journal .dj-table td[data-field=position]{color:#38bdf8;font-weight:600;white-space:nowrap}
+                    #document-journal .dj-table td[data-field=comment],#document-journal .dj-table td[data-field=details]{color:#d4d8e0}
+                    #document-journal .dj-table td[data-field=serialNumber]{color:#e5e7eb;font-family:'Cascadia Mono','JetBrains Mono',monospace;white-space:nowrap}
+                    #document-journal .dj-table td[data-field=docNumber],#document-journal .dj-table td[data-field=urgentDocNo]{color:#c4b5fd;font-family:'Cascadia Mono','JetBrains Mono',monospace;font-weight:600;white-space:nowrap}
+                    #document-journal .dj-table td[data-field=nomenclature]{color:#f9fafb;font-family:'Cascadia Mono','JetBrains Mono',monospace;font-weight:700;white-space:nowrap}
+                    #document-journal .dj-tag{display:inline-flex;align-items:center;gap:5px;font:600 11px 'Cascadia Mono','JetBrains Mono',monospace;font-variant-numeric:tabular-nums;padding:2px 7px;border:1px solid;border-radius:2px;white-space:nowrap}
+                    #document-journal .dj-icon-button{display:inline-flex;align-items:center;justify-content:center;padding:5px;border-radius:2px;color:#b8bec8;border:1px solid transparent}#document-journal .dj-icon-button:hover{background:#222429;border-color:#2e3138;color:#f3f4f6}
+                    #document-journal .dj-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding-top:10px;color:#989fa9;font:11px 'Cascadia Mono','JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+                    #document-journal .dj-modal{background:#17181b;border-color:#2e3138;border-radius:2px;overscroll-behavior:contain}
                     @media(prefers-reduced-motion:reduce){#document-journal .dj-tab,#document-journal .dj-button{transition:none}}
-                    @media(max-width:800px){#document-journal{padding:0 12px 16px}#document-journal .dj-header{margin:0 -12px 8px;padding:8px 12px}#document-journal .dj-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#document-journal .dj-filter-main>label:first-child{max-width:none}#document-journal .dj-tab{padding:10px 12px}}
-                    #document-journal .dj-stat[aria-pressed=true]{outline:2px solid var(--dj-accent);outline-offset:-2px;background:#0b272a}
-                    #document-journal .dj-table tbody tr.dj-missing-doc{background:#451a1a;animation:dj-document-reminder 2.8s ease-in-out infinite}
-                    #document-journal .dj-table tbody tr.dj-missing-doc td:first-child{border-left:3px solid #fb7185}
-                    @keyframes dj-document-reminder{0%,100%{background-color:#361822}50%{background-color:#662331}}
-                    @media(prefers-reduced-motion:reduce){#document-journal .dj-table tbody tr.dj-missing-doc{animation:none;background:#451a1a}}
+                    @media(max-width:800px){#document-journal{padding:0 12px 16px}#document-journal .dj-header{margin:0 -12px 8px;padding:8px 12px}#document-journal .dj-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#document-journal .dj-filter-main>label:first-child{max-width:none}#document-journal .dj-tab{padding:8px 12px}}
+                    #document-journal .dj-stat[aria-pressed=true]{border-color:#4c8ed9;background:#222429}
+                    #document-journal .dj-table tbody tr.dj-missing-doc{background:rgba(217,83,79,.13)}
+                    #document-journal .dj-table tbody tr.dj-missing-doc td:first-child{border-left:3px solid #d9534f}
                 `}</style>
         <header className="dj-header">
-            <div className="dj-headline"><div className="flex items-center gap-2.5"><div className="dj-logo"><DocumentJournalIcon name={tabTheme[tab][1]} size={18} /></div><div className="flex items-center gap-2 flex-wrap"><h1>{schema.title}</h1><span className="dj-tag" style={tagStyle(tabTheme[tab][0])}>ЖБД · ОБЛІК</span><span className="text-[11px] text-slate-400">· Документальний журнал</span></div></div>
-                <div className="dj-actions"><input ref={fileRef} aria-label="Імпорт Excel документального журналу" type="file" accept=".xlsx,.xls" className="hidden" onChange={event => { const file = event.target.files[0]; event.target.value = ''; chooseImport(file); }} /><button aria-label="Імпорт Excel" disabled={busy} className="dj-button dj-blue" onClick={() => fileRef.current.click()}><DocumentJournalIcon name="FileUp" size={14} />Імпорт (.xlsx)</button><button aria-label="Експорт трьох вкладок" disabled={busy} className="dj-button dj-green" onClick={() => exportExcel(false)}><DocumentJournalIcon name="FileDown" size={14} />Експорт (.xlsx)</button><button disabled={busy} className="dj-button dj-indigo" onClick={openDailyReport}><DocumentJournalIcon name="FileText" size={14} />Добовий витяг</button>{tab === 'ovt' && <button aria-label="Налаштування номенклатури ОВТ" disabled={busy} className="dj-button" style={{ borderColor: 'var(--dj-accent)', color: 'var(--dj-accent)' }} onClick={() => { setOvtDictEdit(prefsRef.current.ovtDict || D.defaultOvtDict); setOvtSettingsOpen(true); }}><DocumentJournalIcon name="Settings" size={14} />Налаштування ОВТ</button>}</div>
+            <div className="dj-headline"><div className="flex items-center gap-2.5"><div className="dj-logo"><DocumentJournalIcon name={tabTheme[tab][1]} size={16} /></div><div className="flex items-center gap-2 flex-wrap"><h1>{schema.title}</h1><span className="dj-tag" style={tagStyle(tabTheme[tab][0])}>ЖБД · ОБЛІК</span><span className="text-[11px] text-[#b8bec8]">· Документальний журнал</span></div></div>
+                <div className="dj-actions"><input ref={fileRef} aria-label="Імпорт Excel документального журналу" type="file" accept=".xlsx,.xls" className="hidden" onChange={event => { const file = event.target.files[0]; event.target.value = ''; chooseImport(file); }} /><button aria-label="Імпорт Excel" disabled={busy} className="dj-button dj-blue" onClick={() => fileRef.current.click()}><DocumentJournalIcon name="FileUp" size={14} />Імпорт (.xlsx)</button><button aria-label="Експорт трьох вкладок" disabled={busy} className="dj-button dj-green" onClick={() => exportExcel(false)}><DocumentJournalIcon name="FileDown" size={14} />Експорт (.xlsx)</button><button disabled={busy} className="dj-button" onClick={openDailyReport}><DocumentJournalIcon name="FileText" size={14} />Добовий витяг</button>{tab === 'ovt' && <button aria-label="Налаштування номенклатури ОВТ" disabled={busy} className="dj-button" style={{ borderColor: '#4c8ed9', color: '#f3f4f6' }} onClick={() => { setOvtDictEdit(prefsRef.current.ovtDict || D.defaultOvtDict); setOvtSettingsOpen(true); }}><DocumentJournalIcon name="Settings" size={14} />Налаштування ОВТ</button>}</div>
             </div>
         </header>
-        {notice && <div role="status" className="flex items-center justify-between gap-3 px-3 py-1.5 mb-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs"><span>{notice}</span><button aria-label="Закрити повідомлення журналу" onClick={() => setNotice('')}>×</button></div>}
+        {notice && <div role="status" className="flex items-center justify-between gap-3 px-3 py-1.5 mb-1.5 rounded-sm bg-[#17181b] border border-[#2e3138] text-xs text-[#f3f4f6]"><span>{notice}</span><button aria-label="Закрити повідомлення журналу" className="dj-icon-button" onClick={() => setNotice('')}><DocumentJournalIcon name="X" size={14} /></button></div>}
         <div className="dj-stats" data-testid="document-action-cards">{cards.map(([title, value, hint, icon, color, filter]) => {
             const isFilterable = Object.keys(filter).length > 0;
             const CardTag = isFilterable ? 'button' : 'div';
             const isActive = isFilterable && Object.entries(filter).every(([k, v]) => options[k] === v);
-            return <CardTag key={title} className="dj-stat" style={{ borderColor: palette[color] + '44', ...(isFilterable ? { cursor: 'pointer' } : {}) }} {...(isFilterable ? {
+            return <CardTag key={title} className="dj-stat" style={{ ...(isActive ? {} : { borderColor: '#2e3138' }), ...(isFilterable ? { cursor: 'pointer' } : {}) }} {...(isFilterable ? {
                 type: 'button', 'aria-pressed': isActive, onClick: () => {
                     const newFilter = {};
                     for (const key of Object.keys(filter)) newFilter[key] = isActive ? D.filters()[key] : filter[key];
@@ -485,78 +556,78 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
             } : {})}><div className="flex items-center justify-between gap-2"><span className="dj-stat-label">{title}</span><span className="dj-stat-icon" style={tagStyle(color)}><DocumentJournalIcon name={icon} size={12} /></span></div><div className="flex items-baseline justify-between gap-2"><div className="dj-stat-number" style={{ color: palette[color] }}>{value}</div><p className="dj-stat-hint">{hint}</p></div></CardTag>;
         })}</div>
         {tab === 'positions' && <>
-            <div className="dj-stats dj-position-categories" data-testid="position-category-cards">{D.positionCategoryCards.map(category => <button type="button" key={category} aria-pressed={options.category === category} onClick={() => changeFilter({ category: options.category === category ? '' : category })} className="dj-stat" style={{ borderColor: '#334155' }}><span className="dj-stat-label">{category}</span><div className="dj-stat-number text-emerald-300">{periodRows.filter(row => D.matchesPositionCategory(row.category, category)).length}</div><p className="dj-stat-hint">{category === 'ОВгП' ? 'мінометні + вогневі · записів' : 'записів за період'}</p></button>)}</div>
-            <div className="mb-1.5 rounded-xl border border-slate-700/80 bg-slate-900/70 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
-                <div className="flex flex-wrap items-center gap-2"><h2 className="text-xs font-bold text-emerald-300">Звірка реєстру:</h2>
-                    <button className="dj-button text-[10px] py-1 px-2" style={tagStyle('rose')} onClick={() => changePrefs(tab, { ...viewFilters, [tab]: { ...D.filters(), missingDoc: true } })}>Без номера донесення: {data.positions.filter(row => !D.hasDoc(row)).length}</button>
-                    <button className="dj-button text-[10px] py-1 px-2" style={tagStyle('amber')} onClick={() => changePrefs(tab, { ...viewFilters, [tab]: { ...D.filters(), needsReview: true } })}>Потребує звірки: {positionRegister.issues.size}</button>
-                    <button className="dj-button text-[10px] py-1 px-2" onClick={() => changeFilter({ category: '__uncategorized' })}>Без категорії: {periodRows.filter(row => !row.category).length}</button>
-                    <span className="text-slate-700">|</span>
-                    <label className="flex items-center gap-1.5 whitespace-nowrap text-[11px] text-slate-300"><input type="checkbox" checked={options.missingDoc} onChange={event => changeFilter({ missingDoc: event.target.checked })} />Лише без номера донесення</label>
-                    <label className="flex items-center gap-1.5 whitespace-nowrap text-[11px] text-slate-300"><input type="checkbox" checked={options.onlyActual} onChange={event => changeFilter({ onlyActual: event.target.checked })} />Лише актуальні</label>
-                    <label className="flex items-center gap-1.5 whitespace-nowrap text-[11px] text-slate-300"><input type="checkbox" checked={options.needsReview} onChange={event => changeFilter({ needsReview: event.target.checked })} />Лише потребують звірки</label>
+            <div className="dj-stats dj-position-categories" data-testid="position-category-cards">{D.positionCategoryCards.map(category => <button type="button" key={category} aria-pressed={options.category === category} onClick={() => changeFilter({ category: options.category === category ? '' : category })} className="dj-stat"><span className="dj-stat-label">{category}</span><div className="dj-stat-number text-[#a78bfa]">{positionCategoryCounts[category] || 0}</div><p className="dj-stat-hint">{category === 'ОВгП' ? 'мінометні + вогневі · записів' : 'записів за період'}</p></button>)}</div>
+            <div className="mb-1.5 rounded-sm border border-[#2e3138] bg-[#17181b] px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex flex-wrap items-center gap-2"><h2 className="text-xs font-semibold text-[#f3f4f6]">Звірка реєстру:</h2>
+                    <button className="dj-button text-[11px] py-1 px-2 tabular-nums" style={tagStyle('rose')} onClick={() => changePrefs(tab, { ...viewFilters, [tab]: { ...D.filters(), missingDoc: true } })}>Без номера донесення: {missingDocCount}</button>
+                    <button className="dj-button text-[11px] py-1 px-2 tabular-nums" style={tagStyle('amber')} onClick={() => changePrefs(tab, { ...viewFilters, [tab]: { ...D.filters(), needsReview: true } })}>Потребує звірки: {positionRegister.issues.size}</button>
+                    <button type="button" aria-pressed={options.category === '__uncategorized'} style={options.category === '__uncategorized' ? tagStyle('emerald') : undefined} className="dj-button text-[11px] py-1 px-2 tabular-nums" onClick={() => changeFilter({ category: options.category === '__uncategorized' ? '' : '__uncategorized' })}>Без категорії: {uncategorizedCount}</button>
+                    <span className="text-[#2e3138]">|</span>
+                    <label className="flex items-center gap-1.5 whitespace-nowrap text-[11px] text-[#cbd5e1]"><input type="checkbox" checked={options.missingDoc} onChange={event => changeFilter({ missingDoc: event.target.checked })} />Лише без номера донесення</label>
+                    <label className="flex items-center gap-1.5 whitespace-nowrap text-[11px] text-[#cbd5e1]"><input type="checkbox" checked={options.onlyActual} onChange={event => changeFilter({ onlyActual: event.target.checked })} />Лише актуальні</label>
+                    <label className="flex items-center gap-1.5 whitespace-nowrap text-[11px] text-[#cbd5e1]"><input type="checkbox" checked={options.needsReview} onChange={event => changeFilter({ needsReview: event.target.checked })} />Лише потребують звірки</label>
                 </div>
-                <label className="flex items-center gap-2 text-xs text-slate-400"><span className="text-[11px] whitespace-nowrap">Відкрити історію позиції</span><select aria-label="Відкрити історію позиції" className="dj-input max-w-full py-1 text-xs" value="" onChange={event => { const entry = positionRegister.entries.find(item => item.id === event.target.value); if (entry) { setNotice(''); setHistoryRow(entry.records[0]); } }}><option value="">Реєстр виставлень ({positionRegister.entries.length})</option>{positionRegister.entries.map(entry => <option key={entry.id} value={entry.id}>{entry.name} · {D.dateLabel(entry.records[0].date)} · № {entry.records[0].docNumber || 'очікується'}</option>)}</select></label>
+                <label className="flex items-center gap-2 text-xs text-[#b8bec8]"><span className="text-[11px] whitespace-nowrap">Відкрити історію позиції</span><select aria-label="Відкрити історію позиції" className="dj-input max-w-full py-1 text-xs tabular-nums" value="" onChange={event => { const entry = positionRegister.entries.find(item => item.id === event.target.value); if (entry) { setNotice(''); setHistoryRow(entry.records[0]); } }}><option value="">Реєстр виставлень ({positionRegister.entries.length})</option>{positionRegister.entries.map(entry => <option key={entry.id} value={entry.id}>{entry.name} · {D.dateLabel(entry.records[0].date)} · № {entry.records[0].docNumber || 'очікується'}</option>)}</select></label>
             </div>
         </>}
         <div className="dj-toolbar">
             <div className="dj-filter-main">
-                <label className="text-xs text-slate-400"><span>Пошук у документах</span><input aria-label="Пошук у документах" className={control} value={options.search} onChange={event => changeFilter({ search: event.target.value })} placeholder="Назва, номер донесення, примітка…" /></label>
-                <div className="text-xs text-slate-400 shrink-0"><span>Період</span><div className="flex items-center gap-1"><input aria-label="Дата від" type="date" className={control} value={options.from} onChange={event => changeFilter({ from: event.target.value })} /><span className="text-slate-600">-</span><input aria-label="Дата до" type="date" className={control} value={options.to} onChange={event => changeFilter({ to: event.target.value })} /></div></div>
+                <label className="text-xs text-[#b8bec8]"><span>Пошук у документах</span><input aria-label="Пошук у документах" className={control} value={options.search} onChange={event => changeFilter({ search: event.target.value })} placeholder="Назва, номер донесення, примітка…" /></label>
+                <div className="text-xs text-[#b8bec8] shrink-0"><span>Період</span><div className="flex items-center gap-1"><input aria-label="Дата від" type="date" className={control} value={options.from} onChange={event => changeFilter({ from: event.target.value })} /><span className="text-[#989fa9]">-</span><input aria-label="Дата до" type="date" className={control} value={options.to} onChange={event => changeFilter({ to: event.target.value })} /></div></div>
                 <div className="flex gap-1 items-center shrink-0">
-                    {[['За добу', 0], ['3 дні', 2], ['7 днів', 6]].map(([lbl, days]) => <button key={lbl} aria-label={lbl} onClick={() => changeFilter(window.SuiteDates.recent(days))} className="px-1.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] uppercase font-bold transition-colors whitespace-nowrap">{lbl}</button>)}
-                    <button aria-label="Скинути" title="Скинути період" onClick={() => changeFilter({ from: '', to: '' })} className="px-1.5 py-1 rounded bg-slate-800/50 hover:bg-slate-800 text-slate-500 text-[10px] uppercase font-bold transition-colors"><DocumentJournalIcon name="X" size={12} /></button>
+                    {[['За добу', 0], ['3 дні', 2], ['7 днів', 6]].map(([lbl, days]) => <button key={lbl} aria-label={lbl} onClick={() => changeFilter(window.SuiteDates.recent(days))} className="px-2 py-1 rounded-sm bg-[#222429] hover:bg-[#282b31] border border-[#2e3138] text-[#cbd5e1] text-[10px] uppercase font-semibold transition-colors whitespace-nowrap">{lbl}</button>)}
+                    <button aria-label="Скинути" title="Скинути період" onClick={() => changeFilter({ from: '', to: '' })} className="px-1.5 py-1 rounded-sm bg-[#222429] hover:bg-[#282b31] border border-[#2e3138] text-[#b8bec8] hover:text-[#f3f4f6] transition-colors"><DocumentJournalIcon name="X" size={12} /></button>
                 </div>
-                <label className="text-xs text-slate-400 shrink-0"><span>Статус / Дія</span><select aria-label="Фільтр статусу журналу" className={control} value={options.status} onChange={event => changeFilter({ status: event.target.value })}><option value="">Усі статуси</option>{statusOptions.map(status => <option key={status}>{status}</option>)}</select></label>
+                <label className="text-xs text-[#b8bec8] shrink-0"><span>Статус / Дія</span><select aria-label="Фільтр статусу журналу" className={control} value={options.status} onChange={event => changeFilter({ status: event.target.value })}><option value="">Усі статуси</option>{statusOptions.map(status => <option key={status}>{status}</option>)}</select></label>
             </div>
             <div className="dj-filter-extra text-xs">
-                <label className="flex items-center gap-1 text-slate-400 shrink-0"><span className="sr-only">Показувати:</span><select aria-label="Рядків на сторінці" className={button} value={options.pageSize || 50} onChange={event => changeFilter({ pageSize: parseInt(event.target.value, 10) || 50 })}><option value={20}>20 рядків</option><option value={50}>50 рядків</option><option value={100}>100 рядків</option><option value={500}>500 рядків</option></select></label>
-                {hasPbd && <label className="flex items-center gap-1.5 whitespace-nowrap shrink-0 text-[11px]"><input type="checkbox" checked={options.unreported} onChange={event => changeFilter({ unreported: event.target.checked })} />Лише не подані в ПБД</label>}
-                {tab === 'ovt' && <label className="flex items-center gap-1.5 whitespace-nowrap shrink-0 text-[11px]"><input type="checkbox" checked={options.missingDoc} onChange={event => changeFilter({ missingDoc: event.target.checked })} />Лише без номера донесення</label>}
+                <label className="flex items-center gap-1 text-[#b8bec8] shrink-0"><span className="sr-only">Показувати:</span><select aria-label="Рядків на сторінці" className={button} value={options.pageSize || 50} onChange={event => changeFilter({ pageSize: parseInt(event.target.value, 10) || 50 })}><option value={20}>20 рядків</option><option value={50}>50 рядків</option><option value={100}>100 рядків</option><option value={500}>500 рядків</option></select></label>
+                {hasPbd && <label className="flex items-center gap-1.5 whitespace-nowrap shrink-0 text-[11px] text-[#cbd5e1]"><input type="checkbox" checked={options.unreported} onChange={event => changeFilter({ unreported: event.target.checked })} />Лише не подані в ПБД</label>}
+                {tab === 'ovt' && <label className="flex items-center gap-1.5 whitespace-nowrap shrink-0 text-[11px] text-[#cbd5e1]"><input type="checkbox" checked={options.missingDoc} onChange={event => changeFilter({ missingDoc: event.target.checked })} />Лише без номера донесення</label>}
                 {tab === 'positions' && <select aria-label="Фільтр категорії позицій" className={button} value={options.category} onChange={event => changeFilter({ category: event.target.value })}><option value="">Усі категорії позицій</option><option value="ОВгП">ОВгП — мінометні та вогневі</option>{POSITION_CATEGORIES.map(category => <option key={category}>{category}</option>)}<option value="__uncategorized">Без категорії</option></select>}
                 {tab === 'ovt' && <select aria-label="Фільтр категорії ОВТ" className={button} value={options.category} onChange={event => changeFilter({ category: event.target.value })}><option value="">Усі категорії</option>{[...new Set([...schema.fields.find(([key]) => key === 'category')[2], ...data.ovt.map(row => row.category)])].filter(Boolean).map(category => <option key={category}>{category}</option>)}</select>}
                 {tab === 'ovt' && <select aria-label="Фільтр помітки ОВТ" className={button} value={options.event} onChange={event => changeFilter({ event: event.target.value })}><option value="">Усі записи ОВТ</option><option value="real">Без помітки *</option><option value="marked">З поміткою *</option></select>}
-                <button onClick={() => changePrefs(tab, { ...viewFilters, [tab]: D.filters() })} className="text-teal-300 underline text-[11px] whitespace-nowrap shrink-0">Скинути фільтри</button>
+                <button onClick={() => changePrefs(tab, { ...viewFilters, [tab]: D.filters() })} className="text-[#4c8ed9] hover:text-[#7db3ed] underline text-[11px] whitespace-nowrap shrink-0">Скинути фільтри</button>
             </div>
             <div className="dj-toolbar-actions">
-                {tab === 'positions' && <button type="button" disabled={busy} onClick={() => { setNotice(''); setBatchOpen(true); }} className="dj-button dj-indigo"><DocumentJournalIcon name="ListPlus" size={14} />Масове внесення / перейменування</button>}
+                {tab === 'positions' && <button type="button" disabled={busy} onClick={() => { setNotice(''); setBatchOpen(true); }} className="dj-button"><DocumentJournalIcon name="ListPlus" size={14} />Масове внесення / перейменування</button>}
                 {tab === 'tasks' && <button type="button" aria-label="Додати завдання" disabled={busy} onClick={addTaskRow} className="dj-button dj-primary"><DocumentJournalIcon name="Plus" size={14} />Додати завдання</button>}
-                {tab === 'tasks' && <button type="button" disabled={busy || !rows.length} onClick={copyFilteredTasks} className="dj-button dj-indigo" title="Копіювати текст усіх показаних завдань"><DocumentJournalIcon name="Copy" size={14} />Копіювати текст завдань</button>}
+                {tab === 'tasks' && <button type="button" disabled={busy || !rows.length} onClick={copyFilteredTasks} className="dj-button" title="Копіювати текст усіх показаних завдань"><DocumentJournalIcon name="Copy" size={14} />Копіювати текст завдань</button>}
                 <button type="button" disabled={busy || !rows.length} onClick={() => exportExcel(true)} className="dj-button dj-green" title="Згенерувати Excel звіт по вибірці"><DocumentJournalIcon name="FileDown" size={14} />Експорт вибірки</button>
                 {tab !== 'tasks' && <button aria-label="Додати запис" disabled={busy} onClick={() => openRecord(null)} className="dj-button dj-primary"><DocumentJournalIcon name="Plus" size={14} />{tab === 'ovt' ? 'Додати запис ОВТ' : 'Додати подію позиції'}</button>}
             </div>
-            {options.from && options.to && options.from > options.to && <p role="alert" className="text-amber-300 text-sm">Дата «від» пізніша за дату «до». Перевірте період.</p>}
+            {options.from && options.to && options.from > options.to && <p role="alert" className="text-[#d99b26] text-sm">Дата «від» пізніша за дату «до». Перевірте період.</p>}
         </div>
-        <div className="text-[10px] font-mono text-slate-500 flex justify-between"><h2>{schema.title} · показано <b style={{ color: tone }}>{rows.length}</b> із {data[tab].length}</h2><span>{options.from || options.to ? 'За обраний період' : 'За весь період'}</span></div>
+        <div className="text-[11px] font-mono text-[#b8bec8] flex justify-between tabular-nums"><h2>{schema.title} · показано <b className="text-[#f3f4f6]">{rows.length}</b> із {data[tab].length}</h2><span>{options.from || options.to ? 'За обраний період' : 'За весь період'}</span></div>
         <div className="dj-table-wrap">
-            <table className="dj-table" data-testid="document-journal-table"><thead><tr><th className="text-center w-10">#</th>{allFields.map(([key, title]) => <th key={key} style={tab === 'tasks' ? (key === 'date' ? { width: '125px' } : key === 'task' ? { width: 'auto' } : key === 'reportedInPbd' ? { width: '105px' } : key === 'status' ? { width: '140px' } : key === 'comment' ? { width: '28%' } : {}) : {}}>{columnTitle(key) || title}</th>)}<th className="text-right w-14">Дії</th></tr></thead><tbody>{visible.map((row, index) => <tr key={row.id} data-document-id={row.id} className={tab === 'positions' && !D.hasDoc(row) ? 'dj-missing-doc' : row.isEvent ? 'dj-marked' : ''}><td className="text-center text-slate-500 font-mono text-[11px]">{(shownPage - 1) * (options.pageSize || 50) + index + 1}</td>{allFields.map(([key, , type]) => <td key={key} data-field={key} className={type === 'textarea' && tab !== 'tasks' ? 'min-w-[200px] max-w-md whitespace-pre-wrap break-words' : ''}>
-                {tab === 'tasks' ? <TaskInlineEditor row={row} fieldKey={key} type={type} options={Array.isArray(type) ? [...new Set([...type, row[key]])].filter(Boolean) : null} onSave={changeField} disabled={busy} getStyle={key === 'status' ? val => tagStyle(statusTone(val)) : null} autoFocus={key === 'task' && lastAddedTaskIdRef.current === row.id} /> :
-                    key === 'name' && tab === 'positions' ? <span className="inline-flex flex-col gap-1"><span>{row.name}</span>{row.newName && <span className="text-xs text-purple-300">→ {row.newName || 'нова назва не вказана'}</span>}{row.destinationPositionId && <span className="text-xs text-cyan-300">на місце: {row.destinationName || 'зв’язок із записом'}</span>}</span> : key === 'serialNumber' && tab === 'ovt' ? (() => { const s = ovtCellText(row, 'serialNumber'), p = (row.category === 'Транспорт' || row.plateNumber || row.boardNumber) ? ovtCellText(row, 'plateNumber') : ''; if (!s && !p) return '—'; if (row.category !== 'Транспорт' && !p) return s; return <span className="inline-flex flex-col gap-0.5 leading-tight">{s && <span>{row.category === 'Транспорт' && !s.includes(':') ? `VIN: ${s}` : s}</span>}{p && <span className="text-[11px] text-slate-300">{!p.includes(':') ? `Номер: ${p}` : p}</span>}</span>; })() : key === 'reportedInPbd' ? <label className="inline-flex items-center gap-2 cursor-pointer whitespace-nowrap"><input type="checkbox" aria-label={`Подано в ПБД: ${row.name || row.task}`} disabled={busy} checked={row.reportedInPbd} onChange={() => togglePbd(row)} /><span className="dj-tag" style={tagStyle(row.reportedInPbd ? 'emerald' : 'slate')}>{row.reportedInPbd ? 'Подано' : 'Не подано'}</span></label> : type === 'checkbox' ? <span className="dj-tag" style={tagStyle(row[key] ? 'purple' : 'emerald')}>{row[key] ? '★ Подія (*)' : '● Реальна'}</span> : type === 'date' ? <span className="font-mono font-semibold whitespace-nowrap">{D.dateLabel(row[key])}</span> : key === 'status' && tab === 'positions' ? <div className="space-y-1"><span className="dj-tag" style={tagStyle(statusTone(row.status))}>{row.status}</span>{positionRegister.issues.has(row.id) && <p className="text-amber-300 text-[10px] max-w-[250px]" title={positionRegister.issues.get(row.id)}>⚠ Потребує звірки</p>}</div> : key === 'status' && Array.isArray(type) ? <div className="inline-flex items-center gap-1.5"><select aria-label={`Статус: ${row.name || row.task || ''}`} value={row[key]} onChange={e => changeField(row, key, e.target.value)} disabled={busy} className="dj-tag bg-transparent outline-none cursor-pointer font-bold appearance-none px-2 pr-4" style={{ ...tagStyle(statusTone(row[key])), backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center', backgroundSize: '12px' }}>{(tab === 'ovt' && row.category === 'Транспорт' ? [...new Set([...OVT_STATUSES, row.status])] : type).map(opt => <option key={opt} value={opt} className="bg-slate-900 text-slate-200">{opt}</option>)}</select>{tab === 'ovt' && row.isEvent && <span className="dj-tag" style={tagStyle('purple')} title="Подія з поміткою *">★ Подія (*)</span>}</div> : key === 'category' ? <span className="dj-tag" style={tagStyle(statusTone(row[key]))}><span className="w-1.5 h-1.5 rounded-full" style={{ background: 'currentColor' }} />{row[key] || 'Не визначено'}</span> : key === documentKey && !D.hasDoc(row) ? <span className={tab === 'positions' ? 'text-rose-200 font-bold' : 'text-amber-300'}>{tab === 'positions' ? '⚠ Очікується номер' : (row[key] || 'Не вказано')}</span> : ((tab === 'ovt' ? ovtCellText(row, key) : row[key]) || '—')}
+            <table className="dj-table" data-testid="document-journal-table"><thead><tr><th className="text-center w-10">#</th>{allFields.map(([key, title]) => <th key={key} style={tab === 'tasks' ? (key === 'date' ? { width: '125px' } : key === 'task' ? { width: 'auto' } : key === 'reportedInPbd' ? { width: '105px' } : key === 'status' ? { width: '140px' } : key === 'comment' ? { width: '28%' } : {}) : {}}>{columnTitle(key) || title}</th>)}<th className="text-right w-14">Дії</th></tr></thead><tbody>{visible.map((row, index) => <tr key={row.id} data-document-id={row.id} className={tab === 'positions' && !D.hasDoc(row) ? 'dj-missing-doc' : row.isEvent ? 'dj-marked' : ''}><td className="text-center text-[#989fa9] font-mono text-[11px] tabular-nums">{(shownPage - 1) * (options.pageSize || 50) + index + 1}</td>{allFields.map(([key, , type]) => <td key={key} data-field={key} className={type === 'textarea' && tab !== 'tasks' ? 'min-w-[200px] max-w-md whitespace-pre-wrap break-words' : ''}>
+                {tab === 'tasks' ? <TaskInlineEditor row={row} fieldKey={key} type={type} options={Array.isArray(type) ? [...new Set([...type, row[key]])].filter(Boolean) : null} onSave={changeField} disabled={busy} getStyle={key === 'status' ? val => tagStyle(statusTone(val)) : null} autoFocus={key === 'task' && lastAddedTaskIdRef.current === row.id} onAutoFocusDone={() => { lastAddedTaskIdRef.current = null; }} /> :
+                    key === 'name' && tab === 'positions' ? <span className="inline-flex flex-col items-start gap-0.5"><span className="text-[#38bdf8] font-semibold">{row.name}</span>{row.newName && <span className="text-xs text-[#fbbf24]">→ {row.newName || 'нова назва не вказана'}</span>}{row.destinationPositionId && <span className="text-xs text-[#b8bec8]">на місце: {row.destinationName || 'зв’язок із записом'}</span>}</span> : key === 'serialNumber' && tab === 'ovt' ? (() => { const s = ovtCellText(row, 'serialNumber'), p = (row.category === 'Транспорт' || row.plateNumber || row.boardNumber) ? ovtCellText(row, 'plateNumber') : ''; if (!s && !p) return '—'; if (row.category !== 'Транспорт' && !p) return s; return <span className="inline-flex flex-col gap-0.5 leading-tight">{s && <span>{row.category === 'Транспорт' && !s.includes(':') ? `VIN: ${s}` : s}</span>}{p && <span className="text-[11px] text-[#d4d8e0]">{!p.includes(':') ? `Номер: ${p}` : p}</span>}</span>; })() : key === 'reportedInPbd' ? <label className="inline-flex items-center gap-2 cursor-pointer whitespace-nowrap"><input type="checkbox" aria-label={`Подано в ПБД: ${row.name || row.task}`} disabled={busy} checked={row.reportedInPbd} onChange={() => togglePbd(row)} /><span className={`font-mono text-[11.5px] font-semibold ${row.reportedInPbd ? 'text-[#34d399]' : 'text-[#989fa9]'}`}>{row.reportedInPbd ? 'Подано' : 'Не подано'}</span></label> : type === 'checkbox' ? <span className="dj-tag" style={tagStyle(row[key] ? 'blue' : 'emerald')}>{row[key] ? 'Подія (*)' : 'Реальна'}</span> : type === 'date' ? <span className="font-mono font-normal text-[#d4d8e0] whitespace-nowrap tabular-nums">{D.dateLabel(row[key])}</span> : key === 'status' && tab === 'positions' ? <div className="space-y-1"><span className="dj-tag" style={tagStyle(statusTone(row.status))}>{row.status}</span>{positionRegister.issues.has(row.id) && <p className="text-[#fbbf24] text-[10px] max-w-[250px]" title={positionRegister.issues.get(row.id)}>Потребує звірки</p>}</div> : key === 'status' && Array.isArray(type) ? <div className="inline-flex items-center gap-1.5"><select aria-label={`Статус: ${row.name || row.task || ''}`} value={row[key]} onChange={e => changeField(row, key, e.target.value)} disabled={busy} className="dj-tag bg-transparent outline-none cursor-pointer font-semibold appearance-none px-2 pr-4" style={{ ...tagStyle(statusTone(row[key])), backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center', backgroundSize: '12px' }}>{(tab === 'ovt' && row.category === 'Транспорт' ? [...new Set([...OVT_STATUSES, row.status])] : type).map(opt => <option key={opt} value={opt} className="bg-[#17181b] text-[#f3f4f6]">{opt}</option>)}</select>{tab === 'ovt' && row.isEvent && <span className="dj-tag" style={tagStyle('blue')} title="Подія з поміткою *">Подія (*)</span>}</div> : key === 'category' ? <span className="text-xs font-medium text-[#a5b4fc] whitespace-nowrap">{row[key] || 'Не визначено'}</span> : key === documentKey && !D.hasDoc(row) ? <span className={tab === 'positions' ? 'text-[#f87171] font-semibold' : 'text-[#fbbf24]'}>{tab === 'positions' ? 'Очікується номер' : (row[key] || 'Не вказано')}</span> : ((tab === 'ovt' ? ovtCellText(row, key) : row[key]) || '—')}
             </td>)}<td><div className="flex gap-1 justify-end items-center">{tab === 'positions' && <button className="dj-button" title="Історія позиції за всіма документами" aria-label={`Історія позиції ${row.id}`} onClick={() => { setNotice(''); setHistoryRow(row); }}><DocumentJournalIcon name="History" size={14} />Історія</button>}{tab === 'ovt' && <button title="Сформувати позатермінове донесення" aria-label={`Позатермінове донесення ${row.id}`} onClick={() => openOvtReport(row)} className="dj-button" style={tagStyle('amber')}><DocumentJournalIcon name="Zap" size={12} />Позатерм.</button>}{tab !== 'tasks' && <button disabled={busy} title="Редагувати" aria-label={`Редагувати запис ${row.id}`} className="dj-icon-button" onClick={() => openRecord(row)}><DocumentJournalIcon name="SquarePen" size={15} /></button>}<button disabled={busy} title="Видалити" aria-label={`Видалити запис ${row.id}`} className="dj-icon-button" onClick={() => setPendingDelete(row)}><DocumentJournalIcon name="Trash2" size={15} /></button></div></td></tr>)}
-                {!rows.length && <tr><td colSpan={allFields.length + 2} className="p-10 text-center text-slate-500 italic">{data[tab].length ? 'За цими фільтрами записів немає.' : 'Записів ще немає. Додайте запис або імпортуйте Excel із попередньої програми.'}</td></tr>}
+                {!rows.length && <tr><td colSpan={allFields.length + 2} className="p-10 text-center text-[#989fa9] italic">{data[tab].length ? 'За цими фільтрами записів немає.' : 'Записів ще немає. Додайте запис або імпортуйте Excel із попередньої програми.'}</td></tr>}
             </tbody></table>
         </div>
         <footer className="dj-footer"><p className="flex items-center gap-2"><DocumentJournalIcon name="Database" size={12} />Локальна база · записи та налаштування входять до єдиного AES-256 бекапу</p><div className="flex items-center gap-3"><button className={button} disabled={shownPage <= 1} onClick={() => setPage(shownPage - 1)}>Назад</button><span>{shownPage} / {totalPages}</span><button className={button} disabled={shownPage >= totalPages} onClick={() => setPage(shownPage + 1)}>Далі</button></div></footer>
-        {(draft || pendingDelete || importPreview || report || historyRow || batchOpen) && <div className="fixed inset-0 z-[15000] bg-black/80 backdrop-blur-sm p-3 sm:p-6 flex items-center justify-center"><section ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="document-dialog-title" className={'dj-modal border rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4' + (draft && tab === 'ovt' ? ' ovt-dialog' : '')}>
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4 gap-3"><h2 id="document-dialog-title" className="text-lg font-bold flex items-center gap-2"><DocumentJournalIcon name={report ? 'FileText' : 'ClipboardList'} size={20} />{batchOpen ? 'Масові записи · Статус позицій' : historyRow ? 'Історія позиції' : report ? report.title : draft ? (draft.id ? 'Редагування запису' : 'Новий запис') + ' · ' + schema.title : pendingDelete ? 'Видалення запису' : 'Перевірка імпорту Excel'}</h2><button aria-label="Закрити вікно журналу" disabled={busy} className="dj-icon-button" onClick={() => { setDraft(null); setPendingDelete(null); setImportPreview(null); setReport(null); setHistoryRow(null); setBatchOpen(false); }}><DocumentJournalIcon name="X" size={18} /></button></div>
-            {report && <div className="space-y-4">{report.date !== undefined && <label className="flex items-center gap-3 text-xs text-slate-400">Дата витягу<input aria-label="Дата витягу" type="date" className="dj-input" value={report.date} onChange={event => setReport({ ...report, date: event.target.value, text: dailyText(event.target.value) })} /></label>}<p className="text-xs text-slate-400">Текст сформовано з наявних записів. Перед поданням перевірте та відредагуйте його. Копіювання не ставить галочку ПБД автоматично.</p><textarea aria-label="Текст витягу" value={report.text} onChange={event => setReport({ ...report, text: event.target.value })} className="dj-input w-full font-mono leading-relaxed" rows={16} /><div className="flex justify-end gap-2"><button className={button} onClick={() => setReport(null)}>Закрити</button><button className="dj-button dj-indigo" onClick={copyReport}><DocumentJournalIcon name="Copy" size={14} />Копіювати текст</button></div></div>}
+        {(draft || pendingDelete || importPreview || report || historyRow || batchOpen) && <div className="fixed inset-0 z-[15000] bg-black/80 p-3 sm:p-6 flex items-center justify-center overscroll-contain"><section ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="document-dialog-title" className={'dj-modal border rounded-sm w-full max-w-3xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4' + (draft && tab === 'ovt' ? ' ovt-dialog' : '')}>
+            <div className="flex items-center justify-between border-b border-[#2e3138] pb-3.5 gap-3"><h2 id="document-dialog-title" className="text-base font-bold flex items-center gap-2 text-[#f3f4f6]"><DocumentJournalIcon name={report ? 'FileText' : 'ClipboardList'} size={18} />{batchOpen ? 'Масові записи · Статус позицій' : historyRow ? 'Історія позиції' : report ? report.title : draft ? (draft.id ? 'Редагування запису' : 'Новий запис') + ' · ' + schema.title : pendingDelete ? 'Видалення запису' : 'Перевірка імпорту Excel'}</h2><button aria-label="Закрити вікно журналу" disabled={busy} className="dj-icon-button" onClick={() => { setDraft(null); setPendingDelete(null); setImportPreview(null); setReport(null); setHistoryRow(null); setBatchOpen(false); }}><DocumentJournalIcon name="X" size={16} /></button></div>
+            {report && <div className="space-y-4">{report.date !== undefined && <label className="flex items-center gap-3 text-xs text-[#b8bec8]">Дата витягу<input aria-label="Дата витягу" type="date" className="dj-input tabular-nums" value={report.date} onChange={event => setReport({ ...report, date: event.target.value, text: dailyText(event.target.value) })} /></label>}<p className="text-xs text-[#b8bec8]">Текст сформовано з наявних записів. Перед поданням перевірте та відредагуйте його. Копіювання не ставить галочку ПБД автоматично.</p><textarea aria-label="Текст витягу" value={report.text} onChange={event => setReport({ ...report, text: event.target.value })} className="dj-input w-full font-mono leading-relaxed" rows={16} /><div className="flex justify-end gap-2"><button className={button} onClick={() => setReport(null)}>Закрити</button><button className="dj-button dj-primary" onClick={copyReport}><DocumentJournalIcon name="Copy" size={14} />Копіювати текст</button></div></div>}
             {historyRow && <PositionHistory row={historyRow} register={positionRegister} audit={data.positionAudit || []} onEdit={openRecord} />}
-            {batchOpen && <>{notice && <p role="alert" className="text-amber-300 text-sm">{notice}</p>}<PositionBatch rows={data.positions} busy={busy} onApply={applyPositionBatch} /></>}
-            {draft && <form onSubmit={saveRecord} className={tab === 'ovt' ? 'ovt-form' : 'space-y-4'}>{tab === 'positions' ? <PositionFields draft={draft} setDraft={setDraft} rows={data.positions} busy={busy} /> : tab === 'ovt' ? <OvtFields draft={draft} setDraft={setDraft} rows={data.ovt} modelOptions={(() => { const templates = SharedDictionaries.ovtTemplates(); return [...new Set(templates.models.filter(m => (m.category || 'Транспорт') === draft.category).map(m => typeof m === 'string' ? m : m.name))]; })()} busy={busy} /> : <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{schema.fields.map(([key, title, type, required]) => <label key={key} className={`text-sm ${type === 'textarea' ? 'sm:col-span-2' : ''}`}>
-                {type === 'checkbox' ? <span className="flex gap-2 items-center py-2"><input aria-label={title} type="checkbox" disabled={busy} checked={!!draft[key]} onChange={event => setDraft({ ...draft, [key]: event.target.checked })} />{title}</span> : <><span className="block text-slate-300 mb-1">{title}{required || key === 'date' ? ' *' : ''}</span>{Array.isArray(type) ? <select aria-label={title} className={control} disabled={busy} value={draft[key]} onChange={event => setDraft({ ...draft, [key]: event.target.value })}>{[...new Set([...type, draft[key]])].filter(Boolean).map(option => <option key={option}>{option}</option>)}</select> : type === 'textarea' ? <textarea aria-label={title} className={control} disabled={busy} rows="3" required={required} maxLength={10000} value={draft[key]} onChange={event => setDraft({ ...draft, [key]: event.target.value })} /> : <><input aria-label={title} type={type} className={control} disabled={busy} required={required || key === 'date'} maxLength={1000} value={draft[key]} onChange={event => setDraft({ ...draft, [key]: event.target.value })} list={key === 'position' ? 'ovt-document-names' : key === 'nomenclature' && tab === 'ovt' ? 'nomenclature-list' : undefined} />{key === 'position' && <datalist id="ovt-document-names">{dictionaryOptions('docPlaces', data.ovt.map(row => row.position), draft.position).map(name => <option key={name} value={name} />)}</datalist>}{key === 'nomenclature' && tab === 'ovt' && <datalist id="nomenclature-list">{((prefsRef.current.ovtDict || D.defaultOvtDict)[draft.category] || []).map(opt => <option key={opt} value={opt} />)}</datalist>}</>}</>}
-            </label>)}</div>}{formError && <p role="alert" className="text-rose-300">{formError}</p>}<div className="flex gap-2 justify-end"><button type="button" disabled={busy} className={button} onClick={() => setDraft(null)}>Скасувати</button><button type="submit" disabled={busy} className="px-4 py-2 rounded-lg bg-teal-500 text-slate-950 font-bold disabled:opacity-50">Зберегти запис</button></div></form>}
-            {pendingDelete && <><p>Видалити запис від {D.dateLabel(pendingDelete.date)}: {pendingDelete.name || pendingDelete.task || pendingDelete.nomenclature}?</p><p className="text-sm text-slate-400">Для відновлення потрібна раніше збережена резервна копія.</p><div className="flex gap-2 justify-end"><button disabled={busy} className={button} onClick={() => setPendingDelete(null)}>Скасувати</button><button disabled={busy} className="px-4 py-2 rounded-lg bg-rose-700 font-bold" onClick={async () => { if (await commit(value => { const records = value[tab].filter(row => row.id !== pendingDelete.id); const problem = tab === 'positions' ? positionChangeError(value.positions, records, pendingDelete.id) : ''; if (problem) throw new Error(problem); return { ...value, [tab]: records }; })) { setPendingDelete(null); setNotice('Запис видалено. Відновити його можна з раніше збереженого бекапу.'); } }}>Підтвердити видалення</button></div></>}
-            {importPreview && <><p className="text-sm break-all">Файл: {importPreview.name}</p><p>Буде додано: <strong>{importPreview.added}</strong>. Повторів: {importPreview.duplicates}. Некоректних рядків: {importPreview.issues.length}.</p><ul className="space-y-1 text-sm">{D.tabs.map(key => <li key={key}>{D.schemas[key].title}: {importPreview.incoming[key].length}</li>)}</ul>{!!importPreview.positionIssues?.length && <p className="text-sm text-amber-300">Після імпорту {importPreview.positionIssues.length} записів позицій потребуватимуть звірки зв’язків. Історичні записи збережуться; перевірте їх через фільтр «Лише потребують звірки».</p>}<p className="text-sm text-teal-200">Імпорт лише доповнює три вкладки. Наявні записи та відмітки ПБД не перезаписуються.</p>{!!importPreview.ignored.length && <p className="text-sm text-amber-300">Не імпортуються аркуші: {importPreview.ignored.join(', ')}.</p>}{!!importPreview.issues.length && <details className="text-sm text-amber-300"><summary>Пропущені рядки — перевірте перед підтвердженням</summary><ul className="mt-2 max-h-40 overflow-auto">{importPreview.issues.map((issue, i) => <li key={i}>{issue}</li>)}</ul></details>}<div className="flex gap-2 justify-end"><button disabled={busy} className={button} onClick={() => setImportPreview(null)}>Скасувати</button><button disabled={busy || !importPreview.added} className="px-4 py-2 rounded-lg bg-teal-500 text-slate-950 font-bold disabled:opacity-50" onClick={applyImport}>Імпортувати {importPreview.added} записів</button></div></>}
-            {busy && <p role="status" className="text-teal-300 text-sm">Збереження / обробка…</p>}
-            {!!notice && <p className="text-sm text-amber-200">{notice}</p>}
+            {batchOpen && <>{notice && <p role="alert" className="text-[#d99b26] text-sm">{notice}</p>}<PositionBatch rows={data.positions} busy={busy} onApply={applyPositionBatch} /></>}
+            {draft && <form onSubmit={saveRecord} className={tab === 'ovt' ? 'ovt-form' : 'space-y-4'}>{tab === 'positions' ? <PositionFields draft={draft} setDraft={setDraft} rows={data.positions} busy={busy} /> : tab === 'ovt' ? <OvtFields draft={draft} setDraft={setDraft} rows={data.ovt} busy={busy} /> : <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{schema.fields.map(([key, title, type, required]) => <label key={key} className={`text-sm ${type === 'textarea' ? 'sm:col-span-2' : ''}`}>
+                {type === 'checkbox' ? <span className="flex gap-2 items-center py-2"><input aria-label={title} type="checkbox" disabled={busy} checked={!!draft[key]} onChange={event => setDraft({ ...draft, [key]: event.target.checked })} />{title}</span> : <><span className="block text-[#cbd5e1] mb-1">{title}{required || key === 'date' ? ' *' : ''}</span>{Array.isArray(type) ? <select aria-label={title} className={control} disabled={busy} value={draft[key]} onChange={event => setDraft({ ...draft, [key]: event.target.value })}>{[...new Set([...type, draft[key]])].filter(Boolean).map(option => <option key={option}>{option}</option>)}</select> : type === 'textarea' ? <textarea aria-label={title} className={control} disabled={busy} rows="3" required={required} maxLength={10000} value={draft[key]} onChange={event => setDraft({ ...draft, [key]: event.target.value })} /> : <><input aria-label={title} type={type} className={control} disabled={busy} required={required || key === 'date'} maxLength={1000} value={draft[key]} onChange={event => setDraft({ ...draft, [key]: event.target.value })} list={key === 'position' ? 'ovt-document-names' : key === 'nomenclature' && tab === 'ovt' ? 'nomenclature-list' : undefined} />{key === 'position' && <datalist id="ovt-document-names">{dictionaryOptions('docPlaces', data.ovt.map(row => row.position), draft.position).map(name => <option key={name} value={name} />)}</datalist>}{key === 'nomenclature' && tab === 'ovt' && <datalist id="nomenclature-list">{((prefsRef.current.ovtDict || D.defaultOvtDict)[draft.category] || []).map(opt => <option key={opt} value={opt} />)}</datalist>}</>}</>}
+            </label>)}</div>}{formError && <p role="alert" className="text-[#f3a3a0]">{formError}</p>}<div className="flex gap-2 justify-end"><button type="button" disabled={busy} className={button} onClick={() => setDraft(null)}>Скасувати</button><button type="submit" disabled={busy} className="px-4 py-2 rounded-sm bg-[#2b67ab] hover:bg-[#3477c2] border border-[#4c8ed9] text-white font-semibold disabled:opacity-50">Зберегти запис</button></div></form>}
+            {pendingDelete && <><p>Видалити запис від {D.dateLabel(pendingDelete.date)}: {pendingDelete.name || pendingDelete.task || pendingDelete.nomenclature}?</p><p className="text-sm text-[#b8bec8]">Для відновлення потрібна раніше збережена резервна копія.</p><div className="flex gap-2 justify-end"><button disabled={busy} className={button} onClick={() => setPendingDelete(null)}>Скасувати</button><button disabled={busy} className="px-4 py-2 rounded-sm bg-[#d9534f]/20 hover:bg-[#d9534f]/30 border border-[#d9534f]/60 text-[#f3a3a0] font-semibold" onClick={async () => { if (await commit(value => { const records = value[tab].filter(row => row.id !== pendingDelete.id); const problem = tab === 'positions' ? positionChangeError(value.positions, records, pendingDelete.id) : ''; if (problem) throw new Error(problem); return { ...value, [tab]: records }; })) { setPendingDelete(null); setNotice('Запис видалено. Відновити його можна з раніше збереженого бекапу.'); } }}>Підтвердити видалення</button></div></>}
+            {importPreview && <><p className="text-sm break-all">Файл: {importPreview.name}</p><p className="tabular-nums">Буде додано: <strong>{importPreview.added}</strong>. Повторів: {importPreview.duplicates}. Некоректних рядків: {importPreview.issues.length}.</p><ul className="space-y-1 text-sm tabular-nums">{D.tabs.map(key => <li key={key}>{D.schemas[key].title}: {importPreview.incoming[key].length}</li>)}</ul>{!!importPreview.positionIssues?.length && <p className="text-sm text-[#d99b26]">Після імпорту {importPreview.positionIssues.length} записів позицій потребуватимуть звірки зв’язків. Історичні записи збережуться; перевірте їх через фільтр «Лише потребують звірки».</p>}<p className="text-sm text-[#cbd5e1]">Імпорт лише доповнює три вкладки. Наявні записи та відмітки ПБД не перезаписуються.</p>{!!importPreview.ignored.length && <p className="text-sm text-[#d99b26]">Не імпортуються аркуші: {importPreview.ignored.join(', ')}.</p>}{!!importPreview.issues.length && <details className="text-sm text-[#d99b26]"><summary>Пропущені рядки — перевірте перед підтвердженням</summary><ul className="mt-2 max-h-40 overflow-auto">{importPreview.issues.map((issue, i) => <li key={i}>{issue}</li>)}</ul></details>}<div className="flex gap-2 justify-end"><button disabled={busy} className={button} onClick={() => setImportPreview(null)}>Скасувати</button><button disabled={busy || !importPreview.added} className="px-4 py-2 rounded-sm bg-[#2b67ab] hover:bg-[#3477c2] border border-[#4c8ed9] text-white font-semibold disabled:opacity-50" onClick={applyImport}>Імпортувати {importPreview.added} записів</button></div></>}
+            {busy && <p role="status" className="text-[#4c8ed9] text-sm">Збереження / обробка…</p>}
+            {!!notice && <p className="text-sm text-[#d99b26]">{notice}</p>}
         </section></div>}
-        {ovtSettingsOpen && <div className="fixed inset-0 z-[16000] bg-black/80 backdrop-blur-sm p-3 sm:p-6 flex items-center justify-center"><section role="dialog" aria-modal="true" aria-labelledby="ovt-settings-title" className="dj-modal border rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4 text-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4 gap-3"><h2 id="ovt-settings-title" className="text-lg font-bold flex items-center gap-2"><DocumentJournalIcon name="Settings" size={20} />Налаштування номенклатури ОВТ</h2><button aria-label="Закрити" disabled={busy} className="dj-icon-button" onClick={() => setOvtSettingsOpen(false)}><DocumentJournalIcon name="X" size={18} /></button></div>
-            <p className="text-xs text-slate-400">Моделі транспорту запам’ятовуються після збереження події та редагуються у «Спільні довідники» → «Шаблони ОВТ» → «Номенклатура / Модель». Нижче — підказки для інших категорій, кожна з нового рядка.</p>
+        {ovtSettingsOpen && <div className="fixed inset-0 z-[16000] bg-black/80 p-3 sm:p-6 flex items-center justify-center overscroll-contain"><section ref={ovtSettingsRef} role="dialog" aria-modal="true" aria-labelledby="ovt-settings-title" className="dj-modal border rounded-sm w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4 text-[#f3f4f6]">
+            <div className="flex items-center justify-between border-b border-[#2e3138] pb-3.5 gap-3"><h2 id="ovt-settings-title" className="text-base font-bold flex items-center gap-2"><DocumentJournalIcon name="Settings" size={18} />Налаштування номенклатури ОВТ</h2><button aria-label="Закрити" disabled={busy} className="dj-icon-button" onClick={() => setOvtSettingsOpen(false)}><DocumentJournalIcon name="X" size={16} /></button></div>
+            <p className="text-xs text-[#b8bec8]">Моделі транспорту запам’ятовуються після збереження події та редагуються у «Спільні довідники» → «Шаблони ОВТ» → «Номенклатура / Модель». Нижче — підказки для інших категорій, кожна з нового рядка.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {['БпЛА', 'Зброя', 'Інше'].map(cat => <label key={cat} className="space-y-1"><span className="text-sm font-bold" style={{ color: palette[statusTone(cat)] }}>{cat}</span><textarea className={control} rows="3" value={(ovtDictEdit[cat] || []).join('\n')} onChange={e => setOvtDictEdit({ ...ovtDictEdit, [cat]: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })} /></label>)}
+                {['БпЛА', 'Зброя', 'Інше'].map(cat => <label key={cat} className="space-y-1"><span className="text-sm font-semibold" style={{ color: palette[statusTone(cat)] }}>{cat}</span><textarea className={control} rows="3" value={(ovtDictEdit[cat] || []).join('\n')} onChange={e => setOvtDictEdit({ ...ovtDictEdit, [cat]: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })} /></label>)}
             </div>
-            <div className="flex justify-end gap-2"><button type="button" disabled={busy} className={button} onClick={() => setOvtSettingsOpen(false)}>Скасувати</button><button type="button" disabled={busy} className="px-4 py-2 rounded-lg bg-teal-500 text-slate-950 font-bold disabled:opacity-50" onClick={saveOvtDict}>Зберегти</button></div>
+            <div className="flex justify-end gap-2"><button type="button" disabled={busy} className={button} onClick={() => setOvtSettingsOpen(false)}>Скасувати</button><button type="button" disabled={busy} className="px-4 py-2 rounded-sm bg-[#2b67ab] hover:bg-[#3477c2] border border-[#4c8ed9] text-white font-semibold disabled:opacity-50" onClick={saveOvtDict}>Зберегти</button></div>
         </section></div>}
     </section>;
 };

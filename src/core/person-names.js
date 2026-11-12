@@ -53,7 +53,13 @@ const sources = [
 function visitNames(snapshot, visit) {
     for (const [storage, key, module, fields] of sources) {
         if (!Object.hasOwn(snapshot[storage] || {}, key)) continue;
-        const rows = storage === 'localstorage' ? JSON.parse(snapshot[storage][key]) : structuredClone(snapshot[storage][key]);
+        let rows;
+        if (storage === 'localstorage') {
+            try { rows = JSON.parse(snapshot[storage][key]); }
+            catch { throw new Error('Не вдалося прочитати ' + key + '. Дані не змінено.'); }
+        } else {
+            rows = structuredClone(snapshot[storage][key]);
+        }
         if (!Array.isArray(rows)) throw new Error('Невірний формат списку: ' + key);
         rows.forEach((row, index) => {
             for (const field of fields) {

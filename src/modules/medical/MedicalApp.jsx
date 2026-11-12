@@ -109,25 +109,25 @@ const MedicalApp = (function() {
 
                 const finalOptions = {
                     responsive: true, maintainAspectRatio: false,
-                    color: '#cbd5e1', font: { family: 'Inter, sans-serif', size: 11 },
-                    animation: { duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 250 },
+                    color: '#b8bec8', font: { family: "'Segoe UI Variable Text', Inter, system-ui, sans-serif", size: 11 },
+                    animation: { duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 200 },
                     layout: { padding: { top: 18, right: 12, bottom: 6, left: 4 } },
-                    elements: { bar: { borderRadius: 4 }, arc: { borderWidth: 2, borderColor: '#0b1220', hoverOffset: 5 } },
+                    elements: { bar: { borderRadius: 2 }, arc: { borderWidth: 2, borderColor: '#17181b', hoverOffset: 4 } },
                     ...options,
                     ...(options?.scales ? { scales: Object.fromEntries(Object.entries(options.scales).map(([key, axis]) => [key, {
                         ...axis, border: { display: false, ...axis.border },
-                        grid: { color: '#94a3b81a', drawTicks: false, ...axis.grid },
-                        ticks: { color: '#94a3b8', padding: 8, ...axis.ticks },
+                        grid: { color: '#2e3138', drawTicks: false, ...axis.grid },
+                        ticks: { color: '#989fa9', padding: 8, ...axis.ticks },
                     }])) } : {}),
                     plugins: {
                         ...options?.plugins,
-                        legend: { position: 'bottom', ...options?.plugins?.legend, labels: { color: '#cbd5e1', usePointStyle: true, boxWidth: 8, boxHeight: 8, padding: 16, font: { size: 11 }, ...options?.plugins?.legend?.labels } },
-                        tooltip: { backgroundColor: '#0f172af5', titleColor: '#f8fafc', bodyColor: '#e2e8f0', borderColor: '#475569', borderWidth: 1, padding: 12, cornerRadius: 10, usePointStyle: true, ...options?.plugins?.tooltip },
+                        legend: { position: 'bottom', ...options?.plugins?.legend, labels: { color: '#b8bec8', usePointStyle: true, boxWidth: 8, boxHeight: 8, padding: 14, font: { size: 11 }, ...options?.plugins?.legend?.labels } },
+                        tooltip: { backgroundColor: '#17181b', titleColor: '#f3f4f6', bodyColor: '#b8bec8', borderColor: '#2e3138', borderWidth: 1, padding: 10, cornerRadius: 2, usePointStyle: true, ...options?.plugins?.tooltip },
                         datalabels: {
                             display: showLabels ? function(context) { return context.dataset.data[context.dataIndex] > 0; } : false,
-                            color: '#fff',
+                            color: '#f3f4f6',
                             font: { weight: 'bold', size: 10 },
-                            textStrokeColor: '#0f172a',
+                            textStrokeColor: '#101113',
                             textStrokeWidth: 3,
                             formatter: function(value, context) {
                                 if (!showPercentages) return value;
@@ -273,11 +273,11 @@ const MedicalApp = (function() {
             return (
                 <div className={`relative group ${className}`}>
                     <canvas ref={chartRef} role="img" aria-label={(title || 'Діаграма').replace(/_/g, ' ')}></canvas>
-                    <div className="absolute top-1 right-1 flex gap-1 opacity-60 hover:opacity-100 focus-within:opacity-100 transition z-10">
-                        <button onClick={downloadExcel} className="p-1.5 bg-emerald-800 hover:bg-emerald-600 text-emerald-100 rounded border border-emerald-700 shadow-lg" title="Завантажити звіт в Excel (сирі дані + діаграма)">
+                    <div className="absolute top-1 right-1 flex gap-1 opacity-70 hover:opacity-100 focus-within:opacity-100 transition-opacity z-10">
+                        <button onClick={downloadExcel} className="p-1.5 bg-[#17181b] hover:bg-[#235d42] text-[#3da372] hover:text-white rounded-sm border border-[#2e3138] transition-colors" title="Завантажити звіт в Excel (сирі дані + діаграма)">
                             <Icon name="table" className="w-4 h-4" />
                         </button>
-                        <button onClick={downloadImage} className="p-1.5 bg-tactical-800 hover:bg-tactical-600 text-tactical-200 hover:text-white rounded border border-tactical-700 shadow-lg" title="Завантажити графік як зображення (PNG)">
+                        <button onClick={downloadImage} className="p-1.5 bg-[#17181b] hover:bg-[#222429] text-[#b8bec8] hover:text-[#f3f4f6] rounded-sm border border-[#2e3138] transition-colors" title="Завантажити графік як зображення (PNG)">
                             <Icon name="download" className="w-4 h-4" />
                         </button>
                     </div>
@@ -334,25 +334,25 @@ const MedicalApp = (function() {
         const calculateWaitTimeUI = medicalWaitTime;
 
         const getBadgeColors = (lossType, severity, awolStatus) => {
-            if (lossType === "Загибель (200)") return "bg-zinc-900 text-zinc-300 border-zinc-700";
-            if (lossType === "Небойова смерть (200)") return "bg-stone-900 text-stone-300 border-stone-700";
-            if (lossType === "200 (від ран)") return "bg-slate-900 text-slate-300 border-slate-700";
-            if (lossType === "Зниклий безвісти (ЗБВ)") return "bg-blue-950 text-blue-300 border-blue-800";
-            if (lossType === "Повернення з СЗЧ" || (isAwol(lossType) && awolStatus === "Повернувся")) return "bg-emerald-950 text-emerald-300 border-emerald-800";
-            if (lossType === "СЗЧ") return "bg-fuchsia-950 text-fuchsia-300 border-fuchsia-800";
-            if (lossType === "Дезертирство") return "bg-pink-950 text-pink-300 border-pink-800";
-            if (severity === "Критичний") return "bg-purple-950 text-purple-300 border-purple-800 animate-pulse";
-            if (severity === "Важкий") return "bg-red-950 text-red-400 border-red-800 animate-pulse";
-            if (severity === "Середній") return "bg-amber-950 text-amber-300 border-amber-800";
-            return "bg-emerald-950 text-emerald-300 border-emerald-800";
+            if (lossType === "Загибель (200)") return "bg-[#222429] text-[#f3f4f6] border-[#3c404a]";
+            if (lossType === "Небойова смерть (200)") return "bg-[#222429] text-[#b8bec8] border-[#3c404a]";
+            if (lossType === "200 (від ран)") return "bg-[#222429] text-[#f3f4f6] border-[#3c404a]";
+            if (lossType === "Зниклий безвісти (ЗБВ)") return "bg-[#4c8ed9]/15 text-[#6fa8e6] border-[#4c8ed9]/50";
+            if (lossType === "Повернення з СЗЧ" || (isAwol(lossType) && awolStatus === "Повернувся")) return "bg-[#3da372]/15 text-[#3da372] border-[#3da372]/50";
+            if (lossType === "СЗЧ") return "bg-[#8f5fb8]/15 text-[#c084fc] border-[#8f5fb8]/50";
+            if (lossType === "Дезертирство") return "bg-[#8f5fb8]/20 text-[#d8b4fe] border-[#8f5fb8]/60";
+            if (severity === "Критичний") return "bg-[#8f5fb8]/20 text-[#d8b4fe] border-[#8f5fb8]/60";
+            if (severity === "Важкий") return "bg-[#d9534f]/20 text-[#f3a3a0] border-[#d9534f]/60";
+            if (severity === "Середній") return "bg-[#d99b26]/15 text-[#d99b26] border-[#d99b26]/50";
+            return "bg-[#3da372]/15 text-[#3da372] border-[#3da372]/50";
         };
 
         const getLogRowStyle = (action, details) => {
             const aLow = action.toLowerCase(), dLow = details.toLowerCase();
-            if (aLow.includes("евак") || dLow.includes("евак")) return "bg-blue-950/40 border-blue-900/60 text-blue-200 hover:bg-blue-950/60";
-            if (dLow.includes("200") || dLow.includes("збв") || dLow.includes("сзч") || dLow.includes("дезерт") || dLow.includes("загиб") || dLow.includes("смерть") || aLow.includes("видалення")) return "bg-red-950/40 border-red-900/60 text-red-200 hover:bg-red-950/60";
-            if (dLow.includes("300") || dLow.includes("травм") || dLow.includes("поран") || dLow.includes("важк") || dLow.includes("критич")) return "bg-amber-950/30 border-amber-900/40 text-amber-200 hover:bg-amber-950/50";
-            return "bg-tactical-900/20 border-tactical-800 text-tactical-300 hover:bg-tactical-900/30";
+            if (aLow.includes("евак") || dLow.includes("евак")) return "bg-[#4c8ed9]/10 border-[#4c8ed9]/30 text-[#f3f4f6] hover:bg-[#4c8ed9]/15";
+            if (dLow.includes("200") || dLow.includes("збв") || dLow.includes("сзч") || dLow.includes("дезерт") || dLow.includes("загиб") || dLow.includes("смерть") || aLow.includes("видалення")) return "bg-[#d9534f]/10 border-[#d9534f]/30 text-[#f3a3a0] hover:bg-[#d9534f]/15";
+            if (dLow.includes("300") || dLow.includes("травм") || dLow.includes("поран") || dLow.includes("важк") || dLow.includes("критич")) return "bg-[#d99b26]/10 border-[#d99b26]/30 text-[#f3f4f6] hover:bg-[#d99b26]/15";
+            return "bg-[#17181b] border-[#2e3138] text-[#b8bec8] hover:bg-[#222429]";
         };
 
         const formatLogTime = (isoStr) => {
@@ -369,15 +369,15 @@ const MedicalApp = (function() {
         const FilterSection = ({ title, isOpen, toggle, onSelectAll, onClearAll, children }) => (
             <div className="space-y-1">
                 <div className="flex items-center justify-between cursor-pointer select-none group" onClick={toggle}>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider group-hover:text-slate-200 transition">{title}</span>
+                    <span className="text-[11px] text-[#b8bec8] font-semibold uppercase tracking-wider group-hover:text-[#f3f4f6] transition-colors">{title}</span>
                     <div className="flex items-center gap-1.5">
                         {onSelectAll && onClearAll && isOpen && (
-                            <div className="flex items-center gap-1 font-mono text-[9px]">
-                                <button type="button" onClick={(e) => { e.stopPropagation(); onSelectAll(); }} className="text-amber-400 hover:text-amber-300 hover:bg-amber-950/60 px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800 transition cursor-pointer" title="Обрати всі">Всі</button>
-                                <button type="button" onClick={(e) => { e.stopPropagation(); onClearAll(); }} className="text-slate-400 hover:text-red-400 hover:bg-red-950/60 px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800 transition cursor-pointer" title="Зняти всі">Зняти</button>
+                            <div className="flex items-center gap-1 font-mono text-[10px]">
+                                <button type="button" onClick={(e) => { e.stopPropagation(); onSelectAll(); }} className="text-[#4c8ed9] hover:text-white hover:bg-[#222429] px-1.5 py-0.5 rounded-sm bg-[#101113] border border-[#2e3138] transition-colors cursor-pointer" title="Обрати всі">Всі</button>
+                                <button type="button" onClick={(e) => { e.stopPropagation(); onClearAll(); }} className="text-[#b8bec8] hover:text-[#f3a3a0] hover:bg-[#222429] px-1.5 py-0.5 rounded-sm bg-[#101113] border border-[#2e3138] transition-colors cursor-pointer" title="Зняти всі">Зняти</button>
                             </div>
                         )}
-                        <Icon name={isOpen ? "chevron-up" : "chevron-down"} className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-300" />
+                        <Icon name={isOpen ? "chevron-up" : "chevron-down"} className="w-3.5 h-3.5 text-[#989fa9] group-hover:text-[#f3f4f6]" />
                     </div>
                 </div>
                 {isOpen && <div className="mt-1">{children}</div>}
@@ -385,7 +385,7 @@ const MedicalApp = (function() {
         );
 
         const CheckboxList = ({ items, selected, toggle, onSelectOnly, maxH = true }) => (
-            <div className={`flex flex-col gap-1.5 bg-slate-950/70 p-2 rounded-xl border border-slate-800/80 ${maxH ? 'max-h-56 overflow-y-auto' : ''}`}>
+            <div className={`flex flex-col gap-1 bg-[#101113] p-2 rounded-sm border border-[#2e3138] ${maxH ? 'max-h-56 overflow-y-auto' : ''}`}>
                 {items.map(item => {
                     const key = typeof item === 'object' ? item.k : item;
                     const label = typeof item === 'object' ? item.l : item;
@@ -397,15 +397,15 @@ const MedicalApp = (function() {
                                     type="checkbox" 
                                     checked={isChecked} 
                                     onChange={() => toggle(key)} 
-                                    className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer shrink-0" 
+                                    className="rounded-sm bg-[#17181b] border-[#2e3138] text-[#4c8ed9] focus:ring-0 w-3.5 h-3.5 cursor-pointer shrink-0" 
                                 />
-                                <span className={`whitespace-nowrap transition text-xs ${isChecked ? 'text-slate-200 font-medium' : 'text-slate-400'}`}>{label}</span>
+                                <span className={`whitespace-nowrap transition-colors text-xs ${isChecked ? 'text-[#f3f4f6] font-medium' : 'text-[#b8bec8]'}`}>{label}</span>
                             </label>
                             {onSelectOnly && (
                                 <button 
                                     type="button" 
                                     onClick={(e) => { e.stopPropagation(); onSelectOnly(key); }}
-                                    className="opacity-0 group-hover/row:opacity-100 text-[9px] font-mono text-amber-400/80 hover:text-amber-300 px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700/50 transition cursor-pointer shrink-0"
+                                    className="opacity-0 group-hover/row:opacity-100 focus:opacity-100 text-[10px] font-mono text-[#4c8ed9] hover:text-white px-1.5 py-0.5 rounded-sm bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] transition-colors cursor-pointer shrink-0"
                                     title={`Вибрати тільки "${label}"`}
                                 >
                                     Тільки
@@ -426,35 +426,35 @@ const MedicalApp = (function() {
                     <button 
                         type="button" 
                         onClick={onToggle}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold transition cursor-pointer select-none ${
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-sm border text-xs font-medium transition-colors cursor-pointer select-none ${
                             isCustom 
-                                ? 'bg-amber-500/15 border-amber-500/50 text-amber-300 shadow-sm' 
+                                ? 'bg-[#2b67ab]/20 border-[#4c8ed9] text-[#f3f4f6]' 
                                 : isZero 
-                                ? 'bg-red-950/30 border-red-800/60 text-red-300' 
-                                : 'bg-slate-950/80 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
+                                ? 'bg-[#d9534f]/15 border-[#d9534f]/60 text-[#f3a3a0]' 
+                                : 'bg-[#101113] border-[#2e3138] text-[#b8bec8] hover:text-[#f3f4f6] hover:border-[#3c404a]'
                         }`}
                     >
                         <span>{title}</span>
-                        <span className={`font-mono text-[10px] px-1.5 py-0.2 rounded border font-bold ${
+                        <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded-sm border font-semibold tabular-nums ${
                             isCustom 
-                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' 
+                                ? 'bg-[#2b67ab]/30 text-[#f3f4f6] border-[#4c8ed9]/50' 
                                 : isZero 
-                                ? 'bg-red-950 text-red-400 border-red-900' 
-                                : 'bg-slate-900 text-slate-400 border-slate-700/60'
+                                ? 'bg-[#d9534f]/20 text-[#f3a3a0] border-[#d9534f]/40' 
+                                : 'bg-[#17181b] text-[#b8bec8] border-[#2e3138]'
                         }`}>
                             {count === total ? 'Всі' : count === 0 ? '0' : `${count}`}
                         </span>
-                        <Icon name="chevron-down" className={`w-3 h-3 text-slate-400 transition-transform ${isOpen ? 'rotate-180 text-amber-400' : ''}`} />
+                        <Icon name="chevron-down" className={`w-3 h-3 text-[#989fa9] transition-transform ${isOpen ? 'rotate-180 text-[#4c8ed9]' : ''}`} />
                     </button>
                     {isOpen && (
                         <>
                             <div className="fixed inset-0 z-40 cursor-default" onClick={onToggle}></div>
-                            <div className="absolute top-full left-0 mt-1.5 w-max min-w-[280px] max-w-[calc(100vw-32px)] bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-3.5 z-50 space-y-2.5 animate-in fade-in zoom-in-95 duration-150">
-                                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                                    <span className="text-[11px] font-bold text-slate-300 uppercase">{title}</span>
+                            <div className="absolute top-full left-0 mt-1 w-max min-w-[280px] max-w-[calc(100vw-32px)] bg-[#17181b] border border-[#2e3138] rounded-sm p-3 z-50 space-y-2.5">
+                                <div className="flex items-center justify-between pb-2 border-b border-[#2e3138]">
+                                    <span className="text-[11px] font-semibold text-[#f3f4f6] uppercase tracking-wider">{title}</span>
                                     <div className="flex gap-1.5 text-[10px] font-mono">
-                                        {onSelectAll && <button type="button" onClick={onSelectAll} className="text-amber-400 hover:text-amber-300 px-2 py-0.5 rounded bg-slate-950 border border-slate-800 hover:bg-slate-800 cursor-pointer">Всі</button>}
-                                        {onClearAll && <button type="button" onClick={onClearAll} className="text-red-400 hover:text-red-300 px-2 py-0.5 rounded bg-slate-950 border border-slate-800 hover:bg-slate-800 cursor-pointer">Зняти</button>}
+                                        {onSelectAll && <button type="button" onClick={onSelectAll} className="text-[#4c8ed9] hover:text-white px-2 py-0.5 rounded-sm bg-[#101113] border border-[#2e3138] hover:bg-[#222429] cursor-pointer">Всі</button>}
+                                        {onClearAll && <button type="button" onClick={onClearAll} className="text-[#f3a3a0] hover:text-white px-2 py-0.5 rounded-sm bg-[#101113] border border-[#2e3138] hover:bg-[#222429] cursor-pointer">Зняти</button>}
                                     </div>
                                 </div>
                                 <div className="max-h-60 overflow-y-auto pr-1">
@@ -587,9 +587,12 @@ const MedicalApp = (function() {
             return `${numPrefix}${sName}${sCallsign} (${cleanRank}, ${unitStr})\n   • ${charStr}${injPart}${udpPart}${reportPart} | ${evacStr}\n   • Подія: ${dateStr}${causeStr} | Факт: ${factStr}${docStr}`;
         };
 
-        const EpisodeCard = React.memo(({ episode, soldier: baseSoldier, soldierEpisodes = [], onEdit, onNotify, viewMode = 'grid', onReview, clockTick }) => {
+        const EMPTY_EPISODES = [];
+
+        const EpisodeCard = React.memo(({ episode, soldier: baseSoldier, soldierEpisodes = EMPTY_EPISODES, onEdit, onNotify, viewMode = 'grid', onReview, clockTick }) => {
             const soldier = MedicalPersonnelDirectory.forEpisode(episode, baseSoldier);
             const [isCopied, setIsCopied] = React.useState(false);
+            const handleReview = React.useCallback(() => { if (onReview) onReview(episode.soldierId); }, [onReview, episode.soldierId]);
             const isReturnedAwol = isAwolReturnEp(episode);
             const badgeClass = getBadgeColors(episode.lossType, episode.severity, episode.awolStatus);
             const isEvac = episode.evacStatus === "Евакуйований";
@@ -634,7 +637,7 @@ const MedicalApp = (function() {
                 episode.severity === 'Критичний' ? 'bg-purple-500' :
                 episode.severity === 'Важкий' ? 'bg-red-500' :
                 episode.severity === 'Середній' ? 'bg-amber-500' :
-                episode.severity === 'Легкий' ? 'bg-emerald-500' : 'bg-slate-700';
+                episode.severity === 'Легкий' ? 'bg-[#3da372]' : 'bg-[#3c404a]';
 
             const isRankMissing = !displayRank || displayRank === 'Не вказано' || displayRank === 'Невідомо';
             const cleanRank = isRankMissing ? 'В/сл' : formatRankShortUI(displayRank);
@@ -650,61 +653,60 @@ const MedicalApp = (function() {
                 });
             };
 
-            const renderEvacBadge = (widthClass = "w-48 xl:w-[200px]") => {
+            const renderEvacBadge = (widthClass = "w-52 xl:w-[228px]") => {
                 if (isAwol(episode.lossType)) {
                     if (isReturnedAwol) {
                         return (
-                            <div className={`${widthClass} text-center text-xs font-semibold px-2.5 py-1 rounded-xl bg-emerald-950/40 border border-emerald-800/60 text-emerald-300 shadow-inner flex items-center justify-center gap-1.5`}>
-                                <Icon name="check-circle" className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                <span className="text-emerald-300 truncate">Повернувся</span>
-                                {evacFormattedDate && <span className="text-emerald-400 font-mono font-bold text-[11px]">({evacFormattedDate})</span>}
+                            <div className={`${widthClass} text-center text-xs font-medium px-2.5 py-1 rounded-sm bg-[#3da372]/15 border border-[#3da372]/40 text-[#3da372] flex items-center justify-center gap-1.5 whitespace-nowrap`}>
+                                <Icon name="check-circle" className="w-3.5 h-3.5 text-[#3da372] shrink-0" />
+                                <span className="truncate">Повернувся</span>
+                                {evacFormattedDate && <span className="font-mono font-semibold text-[11px] tabular-nums">({evacFormattedDate})</span>}
                             </div>
                         );
                     }
                     return (
-                        <div className={`${widthClass} text-center text-xs font-semibold px-2.5 py-1 rounded-xl bg-slate-950/90 border border-slate-800 text-slate-300 shadow-inner flex items-center justify-center gap-1.5`}>
-                            <Icon name="user-x" className="w-3.5 h-3.5 text-fuchsia-400 shrink-0" />
-                            <span className="text-fuchsia-300 truncate">{episode.awolStatus || 'СЗЧ'}</span>
+                        <div className={`${widthClass} text-center text-xs font-medium px-2.5 py-1 rounded-sm bg-[#101113] border border-[#2e3138] text-[#c084fc] flex items-center justify-center gap-1.5 whitespace-nowrap`}>
+                            <Icon name="user-x" className="w-3.5 h-3.5 text-[#c084fc] shrink-0" />
+                            <span className="truncate">{episode.awolStatus || 'СЗЧ'}</span>
                         </div>
                     );
                 }
 
                 if (isEvac || episode.awolStatus === "Повернувся") {
                     return (
-                        <div className={`${widthClass} text-center text-xs font-semibold px-2.5 py-1 rounded-xl bg-slate-950/90 border border-slate-800 text-slate-300 shadow-inner flex items-center justify-center gap-1.5`}>
-                            <Icon name="check-circle" className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                            <span className="text-slate-300">Евакуйований</span>
-                            {evacFormattedDate && <span className="text-emerald-400 font-mono font-bold text-[11px]">({evacFormattedDate})</span>}
+                        <div className={`${widthClass} text-center text-xs font-medium px-2.5 py-1 rounded-sm bg-[#101113] border border-[#2e3138] text-[#f3f4f6] flex items-center justify-center gap-1.5 whitespace-nowrap`}>
+                            <Icon name="check-circle" className="w-3.5 h-3.5 text-[#3da372] shrink-0" />
+                            <span>Евакуйований</span>
+                            {evacFormattedDate && <span className="text-[#3da372] font-mono font-semibold text-[11px] tabular-nums">({evacFormattedDate})</span>}
                         </div>
                     );
                 }
 
                 // Не евакуйований: темний бейдж з червоним таймером
                 return (
-                    <div className={`${widthClass} text-center text-xs font-semibold px-2.5 py-1 rounded-xl bg-slate-950/90 border border-slate-800 text-slate-300 shadow-inner flex items-center justify-center gap-1.5`}>
-                        <Icon name="ambulance" className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                        <span className="text-slate-300">Не евакуйований</span>
-                        {isWaitValid && <span className="text-red-400 font-mono font-bold text-[11px]">({waitStr})</span>}
+                    <div className={`${widthClass} text-center text-xs font-medium px-2.5 py-1 rounded-sm bg-[#101113] border border-[#2e3138] text-[#f3f4f6] flex items-center justify-center gap-1.5 whitespace-nowrap`}>
+                        <Icon name="ambulance" className="w-3.5 h-3.5 text-[#f3a3a0] shrink-0" />
+                        <span>Не евакуйований</span>
+                        {isWaitValid && <span className="text-[#f3a3a0] font-mono font-semibold text-[11px] tabular-nums">({waitStr})</span>}
                     </div>
                 );
             };
 
             if (viewMode === 'list') {
+                const listMidGridClass = "grid grid-cols-1 sm:grid-cols-[minmax(160px,1.25fr)_minmax(125px,1fr)_minmax(125px,1fr)] xl:grid-cols-[minmax(220px,255px)_minmax(150px,180px)_minmax(140px,1fr)] 2xl:grid-cols-[275px_195px_minmax(180px,1fr)] items-center gap-3";
                 return (
                     <div 
                         onClick={() => onEdit(episode)} 
-                        className="bg-slate-900/95 border border-slate-800 hover:border-amber-500/50 hover:bg-slate-900 rounded-2xl p-3 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3.5 group transition-all shadow-sm hover:shadow-xl hover:shadow-black/40 relative overflow-hidden cursor-pointer"
+                        className="bg-[#17181b] border border-[#3a3e47] hover:border-[#4c8ed9] hover:bg-[#222429] rounded-sm p-3 flex flex-col lg:flex-row items-stretch justify-between gap-3.5 group transition-colors relative overflow-hidden cursor-pointer"
                         title="Клікніть для редагування запису"
                     >
-                        <div className={`absolute top-0 left-0 w-1.5 h-full ${leftAccentColor}`}></div>
-                        
                         {/* 1. Ліва колонка: Боєць + Кнопки дій */}
-                        <div className="pl-2 flex items-center gap-2.5 w-full lg:w-[400px] xl:w-[440px] 2xl:w-[470px] shrink-0">
+                        <div className="flex items-center gap-2.5 w-full lg:w-[400px] xl:w-[440px] 2xl:w-[470px] shrink-0">
                             <div className="flex items-center gap-1 shrink-0">
                                 <button 
                                     type="button" 
                                     onClick={(e) => { e.stopPropagation(); onEdit(episode); }} 
-                                    className="w-8 h-8 rounded-xl bg-slate-950/90 hover:bg-amber-500/20 border border-slate-800 hover:border-amber-500/50 text-slate-400 group-hover:text-amber-400 flex items-center justify-center transition shadow-sm cursor-pointer"
+                                    className="w-8 h-8 rounded-sm bg-[#101113] hover:bg-[#2b67ab]/25 border border-[#3a3e47] hover:border-[#4c8ed9] text-[#b4c0d0] group-hover:text-[#7eb6f2] flex items-center justify-center transition-colors cursor-pointer"
                                     title="Редагувати запис"
                                 >
                                     <Icon name="edit-3" className="w-3.5 h-3.5" />
@@ -712,10 +714,10 @@ const MedicalApp = (function() {
                                 <button 
                                     type="button" 
                                     onClick={handleCopySummary}
-                                    className={`w-8 h-8 rounded-xl border flex items-center justify-center transition shadow-sm cursor-pointer ${
+                                    className={`w-8 h-8 rounded-sm border flex items-center justify-center transition-colors cursor-pointer ${
                                         isCopied 
-                                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300' 
-                                            : 'bg-slate-950/90 hover:bg-slate-800 border-slate-800 text-slate-400 hover:text-slate-200'
+                                            ? 'bg-[#3da372]/20 border-[#3da372] text-[#6ee7b7]' 
+                                            : 'bg-[#101113] hover:bg-[#222429] border-[#3a3e47] text-[#b4c0d0] hover:text-white'
                                     }`}
                                     title={isCopied ? "Скопійовано в буфер!" : "Скопіювати короткий звіт по бійцю"}
                                 >
@@ -724,99 +726,111 @@ const MedicalApp = (function() {
                             </div>
 
                             <div className="min-w-0 flex-1 space-y-1">
-                                <div className="flex items-center gap-2 min-w-0">
-                                    <span className="text-slate-300 text-[10px] font-semibold bg-slate-950 border border-slate-800 px-1.5 py-0.5 rounded shadow-sm shrink-0 uppercase tracking-wide">
+                                <div className="flex items-baseline gap-2 min-w-0">
+                                    <span className="text-[#9ca3af] text-[11px] font-semibold shrink-0 uppercase tracking-wide">
                                         {cleanRank}
                                     </span>
-                                    <span className="text-white group-hover:text-amber-300 font-bold text-sm tracking-tight truncate transition-colors" title={sName}>
+                                    <span className="text-[#f9fafb] group-hover:text-[#38bdf8] font-bold text-[14.5px] tracking-tight truncate transition-colors" title={sName}>
                                         {sName}
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-2 text-[11px] text-slate-400 flex-wrap">
+                                <div className="flex items-center gap-1.5 text-xs text-[#9ca3af] flex-wrap">
                                     {sCallsign && (
-                                        <span className="text-amber-400 text-xs font-mono font-bold bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded shadow-sm shrink-0">
-                                           «{formatCallsignUI(sCallsign)}»
-                                        </span>
+                                        <>
+                                            <span className="text-[#fbbf24] text-xs font-mono font-bold shrink-0">
+                                               «{formatCallsignUI(sCallsign)}»
+                                            </span>
+                                            <span className="text-[#464b57]">·</span>
+                                        </>
                                     )}
-                                    <span className="text-slate-300 font-medium flex items-center gap-1 bg-slate-950/60 border border-slate-800/80 px-1.5 py-0.5 rounded text-[11px] truncate max-w-[150px]" title={displayUnit}>
-                                        <Icon name="shield" className="w-3 h-3 text-slate-500 shrink-0" />
-                                        <span className="truncate">{displayUnit || 'Не вказано'}</span>
+                                    <span className="text-[#a5b4fc] font-semibold truncate max-w-[160px]" title={displayUnit}>
+                                        {displayUnit || 'Не вказано'}
                                     </span>
-                                    <span className="text-slate-400 font-mono flex items-center gap-1 text-[10px]" title="Дата та час події">
-                                        <Icon name="calendar" className="w-3 h-3 text-slate-500 shrink-0" />
-                                        <span>{dateDisplay}</span>
+                                    <span className="text-[#464b57]">·</span>
+                                    <span className="text-[#d4d8e0] font-mono text-[11.5px] tabular-nums" title="Дата та час події">
+                                        {dateDisplay}
                                     </span>
-                                    <StatusHistoryChainBadge episodes={soldierEpisodes} onReview={onReview} />
+                                    <StatusHistoryChainBadge episodes={soldierEpisodes} onReview={handleReview} />
                                 </div>
                             </div>
                         </div>
 
                         {/* 2. Середня колонка: Обставини/Локації (вгорі) та Травми/Теги (внизу) */}
-                        <div className="flex-1 min-w-0 px-1 lg:border-l lg:border-slate-800/80 lg:pl-3 space-y-1.5">
-                            {/* Рядок 1: Суворе 3-колонкове вирівнювання (Причина | Факт | Док) */}
-                            <div className="grid grid-cols-1 sm:grid-cols-[minmax(180px,250px)_minmax(140px,200px)_1fr] items-center gap-2">
-                                <div className="min-w-0 flex items-center">
-                                    <div className="w-fit max-w-full flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
-                                        <Icon name={isAwol(episode.lossType) ? "compass" : "target"} className={`w-3.5 h-3.5 ${isReturnedAwol ? 'text-emerald-400' : isAwol(episode.lossType) ? 'text-fuchsia-400' : 'text-red-400'} shrink-0`} />
-                                        <span className="text-slate-400 text-[10px] uppercase font-semibold tracking-wider shrink-0">{isAwol(episode.lossType) ? "Звідки:" : "Причина:"}</span>
-                                        <span className="font-medium text-white truncate" title={episode.cause}>{episode.cause}</span>
+                        <div className="flex-1 min-w-0 px-1 lg:border-l lg:border-[#2e3138] lg:pl-4 flex flex-col justify-center space-y-1.5">
+                            {/* Рядок 1: Фіксована 3-колонкова сітка (Причина | Факт | Док) */}
+                            <div className={`${listMidGridClass} text-[12.5px]`}>
+                                <div className="min-w-0 flex items-center gap-1.5">
+                                    <Icon name={isAwol(episode.lossType) ? "compass" : "target"} className="w-3.5 h-3.5 text-[#989fa9] shrink-0" />
+                                    <div className="min-w-0 flex-1 truncate leading-5">
+                                        <span className="text-[#989fa9] text-[10px] uppercase font-semibold tracking-wider mr-1.5">{isAwol(episode.lossType) ? "Звідки:" : "Причина:"}</span>
+                                        <span className="font-medium text-[#f3f4f6]" title={episode.cause}>{episode.cause}</span>
                                     </div>
                                 </div>
 
-                                <div className="min-w-0 flex items-center">
+                                <div className="min-w-0 flex items-center gap-1.5">
                                     {isAwol(episode.lossType) ? (
                                         episode.actualLoc ? (
-                                            <div className="w-fit max-w-full flex items-center gap-1.5 bg-amber-950/20 border border-amber-900/40 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
-                                                <Icon name="map-pin" className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                                <span className="text-amber-400/80 text-[10px] uppercase font-semibold tracking-wider shrink-0">Локація:</span>
-                                                <span className="text-amber-200 font-medium truncate" title={episode.actualLoc}>{episode.actualLoc}</span>
-                                            </div>
+                                            <>
+                                                <Icon name="map-pin" className="w-3.5 h-3.5 text-[#38bdf8] shrink-0" />
+                                                <div className="min-w-0 flex-1 truncate leading-5">
+                                                    <span className="text-[#989fa9] text-[10px] uppercase font-semibold tracking-wider mr-1.5">Локація:</span>
+                                                    <span className="text-[#38bdf8] font-semibold" title={episode.actualLoc}>{episode.actualLoc}</span>
+                                                </div>
+                                            </>
                                         ) : null
                                     ) : (
-                                        <div className="w-fit max-w-full flex items-center gap-1.5 bg-amber-950/20 border border-amber-900/40 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
-                                            <Icon name="map-pin" className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                            <span className="text-amber-400/80 text-[10px] uppercase font-semibold tracking-wider shrink-0">Факт:</span>
-                                            <span className="text-amber-200 font-medium truncate" title={episode.actualLoc}>{episode.actualLoc || "-"}</span>
-                                        </div>
+                                        <>
+                                            <Icon name="map-pin" className="w-3.5 h-3.5 text-[#38bdf8] shrink-0" />
+                                            <div className="min-w-0 flex-1 truncate leading-5">
+                                                <span className="text-[#989fa9] text-[10px] uppercase font-semibold tracking-wider mr-1.5">Факт:</span>
+                                                <span className="text-[#38bdf8] font-semibold" title={episode.actualLoc}>{episode.actualLoc || "-"}</span>
+                                            </div>
+                                        </>
                                     )}
                                 </div>
 
-                                <div className="min-w-0 flex items-center">
+                                <div className="min-w-0 flex items-center gap-1.5">
                                     {isAwol(episode.lossType) && isReturnedAwol && evacFormattedDate ? (
-                                        <div className="w-fit max-w-full flex items-center gap-1.5 bg-emerald-950/30 border border-emerald-800/50 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
-                                            <Icon name="calendar" className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                            <span className="text-emerald-400/90 text-[10px] uppercase font-semibold tracking-wider shrink-0">Повернення:</span>
-                                            <span className="text-emerald-200 font-mono font-bold truncate">{evacFormattedDate}</span>
-                                        </div>
+                                        <>
+                                            <Icon name="calendar" className="w-3.5 h-3.5 text-[#34d399] shrink-0" />
+                                            <div className="min-w-0 flex-1 truncate leading-5">
+                                                <span className="text-[#989fa9] text-[10px] uppercase font-semibold tracking-wider mr-1.5">Повернення:</span>
+                                                <span className="text-[#34d399] font-mono font-semibold tabular-nums">{evacFormattedDate}</span>
+                                            </div>
+                                        </>
                                     ) : episode.docLoc ? (
-                                        <div className="w-fit max-w-full flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
-                                            <Icon name="file-text" className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                            <span className="text-slate-400 text-[10px] uppercase font-semibold tracking-wider shrink-0">Док:</span>
-                                            <span className="text-slate-300 font-medium truncate" title={episode.docLoc}>{episode.docLoc}</span>
-                                        </div>
+                                        <>
+                                            <Icon name="file-text" className="w-3.5 h-3.5 text-[#c4b5fd] shrink-0" />
+                                            <div className="min-w-0 flex-1 truncate leading-5">
+                                                <span className="text-[#989fa9] text-[10px] uppercase font-semibold tracking-wider mr-1.5">Док:</span>
+                                                <span className="text-[#c4b5fd] font-medium" title={episode.docLoc}>{episode.docLoc}</span>
+                                            </div>
+                                        </>
                                     ) : null}
                                 </div>
                             </div>
 
                             {/* Рядок 2: Травми (Колонка 1) | Під час УПД (Колонка 2) | Рапорт / Зброя (Колонка 3) */}
                             {(injStr || episode.inUdp || episode.hasReport || episode.weaponStatus) && (
-                                <div className="grid grid-cols-1 sm:grid-cols-[minmax(180px,250px)_minmax(140px,200px)_1fr] items-center gap-2 pt-0.5 min-w-0">
+                                <div className={`${listMidGridClass} pt-0.5 min-w-0`}>
                                     {/* Колонка 1: Травми */}
-                                    <div className="min-w-0 flex items-center">
+                                    <div className="min-w-0 flex items-center gap-1.5">
                                         {injStr ? (
-                                            <div className="w-fit max-w-full flex items-center gap-1.5 bg-red-950/30 border border-red-900/50 px-2.5 py-0.5 rounded-lg text-xs text-red-300 shadow-inner min-w-0">
-                                                <Icon name="activity" className="w-3 h-3 text-red-400 shrink-0" />
-                                                <span className="font-bold text-red-400 text-[10px] uppercase tracking-wider shrink-0">Травми:</span>
-                                                <span className="text-red-200 font-medium text-[11px] truncate" title={injStr}>{injStr}</span>
-                                            </div>
+                                            <>
+                                                <Icon name="activity" className="w-3 h-3 text-[#fda4af] shrink-0" />
+                                                <div className="min-w-0 flex-1 truncate leading-5">
+                                                    <span className="font-semibold text-[#989fa9] text-[10px] uppercase tracking-wider mr-1.5">Травми:</span>
+                                                    <span className="text-[#fda4af] font-medium text-[11.5px]" title={injStr}>{injStr}</span>
+                                                </div>
+                                            </>
                                         ) : null}
                                     </div>
 
                                     {/* Колонка 2: Під час УПД */}
                                     <div className="min-w-0 flex items-center">
                                         {episode.inUdp ? (
-                                            <span className="w-fit text-[10px] bg-red-950/70 text-red-300 border border-red-800/70 px-2 py-0.5 rounded-md font-semibold tracking-wide flex items-center gap-1 shrink-0" title="Отримано під час УПД">
-                                                <Icon name="zap" className="w-2.5 h-2.5 text-red-400" /> Під час УПД
+                                            <span className="w-fit text-[10px] bg-[#d9534f]/15 text-[#f3a3a0] border border-[#d9534f]/40 px-2 py-0.5 rounded-sm font-medium flex items-center gap-1 shrink-0" title="Отримано під час УПД">
+                                                <Icon name="zap" className="w-2.5 h-2.5 text-[#f3a3a0]" /> Під час УПД
                                             </span>
                                         ) : null}
                                     </div>
@@ -824,16 +838,16 @@ const MedicalApp = (function() {
                                     {/* Колонка 3: Рапорт та Зброя */}
                                     <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                                         {episode.hasReport && (
-                                            <span className="text-[10px] bg-blue-950/70 text-blue-300 border border-blue-800/70 px-2 py-0.5 rounded-md font-semibold tracking-wide flex items-center gap-1 shrink-0" title="Складено офіційний рапорт">
-                                                <Icon name="file-check-2" className="w-2.5 h-2.5 text-blue-400" /> Рапорт
+                                            <span className="text-[10px] bg-[#4c8ed9]/15 text-[#6fa8e6] border border-[#4c8ed9]/40 px-2 py-0.5 rounded-sm font-medium flex items-center gap-1 shrink-0" title="Складено офіційний рапорт">
+                                                <Icon name="file-check-2" className="w-2.5 h-2.5 text-[#4c8ed9]" /> Рапорт
                                             </span>
                                         )}
                                         {episode.weaponStatus && (
                                             <span 
-                                                className={`text-[10px] border px-2 py-0.5 rounded-md font-semibold flex items-center gap-1 shrink-0 ${
-                                                    episode.weaponStatus === "СЗЧ/Дезертирство зі зброєю" ? "bg-red-950/70 text-red-300 border-red-800/70" : 
-                                                    episode.weaponStatus === "знаходиться у підрозділі" ? "bg-blue-950/70 text-blue-300 border-blue-800/70" :
-                                                    "bg-amber-950/70 text-amber-300 border-amber-800/70"
+                                                className={`text-[10px] border px-2 py-0.5 rounded-sm font-medium flex items-center gap-1 shrink-0 ${
+                                                    episode.weaponStatus === "СЗЧ/Дезертирство зі зброєю" ? "bg-[#d9534f]/15 text-[#f3a3a0] border-[#d9534f]/40" : 
+                                                    episode.weaponStatus === "знаходиться у підрозділі" ? "bg-[#4c8ed9]/15 text-[#6fa8e6] border-[#4c8ed9]/40" :
+                                                    "bg-[#d99b26]/15 text-[#d99b26] border-[#d99b26]/40"
                                                 }`}
                                                 title={`Статус зброї: ${episode.weaponStatus}`}
                                             >
@@ -846,12 +860,12 @@ const MedicalApp = (function() {
                             )}
                         </div>
 
-                        {/* 3. Права колонка: Варіант А (Кольоровий статус втрати + темне скло евакуації з акцентним таймером) */}
-                        <div className="flex flex-col items-end justify-center gap-1.5 shrink-0 lg:border-l lg:border-slate-800/80 lg:pl-3.5">
-                            <span className={`w-48 xl:w-[200px] text-center text-xs uppercase font-bold tracking-wide px-2.5 py-1 rounded-xl border shadow-sm ${badgeClass}`}>
+                        {/* 3. Права колонка: Статус втрати та евакуація */}
+                        <div className="flex flex-col items-end justify-center gap-1.5 shrink-0 lg:border-l lg:border-[#2e3138] lg:pl-3.5">
+                            <span className={`w-52 xl:w-[228px] text-center text-xs uppercase font-semibold tracking-wide px-2.5 py-1 rounded-sm border whitespace-nowrap truncate ${badgeClass}`}>
                                 {isAny300(episode.lossType) ? `${episode.lossType.split(' ')[0]} (${episode.severity})` : isReturnedAwol ? (episode.lossType === "Дезертирство" ? "Повернення (Дезерт.)" : "Повернення з СЗЧ") : episode.lossType}
                             </span>
-                            {renderEvacBadge("w-48 xl:w-[200px]")}
+                            {renderEvacBadge("w-52 xl:w-[228px]")}
                         </div>
                     </div>
                 );
@@ -861,19 +875,17 @@ const MedicalApp = (function() {
             return (
                 <div 
                     onClick={() => onEdit(episode)} 
-                    className="bg-slate-900/95 border border-slate-800 hover:border-amber-500/50 hover:bg-slate-900 rounded-2xl p-4 flex flex-col justify-between gap-3 group transition-all shadow-md hover:shadow-xl hover:shadow-black/40 relative overflow-hidden cursor-pointer"
+                    className="bg-[#17181b] border border-[#3a3e47] hover:border-[#4c8ed9] hover:bg-[#222429] rounded-sm p-3.5 flex flex-col justify-between gap-3 group transition-colors relative overflow-hidden cursor-pointer"
                     title="Клікніть для редагування запису"
                 >
-                    <div className={`absolute top-0 left-0 w-1.5 h-full ${leftAccentColor}`}></div>
-
                     {/* Верхня частина: Фіксовані кнопки + Звання, ПІБ, Позивний + Статуси */}
-                    <div className="pl-2 flex items-start justify-between gap-3">
+                    <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
                             <div className="flex items-center gap-1 shrink-0">
                                 <button 
                                     type="button" 
                                     onClick={(e) => { e.stopPropagation(); onEdit(episode); }} 
-                                    className="w-8 h-8 rounded-xl bg-slate-950/90 hover:bg-amber-500/20 border border-slate-800 hover:border-amber-500/50 text-slate-400 group-hover:text-amber-400 flex items-center justify-center transition shadow-sm cursor-pointer"
+                                    className="w-8 h-8 rounded-sm bg-[#101113] hover:bg-[#2b67ab]/20 border border-[#3a3e47] hover:border-[#4c8ed9] text-[#b8bec8] group-hover:text-[#4c8ed9] flex items-center justify-center transition-colors cursor-pointer"
                                     title="Редагувати запис"
                                 >
                                     <Icon name="edit-3" className="w-3.5 h-3.5" />
@@ -881,10 +893,10 @@ const MedicalApp = (function() {
                                 <button 
                                     type="button" 
                                     onClick={handleCopySummary}
-                                    className={`w-8 h-8 rounded-xl border flex items-center justify-center transition shadow-sm cursor-pointer ${
+                                    className={`w-8 h-8 rounded-sm border flex items-center justify-center transition-colors cursor-pointer ${
                                         isCopied 
-                                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300' 
-                                            : 'bg-slate-950/90 hover:bg-slate-800 border-slate-800 text-slate-400 hover:text-slate-200'
+                                            ? 'bg-[#3da372]/20 border-[#3da372] text-[#3da372]' 
+                                            : 'bg-[#101113] hover:bg-[#25272d] border-[#3a3e47] text-[#b8bec8] hover:text-[#ffffff]'
                                     }`}
                                     title={isCopied ? "Скопійовано в буфер!" : "Скопіювати короткий звіт по бійцю"}
                                 >
@@ -893,36 +905,38 @@ const MedicalApp = (function() {
                             </div>
 
                             <div className="min-w-0 flex-1 space-y-1">
-                                <div className="flex items-center gap-2 min-w-0">
-                                    <span className="text-slate-300 text-[10px] font-semibold bg-slate-950 border border-slate-800 px-1.5 py-0.5 rounded shadow-sm shrink-0 uppercase tracking-wide">
+                                <div className="flex items-baseline gap-2 min-w-0">
+                                    <span className="text-[#9ca3af] text-[11px] font-semibold shrink-0 uppercase tracking-wide">
                                         {cleanRank}
                                     </span>
-                                    <span className="text-white group-hover:text-amber-300 font-bold text-sm tracking-tight truncate transition-colors" title={sName}>
+                                    <span className="text-[#f9fafb] group-hover:text-[#38bdf8] font-bold text-[14.5px] tracking-tight truncate transition-colors" title={sName}>
                                         {sName}
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-2 text-[11px] text-slate-400 flex-wrap">
+                                <div className="flex items-center gap-1.5 text-xs text-[#9ca3af] flex-wrap">
                                     {sCallsign && (
-                                        <span className="text-amber-400 text-xs font-mono font-bold bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded shadow-sm shrink-0">
-                                            «{formatCallsignUI(sCallsign)}»
-                                        </span>
+                                        <>
+                                            <span className="text-[#fbbf24] text-xs font-mono font-bold shrink-0">
+                                                «{formatCallsignUI(sCallsign)}»
+                                            </span>
+                                            <span className="text-[#464b57]">·</span>
+                                        </>
                                     )}
-                                    <span className="text-slate-300 font-medium flex items-center gap-1 bg-slate-950/60 border border-slate-800/80 px-1.5 py-0.5 rounded text-[11px] truncate max-w-[150px]" title={displayUnit}>
-                                        <Icon name="shield" className="w-3 h-3 text-slate-500 shrink-0" />
-                                        <span className="truncate">{displayUnit || 'Не вказано'}</span>
+                                    <span className="text-[#a5b4fc] font-semibold truncate max-w-[160px]" title={displayUnit}>
+                                        {displayUnit || 'Не вказано'}
                                     </span>
-                                    <span className="text-slate-400 font-mono flex items-center gap-1 text-[10px]">
-                                        <Icon name="calendar" className="w-3 h-3 text-slate-500 shrink-0" />
-                                        <span>{dateDisplay}</span>
+                                    <span className="text-[#464b57]">·</span>
+                                    <span className="text-[#d4d8e0] font-mono text-[11.5px] tabular-nums">
+                                        {dateDisplay}
                                     </span>
-                                    <StatusHistoryChainBadge episodes={soldierEpisodes} onReview={onReview} />
+                                    <StatusHistoryChainBadge episodes={soldierEpisodes} onReview={handleReview} />
                                 </div>
                             </div>
                         </div>
 
                         {/* Статуси вгорі */}
                         <div className="flex flex-col items-end gap-1.5 shrink-0">
-                            <span className={`w-44 text-center text-xs uppercase font-bold tracking-wide px-2 py-0.5 rounded-xl border shadow-sm ${badgeClass}`}>
+                            <span className={`w-44 text-center text-xs uppercase font-semibold tracking-wide px-2 py-0.5 rounded-sm border ${badgeClass}`}>
                                 {isAny300(episode.lossType) ? `${episode.lossType.split(' ')[0]} (${episode.severity})` : isReturnedAwol ? (episode.lossType === "Дезертирство" ? "Повернення (Дезерт.)" : "Повернення з СЗЧ") : episode.lossType}
                             </span>
                             {renderEvacBadge("w-44")}
@@ -930,40 +944,40 @@ const MedicalApp = (function() {
                     </div>
 
                     {/* Середня частина: Матрична 3-колонкова сітка */}
-                    <div className="pl-2 space-y-1.5">
+                    <div className="pt-2 border-t border-[#32363e] space-y-1.5">
                         {/* Рядок 1: Причина | Факт | Док */}
-                        <div className="grid grid-cols-1 sm:grid-cols-[minmax(160px,210px)_minmax(130px,160px)_minmax(130px,1fr)] items-center gap-2">
-                            <div className="flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
-                                <Icon name={isAwol(episode.lossType) ? "compass" : "target"} className={`w-3.5 h-3.5 ${isReturnedAwol ? 'text-emerald-400' : isAwol(episode.lossType) ? 'text-fuchsia-400' : 'text-red-400'} shrink-0`} />
-                                <span className="text-slate-400 text-[10px] uppercase font-semibold tracking-wider shrink-0">{isAwol(episode.lossType) ? "Звідки:" : "Причина:"}</span>
-                                <span className="font-medium text-white truncate" title={episode.cause}>{episode.cause}</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-[minmax(160px,210px)_minmax(130px,160px)_minmax(130px,1fr)] items-center gap-2 text-xs">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <Icon name={isAwol(episode.lossType) ? "compass" : "target"} className="w-3.5 h-3.5 text-[#989fa9] shrink-0" />
+                                <span className="text-[#989fa9] text-[10px] uppercase font-semibold tracking-wider shrink-0">{isAwol(episode.lossType) ? "Звідки:" : "Причина:"}</span>
+                                <span className="font-medium text-[#f3f4f6] truncate" title={episode.cause}>{episode.cause}</span>
                             </div>
                             {isAwol(episode.lossType) ? (
                                 episode.actualLoc ? (
-                                    <div className="flex items-center gap-1.5 bg-amber-950/20 border border-amber-900/40 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
-                                        <Icon name="map-pin" className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                        <span className="text-amber-400/80 text-[10px] uppercase font-semibold tracking-wider shrink-0">Локація:</span>
-                                        <span className="text-amber-200 font-medium truncate" title={episode.actualLoc}>{episode.actualLoc}</span>
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                        <Icon name="map-pin" className="w-3.5 h-3.5 text-[#38bdf8] shrink-0" />
+                                        <span className="text-[#989fa9] text-[10px] uppercase font-semibold tracking-wider shrink-0">Локація:</span>
+                                        <span className="text-[#38bdf8] font-semibold truncate" title={episode.actualLoc}>{episode.actualLoc}</span>
                                     </div>
                                 ) : <div />
                             ) : (
-                                <div className="flex items-center gap-1.5 bg-amber-950/20 border border-amber-900/40 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
-                                    <Icon name="map-pin" className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                    <span className="text-amber-400/80 text-[10px] uppercase font-semibold tracking-wider shrink-0">Факт:</span>
-                                    <span className="text-amber-200 font-medium truncate" title={episode.actualLoc}>{episode.actualLoc || "-"}</span>
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    <Icon name="map-pin" className="w-3.5 h-3.5 text-[#38bdf8] shrink-0" />
+                                    <span className="text-[#989fa9] text-[10px] uppercase font-semibold tracking-wider shrink-0">Факт:</span>
+                                    <span className="text-[#38bdf8] font-semibold truncate" title={episode.actualLoc}>{episode.actualLoc || "-"}</span>
                                 </div>
                             )}
                             {isAwol(episode.lossType) && isReturnedAwol && evacFormattedDate ? (
-                                <div className="flex items-center gap-1.5 bg-emerald-950/30 border border-emerald-800/50 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
-                                    <Icon name="calendar" className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                    <span className="text-emerald-400/90 text-[10px] uppercase font-semibold tracking-wider shrink-0">Повернення:</span>
-                                    <span className="text-emerald-200 font-mono font-bold truncate">{evacFormattedDate}</span>
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    <Icon name="calendar" className="w-3.5 h-3.5 text-[#34d399] shrink-0" />
+                                    <span className="text-[#989fa9] text-[10px] uppercase font-semibold tracking-wider shrink-0">Повернення:</span>
+                                    <span className="text-[#34d399] font-mono font-semibold truncate tabular-nums">{evacFormattedDate}</span>
                                 </div>
                             ) : episode.docLoc ? (
-                                <div className="flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
-                                    <Icon name="file-text" className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                    <span className="text-slate-400 text-[10px] uppercase font-semibold tracking-wider shrink-0">Док:</span>
-                                    <span className="text-slate-300 font-medium truncate" title={episode.docLoc}>{episode.docLoc}</span>
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    <Icon name="file-text" className="w-3.5 h-3.5 text-[#c4b5fd] shrink-0" />
+                                    <span className="text-[#989fa9] text-[10px] uppercase font-semibold tracking-wider shrink-0">Док:</span>
+                                    <span className="text-[#c4b5fd] font-medium truncate" title={episode.docLoc}>{episode.docLoc}</span>
                                 </div>
                             ) : <div />}
                         </div>
@@ -972,21 +986,21 @@ const MedicalApp = (function() {
                         {(injStr || episode.inUdp || episode.hasReport || episode.weaponStatus) && (
                             <div className="grid grid-cols-1 sm:grid-cols-[minmax(160px,210px)_minmax(130px,160px)_minmax(130px,1fr)] items-center gap-2 pt-0.5 min-w-0">
                                 {/* Колонка 1: Травми */}
-                                <div className="min-w-0">
+                                <div className="min-w-0 flex items-center gap-1.5">
                                     {injStr ? (
-                                        <div className="flex items-center gap-1.5 bg-red-950/30 border border-red-900/50 px-2.5 py-0.5 rounded-lg text-xs text-red-300 shadow-inner min-w-0">
-                                            <Icon name="activity" className="w-3 h-3 text-red-400 shrink-0" />
-                                            <span className="font-bold text-red-400 text-[10px] uppercase tracking-wider shrink-0">Травми:</span>
-                                            <span className="text-red-200 font-medium text-[11px] truncate" title={injStr}>{injStr}</span>
-                                        </div>
+                                        <>
+                                            <Icon name="activity" className="w-3 h-3 text-[#fda4af] shrink-0" />
+                                            <span className="font-semibold text-[#989fa9] text-[10px] uppercase tracking-wider shrink-0">Травми:</span>
+                                            <span className="text-[#fda4af] font-medium text-[11.5px] truncate" title={injStr}>{injStr}</span>
+                                        </>
                                     ) : null}
                                 </div>
 
                                 {/* Колонка 2: Під час УПД */}
                                 <div className="min-w-0">
                                     {episode.inUdp ? (
-                                        <span className="w-fit text-[10px] bg-red-950/70 text-red-300 border border-red-800/70 px-2 py-0.5 rounded-md font-semibold tracking-wide flex items-center gap-1 shrink-0" title="Отримано під час УПД">
-                                            <Icon name="zap" className="w-2.5 h-2.5 text-red-400" /> Під час УПД
+                                        <span className="w-fit text-[10px] bg-[#d9534f]/15 text-[#f3a3a0] border border-[#d9534f]/40 px-2 py-0.5 rounded-sm font-medium flex items-center gap-1 shrink-0" title="Отримано під час УПД">
+                                            <Icon name="zap" className="w-2.5 h-2.5 text-[#f3a3a0]" /> Під час УПД
                                         </span>
                                     ) : null}
                                 </div>
@@ -994,16 +1008,16 @@ const MedicalApp = (function() {
                                 {/* Колонка 3: Рапорт та Зброя */}
                                 <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                                     {episode.hasReport && (
-                                        <span className="text-[10px] bg-blue-950/70 text-blue-300 border border-blue-800/70 px-2 py-0.5 rounded-md font-semibold tracking-wide flex items-center gap-1 shrink-0" title="Складено офіційний рапорт">
-                                            <Icon name="file-check-2" className="w-2.5 h-2.5 text-blue-400" /> Рапорт
+                                        <span className="text-[10px] bg-[#4c8ed9]/15 text-[#6fa8e6] border border-[#4c8ed9]/40 px-2 py-0.5 rounded-sm font-medium flex items-center gap-1 shrink-0" title="Складено офіційний рапорт">
+                                            <Icon name="file-check-2" className="w-2.5 h-2.5 text-[#4c8ed9]" /> Рапорт
                                         </span>
                                     )}
                                     {episode.weaponStatus && (
                                         <span 
-                                            className={`text-[10px] border px-2 py-0.5 rounded-md font-semibold flex items-center gap-1 shrink-0 ${
-                                                episode.weaponStatus === "СЗЧ/Дезертирство зі зброєю" ? "bg-red-950/70 text-red-300 border-red-800/70" : 
-                                                episode.weaponStatus === "знаходиться у підрозділі" ? "bg-blue-950/70 text-blue-300 border-blue-800/70" :
-                                                "bg-amber-950/70 text-amber-300 border-amber-800/70"
+                                            className={`text-[10px] border px-2 py-0.5 rounded-sm font-medium flex items-center gap-1 shrink-0 ${
+                                                episode.weaponStatus === "СЗЧ/Дезертирство зі зброєю" ? "bg-[#d9534f]/15 text-[#f3a3a0] border-[#d9534f]/40" : 
+                                                episode.weaponStatus === "знаходиться у підрозділі" ? "bg-[#4c8ed9]/15 text-[#6fa8e6] border-[#4c8ed9]/40" :
+                                                "bg-[#d99b26]/15 text-[#d99b26] border-[#d99b26]/40"
                                             }`}
                                             title={`Статус зброї: ${episode.weaponStatus}`}
                                         >
@@ -1019,9 +1033,10 @@ const MedicalApp = (function() {
             );
         });
 
-        const TriageCard = React.memo(({ ep, soldier: baseSoldier, soldierEpisodes = [], onQuickEvac, onEdit, onAlertMIA, onNotify, onCreate200FromWounds, onReview, clockTick }) => {
+        const TriageCard = React.memo(({ ep, soldier: baseSoldier, soldierEpisodes = EMPTY_EPISODES, onQuickEvac, onEdit, onAlertMIA, onNotify, onCreate200FromWounds, onReview, clockTick }) => {
             const soldier = MedicalPersonnelDirectory.forEpisode(ep, baseSoldier);
             const [isCopied, setIsCopied] = React.useState(false);
+            const handleReview = React.useCallback(() => { if (onReview) onReview(ep.soldierId); }, [onReview, ep.soldierId]);
             const waitStr = calculateWaitTimeUI(ep.date);
             const injStr = getInjStrUI(ep.injuries);
             const displayRank = ep.rank || soldier?.rank || '';
@@ -1044,23 +1059,23 @@ const MedicalApp = (function() {
                 return sName;
             }, [sName]);
 
-            const statusHistoryBadge = <StatusHistoryChainBadge episodes={soldierEpisodes} onReview={onReview} />;
+            const statusHistoryBadge = <StatusHistoryChainBadge episodes={soldierEpisodes} onReview={handleReview} />;
 
             const leftAccentColor = 
-                isAny200(ep.lossType) ? 'bg-zinc-500' :
-                ep.lossType === 'Зниклий безвісті (ЗБВ)' ? 'bg-blue-500' :
-                isAwol(ep.lossType) ? 'bg-fuchsia-500' :
-                ep.severity === 'Критичний' ? 'bg-purple-500 animate-pulse' :
-                ep.severity === 'Важкий' ? 'bg-red-500' :
-                ep.severity === 'Середній' ? 'bg-amber-500' :
-                ep.severity === 'Легкий' ? 'bg-emerald-500' : 'bg-slate-600';
+                isAny200(ep.lossType) ? 'bg-[#989fa9]' :
+                ep.lossType === 'Зниклий безвісті (ЗБВ)' ? 'bg-[#4c8ed9]' :
+                isAwol(ep.lossType) ? 'bg-[#8f5fb8]' :
+                ep.severity === 'Критичний' ? 'bg-[#8f5fb8]' :
+                ep.severity === 'Важкий' ? 'bg-[#d9534f]' :
+                ep.severity === 'Середній' ? 'bg-[#d99b26]' :
+                ep.severity === 'Легкий' ? 'bg-[#3da372]' : 'bg-[#989fa9]';
 
             const timerBadgeColor =
-                ep.severity === 'Критичний' ? 'bg-purple-950/80 text-purple-300 border-purple-800/80' :
-                ep.severity === 'Важкий' ? 'bg-red-950/80 text-red-300 border-red-800/80' :
-                ep.severity === 'Середній' ? 'bg-amber-950/80 text-amber-300 border-amber-800/80' :
-                ep.severity === 'Легкий' ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800/80' :
-                'bg-slate-950 text-slate-300 border-slate-800';
+                ep.severity === 'Критичний' ? 'bg-[#8f5fb8]/15 text-[#d8b4fe] border-[#8f5fb8]/50' :
+                ep.severity === 'Важкий' ? 'bg-[#d9534f]/15 text-[#f3a3a0] border-[#d9534f]/50' :
+                ep.severity === 'Середній' ? 'bg-[#d99b26]/15 text-[#d99b26] border-[#d99b26]/50' :
+                ep.severity === 'Легкий' ? 'bg-[#3da372]/15 text-[#3da372] border-[#3da372]/50' :
+                'bg-[#101113] text-[#b8bec8] border-[#2e3138]';
 
             const handleCopySummary = (e) => {
                 e.stopPropagation();
@@ -1076,7 +1091,7 @@ const MedicalApp = (function() {
             return (
                 <div 
                     onClick={() => onEdit(ep)}
-                    className="bg-slate-900/95 border border-slate-800/90 hover:border-amber-500/60 hover:bg-slate-900 p-2.5 rounded-xl shadow-sm hover:shadow-md flex flex-col gap-1.5 relative overflow-hidden group transition-all cursor-pointer"
+                    className="bg-[#17181b] border border-[#2e3138] hover:border-[#4c8ed9] hover:bg-[#222429] p-2.5 rounded-sm flex flex-col gap-1.5 relative overflow-hidden group transition-colors cursor-pointer"
                     title="Клікніть для редагування запису"
                 >
                     <div className={`absolute top-0 left-0 w-1 h-full ${leftAccentColor}`}></div>
@@ -1085,24 +1100,24 @@ const MedicalApp = (function() {
                     <div className="pl-1.5 flex justify-between items-center gap-2 min-w-0">
                         <div className="min-w-0 flex-1 flex items-center gap-1.5 overflow-hidden">
                             {sCallsign ? (
-                                <span className="text-amber-400 text-xs font-mono font-extrabold bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded shadow-sm shrink-0">
+                                <span className="text-[#d99b26] text-xs font-mono font-semibold bg-[#d99b26]/10 border border-[#d99b26]/40 px-1.5 py-0.5 rounded-sm shrink-0">
                                     «{formatCallsignUI(sCallsign)}»
                                 </span>
                             ) : null}
-                            <span className="text-sm font-bold text-white group-hover:text-amber-300 truncate min-w-[70px] shrink transition-colors" title={sName}>
+                            <span className="text-sm font-semibold text-[#f3f4f6] group-hover:text-[#4c8ed9] truncate min-w-[70px] shrink transition-colors" title={sName}>
                                 {shortName}
                             </span>
-                            <span className="text-slate-400 text-[10px] font-semibold bg-slate-950 border border-slate-800/80 px-1.5 py-0.2 rounded shrink-0" title={displayRank}>
+                            <span className="text-[#b8bec8] text-[10px] font-medium bg-[#101113] border border-[#2e3138] px-1.5 py-0.5 rounded-sm shrink-0" title={displayRank}>
                                 {cleanRank}
                             </span>
-                            <span className="text-slate-400 text-xs shrink-0 max-w-[80px] truncate" title={displayUnit}>
+                            <span className="text-[#b8bec8] text-xs shrink-0 max-w-[80px] truncate" title={displayUnit}>
                                 {displayUnit || 'Не вказано'}
                             </span>
                         </div>
 
                         {/* Таймер очікування */}
-                        <div className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-lg border shadow-inner flex items-center gap-1 shrink-0 ${timerBadgeColor}`}>
-                            <Icon name="clock" className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+                        <div className={`text-[10px] font-semibold font-mono tabular-nums px-1.5 py-0.5 rounded-sm border flex items-center gap-1 shrink-0 ${timerBadgeColor}`}>
+                            <Icon name="clock" className="w-2.5 h-2.5 text-[#d99b26] shrink-0" />
                             <span>{waitStr}</span>
                         </div>
                     </div>
@@ -1112,16 +1127,16 @@ const MedicalApp = (function() {
                         <div className="min-w-0 flex-1 truncate flex items-center gap-1">
                             {isAny300(ep.lossType) ? (
                                 injStr ? (
-                                    <span className="text-red-300 font-medium text-[11px] truncate flex items-center gap-1 min-w-0" title={injStr}>
-                                        <Icon name="activity" className="w-3 h-3 text-red-400 shrink-0" />
+                                    <span className="text-[#f3a3a0] font-medium text-[11px] truncate flex items-center gap-1 min-w-0" title={injStr}>
+                                        <Icon name="activity" className="w-3 h-3 text-[#f3a3a0] shrink-0" />
                                         <span className="truncate">{injStr}</span>
                                     </span>
                                 ) : (
-                                    <span className="text-slate-400 text-[11px] truncate">{ep.lossType}</span>
+                                    <span className="text-[#b8bec8] text-[11px] truncate">{ep.lossType}</span>
                                 )
                             ) : (
-                                <span className="text-zinc-300 font-semibold text-[11px] truncate flex items-center gap-1 min-w-0">
-                                    <Icon name="shield-alert" className="w-3 h-3 text-zinc-400 shrink-0" />
+                                <span className="text-[#f3f4f6] font-medium text-[11px] truncate flex items-center gap-1 min-w-0">
+                                    <Icon name="shield-alert" className="w-3 h-3 text-[#b8bec8] shrink-0" />
                                     <span className="truncate">{ep.lossType}</span>
                                 </span>
                             )}
@@ -1130,15 +1145,15 @@ const MedicalApp = (function() {
                     </div>
 
                     {/* Рядок 3: Локація + Кнопки дій */}
-                    <div className="pl-1.5 flex justify-between items-center gap-2 pt-1 border-t border-slate-800/60 min-w-0">
+                    <div className="pl-1.5 flex justify-between items-center gap-2 pt-1 border-t border-[#2e3138] min-w-0">
                         <div className="min-w-0 flex-1 flex items-center gap-1.5 text-xs overflow-hidden">
-                            <span className="text-amber-200 text-[11px] truncate flex items-center gap-1 shrink-0 max-w-[140px]" title={ep.actualLoc ? `Локація: ${ep.actualLoc}` : "Локація не вказана"}>
-                                <Icon name="map-pin" className="w-3 h-3 text-amber-400 shrink-0" />
+                            <span className="text-[#f3f4f6] text-[11px] truncate flex items-center gap-1 shrink-0 max-w-[140px]" title={ep.actualLoc ? `Локація: ${ep.actualLoc}` : "Локація не вказана"}>
+                                <Icon name="map-pin" className="w-3 h-3 text-[#d99b26] shrink-0" />
                                 <span className="truncate">{ep.actualLoc || "-"}</span>
                             </span>
 
                             {ep.inUdp && (
-                                <span className="text-[9px] bg-red-950/70 text-red-300 border border-red-800/70 px-1 py-0.2 rounded font-semibold tracking-wide shrink-0">
+                                <span className="text-[9px] bg-[#d9534f]/15 text-[#f3a3a0] border border-[#d9534f]/40 px-1 py-0.5 rounded-sm font-semibold tracking-wide shrink-0">
                                     УПД
                                 </span>
                             )}
@@ -1150,19 +1165,19 @@ const MedicalApp = (function() {
                                 <button 
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); onAlertMIA(); }} 
-                                    className="py-1 px-2 bg-slate-950 hover:bg-blue-950/80 hover:border-blue-700/80 text-blue-300 hover:text-white text-[11px] font-semibold rounded-lg border border-slate-800 transition-all flex items-center gap-1 cursor-pointer shadow-sm active:scale-95"
+                                    className="py-1 px-2 bg-[#101113] hover:bg-[#4c8ed9]/20 hover:border-[#4c8ed9] text-[#6fa8e6] hover:text-white text-[11px] font-medium rounded-sm border border-[#2e3138] transition-colors flex items-center gap-1 cursor-pointer"
                                 >
-                                    <Icon name="alert-triangle" className="w-3 h-3 text-blue-400" /> 
+                                    <Icon name="alert-triangle" className="w-3 h-3 text-[#4c8ed9]" /> 
                                     <span>ЗБВ</span>
                                 </button>
                             ) : isAny200(ep.lossType) ? (
                                 <button 
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); onQuickEvac(ep); }} 
-                                    className="py-1 px-2 bg-slate-950 hover:bg-zinc-700 hover:border-zinc-500 text-slate-300 hover:text-white text-[11px] font-semibold rounded-lg border border-slate-800 transition-all flex items-center gap-1 cursor-pointer shadow-sm active:scale-95 group/btn"
+                                    className="py-1 px-2 bg-[#101113] hover:bg-[#2e3138] hover:border-[#3c404a] text-[#f3f4f6] text-[11px] font-medium rounded-sm border border-[#2e3138] transition-colors flex items-center gap-1 cursor-pointer group/btn"
                                     title="Позначити тіло евакуйованим"
                                 >
-                                    <Icon name="check-circle" className="w-3 h-3 text-zinc-400 group-hover/btn:text-white transition-colors" /> 
+                                    <Icon name="check-circle" className="w-3 h-3 text-[#b8bec8] group-hover/btn:text-white transition-colors" /> 
                                     <span>Тіло</span>
                                 </button>
                             ) : (
@@ -1170,20 +1185,20 @@ const MedicalApp = (function() {
                                     <button 
                                         type="button"
                                         onClick={(e) => { e.stopPropagation(); onQuickEvac(ep); }} 
-                                        className="py-1 px-2.5 bg-emerald-950/60 hover:bg-emerald-600 hover:border-emerald-500 text-emerald-300 hover:text-white text-[11px] font-bold rounded-lg border border-emerald-800/80 transition-all flex items-center gap-1 cursor-pointer shadow-sm active:scale-95 group/btn"
+                                        className="py-1 px-2.5 bg-[#235d42] hover:bg-[#2b7251] text-[#f3f4f6] hover:text-white text-[11px] font-medium rounded-sm border border-[#3da372]/50 transition-colors flex items-center gap-1 cursor-pointer group/btn"
                                         title="Позначити бійця евакуйованим"
                                     >
-                                        <Icon name="check-circle" className="w-3 h-3 text-emerald-400 group-hover/btn:text-white transition-colors" /> 
+                                        <Icon name="check-circle" className="w-3 h-3 text-[#3da372] group-hover/btn:text-white transition-colors" /> 
                                         <span>Евакуювати</span>
                                     </button>
                                     {isAny300(ep.lossType) && (
                                         <button 
                                             type="button"
                                             onClick={(e) => { e.stopPropagation(); onCreate200FromWounds && onCreate200FromWounds(ep); }} 
-                                            className="py-1 px-2 bg-slate-950 hover:bg-zinc-800 hover:border-zinc-500 text-slate-400 hover:text-white text-[11px] font-semibold rounded-lg border border-slate-800 transition-all flex items-center gap-1 cursor-pointer shadow-sm active:scale-95"
+                                            className="py-1 px-2 bg-[#101113] hover:bg-[#222429] text-[#b8bec8] hover:text-[#f3f4f6] text-[11px] font-medium rounded-sm border border-[#2e3138] transition-colors flex items-center gap-1 cursor-pointer"
                                             title="Створити запис про смерть від ран (200)"
                                         >
-                                            <Icon name="skull" className="w-3 h-3 text-zinc-400" /> 
+                                            <Icon name="skull" className="w-3 h-3 text-[#b8bec8]" /> 
                                             <span>200(пвр)</span>
                                         </button>
                                     )}
@@ -1193,10 +1208,10 @@ const MedicalApp = (function() {
                             <button 
                                 type="button" 
                                 onClick={handleCopySummary}
-                                className={`w-7 h-7 rounded-lg border flex items-center justify-center transition shadow-sm cursor-pointer shrink-0 ${
+                                className={`w-7 h-7 rounded-sm border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
                                     isCopied 
-                                        ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300' 
-                                        : 'bg-slate-950 hover:bg-slate-800 border-slate-800 text-slate-400 hover:text-slate-200'
+                                        ? 'bg-[#3da372]/20 border-[#3da372] text-[#3da372]' 
+                                        : 'bg-[#101113] hover:bg-[#222429] border-[#2e3138] text-[#b8bec8] hover:text-[#f3f4f6]'
                                 }`}
                                 title={isCopied ? "Скопійовано в буфер!" : "Скопіювати звіт"}
                             >
@@ -1206,7 +1221,7 @@ const MedicalApp = (function() {
                             <button 
                                 type="button" 
                                 onClick={(e) => { e.stopPropagation(); onEdit(ep); }} 
-                                className="w-7 h-7 rounded-lg bg-slate-950 hover:bg-amber-500/20 text-slate-400 hover:text-amber-400 border border-slate-800 hover:border-amber-500/50 flex items-center justify-center transition shadow-sm cursor-pointer shrink-0" 
+                                className="w-7 h-7 rounded-sm bg-[#101113] hover:bg-[#2b67ab]/20 text-[#b8bec8] hover:text-[#4c8ed9] border border-[#2e3138] hover:border-[#4c8ed9] flex items-center justify-center transition-colors cursor-pointer shrink-0" 
                                 title="Редагувати запис"
                             >
                                 <Icon name="edit-3" className="w-3 h-3" />
@@ -1225,10 +1240,16 @@ const MedicalApp = (function() {
             const [personMatches, setPersonMatches] = useState(null);
             const [chronologyReview, setChronologyReview] = useState(null);
             const dateIssues = useMemo(() => chronologyIssues(episodes), [episodes]);
-            const openChronology = (soldierId, draft = null) => {
+            const soldiersMap = useMemo(() => {
+                const map = new Map();
+                soldiers.forEach(s => map.set(s.id, s));
+                return map;
+            }, [soldiers]);
+
+            const openChronology = useCallback((soldierId, draft = null) => {
                 const persisted = episodes.filter(ep => ep.soldierId === soldierId);
-                setChronologyReview({ soldierId, draftId: draft?.id, persisted, name: soldiers.find(s => s.id === soldierId)?.name || 'Перевірка записів', rows: [...persisted.filter(ep => ep.id !== draft?.id), ...(draft ? [draft] : [])] });
-            };
+                setChronologyReview({ soldierId, draftId: draft?.id, persisted, name: soldiersMap.get(soldierId)?.name || 'Перевірка записів', rows: [...persisted.filter(ep => ep.id !== draft?.id), ...(draft ? [draft] : [])] });
+            }, [episodes, soldiersMap]);
             const checkChronology = draft => {
                 const rows = [...episodes.filter(ep => ep.soldierId === draft.soldierId && ep.id !== draft.id), draft];
                 if (!chronologyIssues(rows).length) return true;
@@ -1255,34 +1276,27 @@ const MedicalApp = (function() {
                 ranks: DEFAULT_RANKS, units: DEFAULT_UNITS, sectors: DEFAULT_SECTORS, causes: DEFAULT_CAUSES
             });
 
-            const soldiersMap = useMemo(() => {
-                const map = new Map();
-                soldiers.forEach(s => map.set(s.id, s));
-                return map;
-            }, [soldiers]);
-
             useEffect(() => {
                 const loadData = async () => {
                     try {
-                        let savedSoldiers = await localforage.getItem('med_soldiers_v3');
+                        let [savedSoldiers, savedEpisodes, savedLogs, savedSettings] = await Promise.all([
+                            localforage.getItem('med_soldiers_v3'),
+                            localforage.getItem('med_episodes_v3'),
+                            localforage.getItem('med_logs_v3'),
+                            localforage.getItem('med_settings_v3')
+                        ]);
                         if (!savedSoldiers) {
                             const ls = localStorage.getItem('med_soldiers_v3') || localStorage.getItem('med_soldiers_v2');
                             savedSoldiers = ls ? JSON.parse(ls) : [];
                         }
-                        
-                        let savedEpisodes = await localforage.getItem('med_episodes_v3');
                         if (!savedEpisodes) {
                             const ls = localStorage.getItem('med_episodes_v3') || localStorage.getItem('med_episodes_v2');
                             savedEpisodes = ls ? JSON.parse(ls) : [];
                         }
-                        
-                        let savedLogs = await localforage.getItem('med_logs_v3');
                         if (!savedLogs) {
                             const ls = localStorage.getItem('med_logs_v3') || localStorage.getItem('med_logs_v2');
                             savedLogs = ls ? JSON.parse(ls) : [{ id: 'init', timestamp: new Date().toISOString(), action: 'Система', details: 'База створена' }];
                         }
-                        
-                        let savedSettings = await localforage.getItem('med_settings_v3');
                         if (!savedSettings) {
                             const ls = localStorage.getItem('med_settings_v3') || localStorage.getItem('med_settings_v2');
                             const oldParsed = ls ? JSON.parse(ls) : {};
@@ -1521,7 +1535,6 @@ const MedicalApp = (function() {
             const [clearKeepUnevac200, setClearKeepUnevac200] = useState(false);
             const [clearKeepEpisodeIds, setClearKeepEpisodeIds] = useState([]);
             const [clearSearchTerm, setClearSearchTerm] = useState("");
-            const [isChangelogOpen, setIsChangelogOpen] = useState(false);
             const [currentEpisode, setCurrentEpisode] = useState(null);
             const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -1594,10 +1607,10 @@ const MedicalApp = (function() {
                 'Дані відсутні': '#6b7280'
             };
 
-            const triggerNotification = (text, type = "success") => {
+            const triggerNotification = useCallback((text, type = "success") => {
                 setNotification({ text, type });
                 setTimeout(() => setNotification(null), 4000);
-            };
+            }, []);
 
             useEffect(() => { if (!isLoading && !window.SuiteRuntime.restoring) window.SuiteRuntime.setItem('med_soldiers_v3', soldiers); }, [soldiers, isLoading]);
             useEffect(() => {
@@ -1657,7 +1670,7 @@ const MedicalApp = (function() {
             }, [soldiers, episodes, logs, settings, sessionPassword, backupPassword, isLoading]);
 
             const hasOpenModal = isAddWoundedOpen || isEditOpen || isSettingsOpen || isBatchReplaceOpen || 
-                                 isBackupOpen || isClearDbConfirmOpen || isChangelogOpen || showAutoRestoreModal || !!chronologyReview || !!personMatches;
+                                 isBackupOpen || isClearDbConfirmOpen || showAutoRestoreModal || !!chronologyReview || !!personMatches;
 
             // Нативне блокування фонового скролу та відновлення фокусу (a11y)
             useEffect(() => {
@@ -1714,10 +1727,6 @@ const MedicalApp = (function() {
                             setIsSettingsOpen(false);
                             return;
                         }
-                        if (isChangelogOpen) {
-                            setIsChangelogOpen(false);
-                            return;
-                        }
                         if (isAddWoundedOpen || isEditOpen) {
                             setIsAddWoundedOpen(false);
                             setIsEditOpen(false);
@@ -1732,7 +1741,7 @@ const MedicalApp = (function() {
                 };
                 window.addEventListener('keydown', handleKeyDown);
                 return () => window.removeEventListener('keydown', handleKeyDown);
-            }, [undoAction, openDropdown, isClearDbConfirmOpen, isBackupOpen, isBatchReplaceOpen, isSettingsOpen, isChangelogOpen, isAddWoundedOpen, isEditOpen]);
+            }, [undoAction, openDropdown, isClearDbConfirmOpen, isBackupOpen, isBatchReplaceOpen, isSettingsOpen, isAddWoundedOpen, isEditOpen]);
 
             const addLog = (action, details) => {
                 setLogs(prev => [{
@@ -2052,7 +2061,7 @@ const MedicalApp = (function() {
                         dGroups[day][typeKey]++;
                     }
 
-                    const soldier = MedicalPersonnelDirectory.forEpisode(d, soldiers.find(s => s.id === d.soldierId));
+                    const soldier = MedicalPersonnelDirectory.forEpisode(d, soldiersMap.get(d.soldierId));
                     const unit = d.unit || (soldier && soldier.unit ? soldier.unit : 'Невідомо');
                     const causeStr = d.cause || 'Не вказано';
                     if (d.cause) activeCausesSet.add(d.cause);
@@ -2194,7 +2203,7 @@ const MedicalApp = (function() {
                     evacStatusData,
                     causeColors
                 };
-            }, [anFilteredEpisodes, soldiers, groupAnalytics, dynFilters]);
+            }, [anFilteredEpisodes, soldiersMap, groupAnalytics, dynFilters, settings.causes]);
 
             const soldierHistory = useMemo(() => {
                 if (!selectedSoldierId) return [];
@@ -2205,8 +2214,9 @@ const MedicalApp = (function() {
 
             
             const handleCopyFilteredList = () => {
-                if (filteredList.length === 0) return;
-                const lines = filteredList.map((ep, idx) => {
+                const targetList = mainFilteredList.length > 0 ? mainFilteredList : filteredList;
+                if (targetList.length === 0) return;
+                const lines = targetList.map((ep, idx) => {
                     const sol = MedicalPersonnelDirectory.forEpisode(ep, soldiersMap.get(ep.soldierId));
                     const waitStr = calculateWaitTimeUI(ep.date);
                     const epWithWait = { ...ep, waitStr: waitStr !== 'Невідомо' ? waitStr : '' };
@@ -2217,7 +2227,7 @@ const MedicalApp = (function() {
                 const onDone = () => {
                     setIsListCopied(true);
                     setTimeout(() => setIsListCopied(false), 2500);
-                    triggerNotification(`Скопійовано ${filteredList.length} записів для доповіді!`, "success");
+                    triggerNotification(`Скопійовано ${targetList.length} записів для доповіді!`, "success");
                 };
 
                 const copyFallbackList = (str) => {
@@ -2310,7 +2320,7 @@ const MedicalApp = (function() {
                         issues.push({
                             id: ep.id,
                             episode: ep,
-                            text: `Епізод #${(ep.id || '').slice(0, 6)} (${sInfo}, ${dInfo}, ${tInfo}): запис втрати не прив'язаний до реєстру бійців`
+                            text: `Епізод #${(ep.id || '').slice(0, 6)} (${sInfo}, ${dInfo}, ${tInfo}): запис втрати не прив\u0027язаний до реєстру бійців`
                         });
                         if (autoRepair) {
                             const newSid = ep.soldierId || ('soldier_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4));
@@ -2405,9 +2415,9 @@ const MedicalApp = (function() {
                     });
                 } else if (!autoRepair) {
                     if (isHealthy) {
-                        triggerNotification('✅ База повністю здорова: 100% цілісності!', 'success');
+                        triggerNotification('База повністю здорова: 100% цілісності.', 'success');
                     } else {
-                        triggerNotification(`⚠️ Знайдено ${issues.length} зауважень. Натисніть "Виправити автоматично".`, 'warning');
+                        triggerNotification(`Знайдено ${issues.length} зауважень. Натисніть "Полікувати базу".`, 'warning');
                     }
                 }
             };
@@ -3505,7 +3515,7 @@ const MedicalApp = (function() {
 
                     let matchSearch = true;
                     if (normSearch) {
-                        const searchStr = normalizeMilitaryText(`${soldier.name} ${soldier.callsign || ''} ${episode.actualLoc || ''}`, { toLower: true, replaceHomoglyphs: true });
+                        const searchStr = normalizeMilitaryText(`${soldier.name} ${soldier.callsign || ''} ${episode.unit || soldier.unit || ''} ${episode.actualLoc || ''} ${episode.docLoc || ''} ${episode.cause || ''}`, { toLower: true, replaceHomoglyphs: true });
                         matchSearch = searchStr.includes(normSearch);
                     }
 
@@ -3702,6 +3712,11 @@ const MedicalApp = (function() {
                 if (rosterCandidates.length) return triggerNotification('Уточніть відповідність старій медичній картці або підтвердьте, що це інша особа.', 'error');
 
                 if (!parseSafeDate(episodeDate)) return triggerNotification('Некоректна дата події.', 'error');
+                const finalAwolStatus = lossType === "Повернення з СЗЧ" ? "Повернувся" : awolStatus;
+                const eventDatePart = localMedicalInput(episodeDate).slice(0, 10);
+                if ((evacStatus === 'Евакуйований' || finalAwolStatus === 'Повернувся') && evacDate && eventDatePart && evacDate < eventDatePart) {
+                    return triggerNotification("Дата евакуації / повернення не може бути раніше дати події", "error");
+                }
                 if (!finalSoldierId && !forceNewPerson) {
                     const candidates = personCandidates({ name: newSoldierName, callsign: newSoldierCallsign, unit: newSoldierUnit }, soldiers, personnelDirectory.entries);
                     if (candidates.length) { setPersonMatches(candidates); return; }
@@ -3712,7 +3727,7 @@ const MedicalApp = (function() {
 
                 if (!finalSoldierId) {
                     if (!newSoldierName.trim() || !newSoldierUnit) {
-                        return triggerNotification("ПІБ та Підрозділ є обов'язковими (Позивний та Звання — за бажанням)", "error");
+                        return triggerNotification("ПІБ та Підрозділ є обов\u0027язковими (Позивний та Звання — за бажанням)", "error");
                     }
 
                     const newSoldierId = 'sol_' + crypto.randomUUID();
@@ -3736,10 +3751,9 @@ const MedicalApp = (function() {
                 const soldierObj = rosterSelection ? { name: newSoldierName.trim(), callsign: formatCallsignUI(newSoldierCallsign), rank: newSoldierRank, unit: newSoldierUnit } : (soldiers.find(s => s.id === finalSoldierId) || { name: newSoldierName, callsign: newSoldierCallsign.trim() });
                 const is300 = isAny300(lossType);
                 const todayStrDate = new Date().toLocaleDateString('en-CA');
-                const finalAwolStatus = lossType === "Повернення з СЗЧ" ? "Повернувся" : awolStatus;
 
                 const newEpisode = {
-                    id: 'ep_' + Date.now(),
+                    id: 'ep_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
                     soldierId: finalSoldierId, date: episodeDate, lossType, cause,
                     ...(rosterSelection ? { personnelSnapshot: { name: newSoldierName.trim(), callsign: formatCallsignUI(newSoldierCallsign), rank: newSoldierRank, unit: newSoldierUnit, sourceRosterId: rosterSelection.rosterId } } : {}),
                     severity: is300 ? severity : null,
@@ -3760,8 +3774,8 @@ const MedicalApp = (function() {
                 triggerNotification("Запис успішно додано");
             };
 
-            const handleStartEdit = (episode) => {
-                const soldier = MedicalPersonnelDirectory.forEpisode(episode, soldiers.find(s => s.id === episode.soldierId));
+            const handleStartEdit = useCallback((episode) => {
+                const soldier = MedicalPersonnelDirectory.forEpisode(episode, soldiersMap.get(episode.soldierId));
                 setRosterSelection(null); setRosterCandidates([]); setForceNewPerson(false);
                 setCurrentEpisode(episode);
                 setSelectedSoldierId(episode.soldierId);
@@ -3791,7 +3805,7 @@ const MedicalApp = (function() {
                 setWeaponStatus(episode.weaponStatus || "");
                 setConfirmDelete(false);
                 setIsEditOpen(true);
-            };
+            }, [soldiersMap]);
 
             useEffect(() => {
                 const openReviewed = ({ detail }) => {
@@ -3837,16 +3851,20 @@ const MedicalApp = (function() {
                 if(!lossType) return triggerNotification("Оберіть тип події", "error");
                 if(!cause) return triggerNotification("Оберіть причину", "error");
                 if(isAny300(lossType) && !severity) return triggerNotification("Оберіть важкість", "error");
-                if (!newSoldierUnit || !newSoldierName.trim()) return triggerNotification("ПІБ та Підрозділ є обов'язковими", "error");
+                if (!newSoldierUnit || !newSoldierName.trim()) return triggerNotification("ПІБ та Підрозділ є обов\u0027язковими", "error");
 
                 if (!parseSafeDate(episodeDate)) return triggerNotification('Некоректна дата події.', 'error');
+                const finalAwolStatus = lossType === "Повернення з СЗЧ" ? "Повернувся" : awolStatus;
+                const eventDatePart = localMedicalInput(episodeDate).slice(0, 10);
+                if ((evacStatus === 'Евакуйований' || finalAwolStatus === 'Повернувся') && evacDate && eventDatePart && evacDate < eventDatePart) {
+                    return triggerNotification("Дата евакуації / повернення не може бути раніше дати події", "error");
+                }
                 if (!checkChronology({ ...currentEpisode, date: episodeDate, lossType })) return;
                 saveHistory();
 
                 const original = episodes.find(ep => ep.id === currentEpisode.id);
                 const is300 = isAny300(lossType);
                 const todayStrDate = new Date().toLocaleDateString('en-CA');
-                const finalAwolStatus = lossType === "Повернення з СЗЧ" ? "Повернувся" : awolStatus;
                 
                 const updatedEpisode = {
                     ...currentEpisode,
@@ -4005,7 +4023,7 @@ const MedicalApp = (function() {
                         setShowAutoRestoreModal(false);
                         setIsBackupOpen(false);
                         addLog("Відновлення", `Базу відновлено з диска (${parsed.soldiers.length} о/с, ${cleanedImportEpisodes.length} епізодів)`);
-                        triggerNotification(`✅ Відновлено: ${parsed.soldiers.length} бійців, ${cleanedImportEpisodes.length} епізодів!`, "success");
+                        triggerNotification(`Відновлено: ${parsed.soldiers.length} бійців, ${cleanedImportEpisodes.length} епізодів.`, "success");
                     } else {
                         throw new Error("Файл не містить коректних даних бійців чи епізодів");
                     }
@@ -4043,7 +4061,7 @@ const MedicalApp = (function() {
                         setSessionPassword(pwd);
                         setBackupPassword(pwd);
                         addLog("Автобекап", "Створено резервну копію на локальному диску");
-                        triggerNotification("✅ Базу надійно збережено на локальний диск!", "success");
+                        triggerNotification("Базу надійно збережено на локальний диск.", "success");
                         // Оновити інформацію про бекап
                         fetch('http://127.0.0.1:8765/api/backup/latest?app=med_tactical')
                             .then(r => r.json())
@@ -4531,12 +4549,12 @@ const MedicalApp = (function() {
                     key={ep.id} 
                     ep={ep} 
                     soldier={soldiersMap.get(ep.soldierId)} 
-                    soldierEpisodes={episodesBySoldier.get(ep.soldierId) || []}
+                    soldierEpisodes={episodesBySoldier.get(ep.soldierId) || EMPTY_EPISODES}
                     onQuickEvac={quickEvacuate} 
                     onEdit={handleStartEdit} 
                     onAlertMIA={handleAlertMIA}
                     onCreate200FromWounds={createDeadFromWoundsRecord}
-                    onReview={() => openChronology(ep.soldierId)} clockTick={clockTick}
+                    onReview={openChronology} clockTick={clockTick}
                 />
             );
 
@@ -4544,86 +4562,80 @@ const MedicalApp = (function() {
 
             if (isLoading) {
                 return (
-                    <div className="flex-1 flex items-center justify-center bg-slate-950 text-slate-400">
-                        <div className="text-center space-y-4">
-                            <Icon name="loader-2" className="w-10 h-10 animate-spin mx-auto text-amber-500" />
-                            <div className="font-mono text-sm uppercase font-bold tracking-widest text-slate-300">Завантаження бази...</div>
+                    <div className="flex-1 flex items-center justify-center bg-[#101113] text-[#b8bec8]">
+                        <div className="text-center space-y-3">
+                            <Icon name="loader-2" className="w-8 h-8 animate-spin mx-auto text-[#4c8ed9]" />
+                            <div className="font-mono text-xs uppercase font-semibold tracking-wider text-[#b8bec8]">Завантаження бази...</div>
                         </div>
                     </div>
                 );
             }
 
             return (
-                <div id="med-app" className="min-h-full min-w-0 flex flex-col p-3 sm:p-6 w-full space-y-5">
+                <div id="med-app" className="min-h-full min-w-0 flex flex-col p-3 sm:p-5 w-full space-y-4">
                     {personMatches && <PersonMatchDialog candidates={personMatches} onClose={() => setPersonMatches(null)} onChoose={person => { selectExistingSoldier(person); setPersonMatches(null); }} onSeparate={() => { setForceNewPerson(true); setPersonMatches(null); }} />}
                     {chronologyReview && <ChronologyDialog review={chronologyReview} onApply={applyChronology} onClose={() => setChronologyReview(null)} />}
-                    {!!dateIssues.length && <div role="alert" className="bg-rose-950 border border-rose-700 text-rose-200 rounded-xl p-3 text-sm">
+                    {!!dateIssues.length && <div role="alert" className="bg-[#d9534f]/15 border border-[#d9534f]/50 text-[#f3a3a0] rounded-sm p-3 text-sm tabular-nums">
                         Виявлено {dateIssues.length} суперечностей дат. Статус загибелі не замінюється пізнішим пораненням.
-                        <div className="flex flex-wrap gap-2 mt-2">{[...new Set(dateIssues.map(issue => issue.episode.soldierId))].map(id => <button key={id} type="button" className="underline" onClick={() => openChronology(id)}>Перевірити: {soldiersMap.get(id)?.name || id}</button>)}</div>
+                        <div className="flex flex-wrap gap-2 mt-2">{[...new Set(dateIssues.map(issue => issue.episode.soldierId))].map(id => <button key={id} type="button" className="underline hover:text-white" onClick={() => openChronology(id)}>Перевірити: {soldiersMap.get(id)?.name || id}</button>)}</div>
                     </div>}
                     
-                    {/* Single Unified Modern Command Header */}
-                    <header className="bg-slate-900/95 border border-slate-800/90 rounded-2xl p-3 sm:p-3.5 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3.5 shadow-2xl backdrop-blur-md">
+                    {/* Командний заголовок */}
+                    <header className="bg-[#17181b] border border-[#2e3138] rounded-sm p-3 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
                         
                         {/* 1. Ліва частина: HUB + Логотип + Бренд + Версія */}
-                        <div className="flex items-center gap-3 shrink-0">
+                        <div className="flex items-center gap-2.5 shrink-0">
                             <a 
                                 href="index.html" 
                                 onClick={(e) => {
                                     e.preventDefault();
                                     window.dispatchEvent(new CustomEvent('suite-switch-tab', { detail: 'enemy' }));
                                 }}
-                                className="px-2.5 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 rounded-xl transition-all text-xs font-semibold flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0" 
+                                className="px-2.5 py-1.5 bg-[#101113] hover:bg-[#222429] text-[#b8bec8] hover:text-[#f3f4f6] border border-[#2e3138] hover:border-[#4c8ed9] rounded-sm transition-colors text-xs font-medium flex items-center gap-1.5 shrink-0" 
                                 title="Повернутися до Єдиного Центру Управління (HUB)"
                             >
-                                <span>🏠 HUB</span>
+                                <Icon name="home" className="w-3.5 h-3.5 text-[#4c8ed9]" />
+                                <span>HUB</span>
                             </a>
-                            <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 shadow-inner shrink-0">
+                            <div className="w-9 h-9 rounded-sm bg-[#122624] border border-[#14b8a6]/55 flex items-center justify-center text-[#2dd4bf] shrink-0">
                                 <Icon name="shield-alert" className="w-5 h-5" />
                             </div>
                             <div className="flex items-center gap-2 flex-wrap">
-                                <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">MedTactical</h1>
-                                <span className="text-[10px] bg-slate-950 text-red-400 border border-slate-800 px-2 py-0.5 rounded-md font-mono font-bold tracking-wider">
+                                <h1 className="text-lg font-semibold text-[#f3f4f6] tracking-tight">MedTactical</h1>
+                                <span className="text-[10px] bg-[#122624] text-[#5eead4] border border-[#14b8a6]/45 px-2 py-0.5 rounded-sm font-mono font-semibold tracking-wider">
                                     COMBAT_MED
                                 </span>
-                                <button 
-                                    onClick={() => setIsChangelogOpen(true)} 
-                                    className="text-[11px] bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 font-mono font-bold px-2 py-0.5 rounded-md transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm" 
-                                    title="Історія оновлень"
-                                >
-                                    ⚡ v3.6.5
-                                </button>
                                 <button
                                     onClick={() => setIsBackupOpen(true)}
-                                    className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-md border transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:scale-105 active:scale-95 ${
+                                    className={`text-[11px] font-mono font-semibold px-2 py-0.5 rounded-sm border transition-colors cursor-pointer flex items-center gap-1.5 tabular-nums ${
                                         diskServiceOnline 
-                                            ? 'bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border-emerald-700/60' 
-                                            : 'bg-slate-900/80 hover:bg-slate-800 text-slate-400 border-slate-800'
+                                            ? 'bg-[#3da372]/15 hover:bg-[#3da372]/25 text-[#3da372] border-[#3da372]/50' 
+                                            : 'bg-[#101113] hover:bg-[#222429] text-[#b8bec8] border-[#2e3138]'
                                     }`}
                                     title={diskServiceOnline ? `Служба бекапу активна на диску (_backups). ${lastDiskSaveTime ? 'Збережено: ' + lastDiskSaveTime : 'Готова'}` : 'Служба бекапу недоступна'}
                                 >
-                                    <span className={`w-1.5 h-1.5 rounded-full ${diskServiceOnline ? 'bg-emerald-400' : 'bg-slate-500'}`}></span>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${diskServiceOnline ? 'bg-[#3da372]' : 'bg-[#989fa9]'}`}></span>
                                     <span>{diskServiceOnline ? (lastDiskSaveTime ? `Диск: ${lastDiskSaveTime}` : 'Диск: OK') : 'Диск: Офлайн'}</span>
                                 </button>
                             </div>
                         </div>
 
-                        {/* 2. Центральна частина: Преміальний Segmented Tabs Bar */}
-                        <div className="flex items-center gap-1 bg-slate-950/90 border border-slate-800/90 p-1.5 rounded-xl shadow-inner shrink-0 self-start xl:self-center">
+                        {/* 2. Центральна частина: Сегментована панель вкладок */}
+                        <div className="flex items-center gap-1 bg-[#101113] border border-[#2e3138] p-1 rounded-sm shrink-0 self-start xl:self-center flex-wrap">
                             {/* Вкладка: Втрати о/с */}
                             <button 
                                 onClick={() => handleTabSwitch("list")} 
                                 aria-label={`Журнал ${stats.lossesCount}`}
                                 title="Журнал втрат особового складу (300, 200, ЗБВ)"
-                                className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 text-xs font-semibold cursor-pointer select-none ${
+                                className={`px-3 py-1.5 rounded-sm border transition-colors flex items-center gap-2 text-xs font-medium cursor-pointer select-none ${
                                     activeTab === "list" 
-                                        ? "bg-slate-800 text-white border border-slate-700 shadow-sm" 
-                                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent"
+                                        ? "bg-[#122624] text-[#f0fdfa] border-[#14b8a6]/65 font-semibold" 
+                                        : "border-transparent text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429]"
                                 }`}
                             >
-                                <Icon name="activity" className={`w-4 h-4 ${activeTab === "list" ? "text-rose-400" : "text-slate-400"}`} />
+                                <Icon name="activity" className={`w-4 h-4 ${activeTab === "list" ? "text-[#2dd4bf]" : "text-[#b8bec8]"}`} />
                                 <span>Втрати о/с</span>
-                                <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-slate-900 border border-slate-800 text-slate-300">
+                                <span className={`px-1.5 py-0.5 rounded-sm text-[10px] font-mono font-semibold tabular-nums ${activeTab === "list" ? "bg-[#0d1c1a] text-[#5eead4] border border-[#14b8a6]/45" : "bg-[#17181b] border border-[#2e3138] text-[#b8bec8]"}`}>
                                     {stats.lossesCount}
                                 </span>
                             </button>
@@ -4633,18 +4645,20 @@ const MedicalApp = (function() {
                                 onClick={() => handleTabSwitch("awol")} 
                                 aria-label={`Облік СЗЧ ${stats.awolFilteredCount}`}
                                 title="Облік військовослужбовців СЗЧ та дезертирства"
-                                className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 text-xs font-semibold cursor-pointer select-none ${
+                                className={`px-3 py-1.5 rounded-sm border transition-colors flex items-center gap-2 text-xs font-medium cursor-pointer select-none ${
                                     activeTab === "awol" 
-                                        ? "bg-purple-950/70 text-purple-200 border border-purple-500/50 shadow-sm" 
-                                        : "text-slate-400 hover:text-purple-300 hover:bg-slate-900/60 border border-transparent"
+                                        ? "bg-[#122624] text-[#f0fdfa] border-[#14b8a6]/65 font-semibold" 
+                                        : "border-transparent text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429]"
                                 }`}
                             >
-                                <Icon name="user-x" className={`w-4 h-4 ${activeTab === "awol" ? "text-purple-400" : "text-slate-400"}`} />
+                                <Icon name="user-x" className={`w-4 h-4 ${activeTab === "awol" ? "text-[#2dd4bf]" : "text-[#b8bec8]"}`} />
                                 <span>Облік СЗЧ</span>
-                                <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold border ${
-                                    stats.awolFilteredCount > 0 
-                                        ? "bg-purple-900/80 border-purple-700/80 text-purple-200" 
-                                        : "bg-slate-900 border-slate-800 text-slate-400"
+                                <span className={`px-1.5 py-0.5 rounded-sm text-[10px] font-mono font-semibold border tabular-nums ${
+                                    activeTab === "awol"
+                                        ? "bg-[#0d1c1a] border-[#14b8a6]/45 text-[#5eead4]"
+                                        : stats.awolFilteredCount > 0 
+                                            ? "bg-[#8f5fb8]/20 border-[#8f5fb8]/50 text-[#c084fc]" 
+                                            : "bg-[#17181b] border-[#2e3138] text-[#b8bec8]"
                                 }`}>
                                     {stats.awolFilteredCount}
                                 </span>
@@ -4653,106 +4667,105 @@ const MedicalApp = (function() {
                             {/* Вкладка: Черга евакуації */}
                             <button 
                                 onClick={() => handleTabSwitch("triage")} 
-                                className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 text-xs font-semibold cursor-pointer select-none ${
+                                className={`px-3 py-1.5 rounded-sm border transition-colors flex items-center gap-2 text-xs font-medium cursor-pointer select-none ${
                                     activeTab === "triage" 
-                                        ? "bg-slate-800 text-amber-300 border border-amber-500/50 shadow-sm" 
-                                        : "text-slate-400 hover:text-amber-300 hover:bg-slate-900/60 border border-transparent"
+                                        ? "bg-[#122624] text-[#f0fdfa] border-[#14b8a6]/65 font-semibold" 
+                                        : "border-transparent text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429]"
                                 }`}
                             >
-                                <Icon name="clock-3" className={`w-4 h-4 ${activeTab === "triage" ? "text-amber-400" : "text-slate-400"}`} />
+                                <Icon name="clock-3" className={`w-4 h-4 ${activeTab === "triage" ? "text-[#2dd4bf]" : "text-[#b8bec8]"}`} />
                                 <span>Евакуація</span>
-                                <div className="flex items-center gap-1 font-mono text-[10px]">
+                                <div className="flex items-center gap-1 font-mono text-[10px] tabular-nums">
                                     {(triageCounts.crit + triageCounts.heavy + triageCounts.med + triageCounts.light) > 0 && (
-                                        <span className="bg-amber-950/80 text-amber-300 border border-amber-800/80 px-1.5 py-0.2 rounded font-bold flex items-center gap-1 shadow-sm">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                        <span className="bg-[#d99b26]/20 text-[#d99b26] border border-[#d99b26]/50 px-1.5 py-0.5 rounded-sm font-semibold flex items-center gap-1">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-[#d99b26]"></span>
                                             {triageCounts.crit + triageCounts.heavy + triageCounts.med + triageCounts.light} 300
                                         </span>
                                     )}
                                     {triageCounts.dead > 0 && (
-                                        <span className="bg-zinc-900 text-zinc-300 border border-zinc-700/80 px-1.5 py-0.2 rounded font-bold shadow-sm">
+                                        <span className="bg-[#17181b] text-[#f3f4f6] border border-[#2e3138] px-1.5 py-0.5 rounded-sm font-semibold">
                                             {triageCounts.dead} 200
                                         </span>
                                     )}
                                     {triageCounts.mia > 0 && (
-                                        <span className="bg-blue-950/90 text-blue-300 border border-blue-800/80 px-1.5 py-0.2 rounded font-bold shadow-sm">
+                                        <span className="bg-[#4c8ed9]/20 text-[#6fa8e6] border border-[#4c8ed9]/50 px-1.5 py-0.5 rounded-sm font-semibold">
                                             {triageCounts.mia} ЗБВ
                                         </span>
                                     )}
-                                    {triageEpisodes.length === 0 && <span className="text-slate-500 text-[10px]">0</span>}
+                                    {triageEpisodes.length === 0 && <span className={activeTab === "triage" ? "text-[#5eead4] text-[10px]" : "text-[#989fa9] text-[10px]"}>0</span>}
                                 </div>
                             </button>
 
                             {/* Вкладка: Аналітика */}
                             <button 
                                 onClick={() => handleTabSwitch("analytics")} 
-                                className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 text-xs font-semibold cursor-pointer select-none ${
+                                className={`px-3 py-1.5 rounded-sm border transition-colors flex items-center gap-2 text-xs font-medium cursor-pointer select-none ${
                                     activeTab === "analytics" 
-                                        ? "bg-slate-800 text-cyan-300 border border-cyan-500/50 shadow-sm" 
-                                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent"
+                                        ? "bg-[#122624] text-[#f0fdfa] border-[#14b8a6]/65 font-semibold" 
+                                        : "border-transparent text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429]"
                                 }`}
                             >
-                                <Icon name="bar-chart-3" className={`w-4 h-4 ${activeTab === "analytics" ? "text-cyan-400" : "text-slate-400"}`} />
+                                <Icon name="bar-chart-3" className={`w-4 h-4 ${activeTab === "analytics" ? "text-[#2dd4bf]" : "text-[#b8bec8]"}`} />
                                 <span>Аналітика</span>
                             </button>
 
                             {/* Вкладка: Лог */}
                             <button 
                                 onClick={() => handleTabSwitch("logs")} 
-                                className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 text-xs font-semibold cursor-pointer select-none ${
+                                className={`px-3 py-1.5 rounded-sm border transition-colors flex items-center gap-2 text-xs font-medium cursor-pointer select-none ${
                                     activeTab === "logs" 
-                                        ? "bg-slate-800 text-indigo-300 border border-indigo-500/50 shadow-sm" 
-                                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent"
+                                        ? "bg-[#122624] text-[#f0fdfa] border-[#14b8a6]/65 font-semibold" 
+                                        : "border-transparent text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429]"
                                 }`}
                             >
-                                <Icon name="history" className={`w-4 h-4 ${activeTab === "logs" ? "text-indigo-400" : "text-slate-400"}`} />
+                                <Icon name="history" className={`w-4 h-4 ${activeTab === "logs" ? "text-[#2dd4bf]" : "text-[#b8bec8]"}`} />
                                 <span>Лог змін</span>
                             </button>
                         </div>
 
-                        {/* 3. Права частина: Уніфіковані тактичні кнопки дій */}
+                        {/* 3. Права частина: Кнопки дій */}
                         <div className="flex items-center gap-2 flex-wrap">
                             <button 
                                 onClick={() => handleOpenAddWounded(null)} 
-                                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-md hover:shadow-emerald-900/40 border border-emerald-500/40 transition-all flex items-center gap-1.5 text-xs cursor-pointer active:scale-95"
+                                className="px-3.5 py-1.5 bg-[#2b67ab] hover:bg-[#3577c2] text-white font-medium rounded-sm border border-[#4c8ed9]/60 transition-colors flex items-center gap-1.5 text-xs cursor-pointer"
                             >
                                 <Icon name="plus" className="w-4 h-4" /> 
                                 <span>Створити запис</span>
                             </button>
 
-                            {/* Допоміжні тактичні кнопки в єдиному стилі темного скла */}
                             <button 
                                 onClick={() => { setBatchCategory("sectors"); setIsBatchReplaceOpen(true); }} 
-                                className="px-3 py-2 bg-slate-950/80 hover:bg-slate-800 text-slate-300 hover:text-amber-300 border border-slate-800 hover:border-slate-700 rounded-xl transition-all text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95" 
+                                className="px-3 py-1.5 bg-[#222429] hover:bg-[#2e3138] text-[#f3f4f6] border border-[#2e3138] hover:border-[#4c8ed9] rounded-sm transition-colors text-xs font-medium flex items-center gap-1.5 cursor-pointer" 
                                 title="Масова заміна та перейменування позицій / підрозділів у всій базі"
                             >
-                                <Icon name="repeat" className="w-3.5 h-3.5 text-amber-400" /> 
+                                <Icon name="repeat" className="w-3.5 h-3.5 text-[#4c8ed9]" /> 
                                 <span>Масова заміна</span>
                             </button>
                             
                             <button 
                                 onClick={() => setIsSettingsOpen(true)} 
-                                className="px-3 py-2 bg-slate-950/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 rounded-xl transition-all text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95" 
+                                className="px-3 py-1.5 bg-[#222429] hover:bg-[#2e3138] text-[#f3f4f6] border border-[#2e3138] hover:border-[#4c8ed9] rounded-sm transition-colors text-xs font-medium flex items-center gap-1.5 cursor-pointer" 
                                 title="Довідники (Причини, Звання, Підрозділи, Позиції)"
                             >
-                                <Icon name="settings" className="w-3.5 h-3.5 text-slate-400" /> 
+                                <Icon name="settings" className="w-3.5 h-3.5 text-[#b8bec8]" /> 
                                 <span>Довідники</span>
                             </button>
                             
                             <button 
                                 onClick={() => setIsBackupOpen(true)} 
-                                className="px-3 py-2 bg-slate-950/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 rounded-xl transition-all text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95" 
+                                className="px-3 py-1.5 bg-[#222429] hover:bg-[#2e3138] text-[#f3f4f6] border border-[#2e3138] hover:border-[#4c8ed9] rounded-sm transition-colors text-xs font-medium flex items-center gap-1.5 cursor-pointer" 
                                 title="Управління базою, шифрований бекап AES-256"
                             >
-                                <Icon name="shield-check" className="w-3.5 h-3.5 text-amber-400" /> 
+                                <Icon name="shield-check" className="w-3.5 h-3.5 text-[#4c8ed9]" /> 
                                 <span>База / Бекап</span>
                             </button>
                         </div>
                     </header>
 
                     {notification && (
-                        <div className="fixed top-20 right-6 z-[25000] animate-in fade-in slide-in-from-top-4 duration-200">
-                            <div className={`px-4 py-3 rounded-xl shadow-2xl border flex items-center gap-2.5 text-xs font-semibold ${notification.type === 'error' ? 'bg-red-950 border-red-700 text-red-200 shadow-red-950/50' : 'bg-slate-900 border-slate-700 text-slate-100 shadow-slate-950/50'}`}>
-                                <Icon name={notification.type === 'error' ? 'alert-octagon' : 'check-circle'} className={`w-4 h-4 ${notification.type === 'error' ? 'text-red-400' : 'text-emerald-400'}`} />
+                        <div className="fixed top-20 right-6 z-[25000]">
+                            <div className={`px-4 py-2.5 rounded-sm border flex items-center gap-2.5 text-xs font-medium ${notification.type === 'error' ? 'bg-[#17181b] border-[#d9534f] text-[#f3a3a0]' : 'bg-[#17181b] border-[#4c8ed9] text-[#f3f4f6]'}`}>
+                                <Icon name={notification.type === 'error' ? 'alert-octagon' : 'check-circle'} className={`w-4 h-4 ${notification.type === 'error' ? 'text-[#f3a3a0]' : 'text-[#3da372]'}`} />
                                 <span>{notification.text}</span>
                             </div>
                         </div>
@@ -4761,7 +4774,7 @@ const MedicalApp = (function() {
                     <main className="flex-1 w-full flex flex-col gap-3">
                         {/* ГОРИЗОНТАЛЬНА ВЕРХНЯ ПАНЕЛЬ ФІЛЬТРІВ (ДЛЯ ВТРАТ О/С, СЗЧ ТА ТРІАЖУ) */}
                         {(activeTab === "list" || activeTab === "awol" || activeTab === "triage") && (
-                            <div className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-2 sm:p-2.5 shadow-lg flex items-center gap-2 flex-wrap">
+                            <div className="w-full bg-[#17181b] border border-[#2e3138] rounded-sm p-2 sm:p-2.5 flex items-center gap-2 flex-wrap">
                                 
                                 {/* Пошук */}
                                 <div className="relative min-w-[150px] max-w-[200px] flex-1 sm:flex-initial">
@@ -4771,22 +4784,22 @@ const MedicalApp = (function() {
                                         placeholder="Пошук... [Ctrl+F]" 
                                         value={searchTerm} 
                                         onChange={(e) => setSearchTerm(e.target.value)} 
-                                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-7 pr-6 py-1 text-xs text-white placeholder-slate-500 focus:border-amber-500 outline-none transition-colors" 
+                                        className="w-full bg-[#101113] border border-[#2e3138] rounded-sm pl-7 pr-6 py-1.5 text-xs text-[#f3f4f6] placeholder-[#989fa9] focus:border-[#4c8ed9] outline-none transition-colors" 
                                     />
-                                    <Icon name="search" className="w-3.5 h-3.5 text-slate-500 absolute left-2 top-2" />
+                                    <Icon name="search" className="w-3.5 h-3.5 text-[#989fa9] absolute left-2 top-2" />
                                     {searchTerm && (
-                                        <button onClick={() => setSearchTerm("")} className="absolute right-1.5 top-1.5 text-slate-500 hover:text-white cursor-pointer" title="Очистити">
+                                        <button onClick={() => setSearchTerm("")} className="absolute right-1.5 top-2 text-[#989fa9] hover:text-[#f3f4f6] cursor-pointer" title="Очистити">
                                             <Icon name="x" className="w-3.5 h-3.5" />
                                         </button>
                                     )}
                                 </div>
 
                                 {/* Фільтр дат: Всі дати + Календар (діапазон) */}
-                                <div className="flex items-center gap-0.5 bg-slate-950 p-0.5 rounded-xl border border-slate-800 text-xs font-mono">
+                                <div className="flex items-center gap-0.5 bg-[#101113] p-0.5 rounded-sm border border-[#2e3138] text-xs font-mono">
                                     <button 
                                         type="button" 
                                         onClick={() => applyDatePreset('all')} 
-                                        className={`px-2.5 py-1 rounded-lg transition cursor-pointer select-none text-[11px] ${datePreset === 'all' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                                        className={`px-2.5 py-1 rounded-sm transition-colors cursor-pointer select-none text-[11px] ${datePreset === 'all' ? 'bg-[#2b67ab] text-white font-semibold' : 'text-[#b8bec8] hover:text-[#f3f4f6]'}`}
                                     >
                                         Всі дати
                                     </button>
@@ -4796,55 +4809,55 @@ const MedicalApp = (function() {
                                         <button 
                                             type="button" 
                                             onClick={() => setOpenDropdown(openDropdown === 'custom_date' ? null : 'custom_date')} 
-                                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition cursor-pointer select-none border text-[11px] ${datePreset === 'custom' ? 'bg-amber-500/20 text-amber-300 font-bold border-amber-500/40 shadow-sm' : 'border-transparent text-slate-400 hover:text-white'}`}
+                                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm transition-colors cursor-pointer select-none text-[11px] tabular-nums ${datePreset === 'custom' ? 'bg-[#2b67ab] text-white font-semibold' : 'text-[#b8bec8] hover:text-[#f3f4f6]'}`}
                                             title="Вибрати період дат у календарі"
                                         >
-                                            <Icon name="calendar" className="w-3.5 h-3.5 text-amber-400" />
+                                            <Icon name="calendar" className={`w-3.5 h-3.5 ${datePreset === 'custom' ? 'text-white' : 'text-[#4c8ed9]'}`} />
                                             <span>{datePreset === 'custom' && listDateFrom ? `${listDateFrom.slice(5)} — ${listDateTo ? listDateTo.slice(5) : '...'}` : 'Календар'}</span>
-                                            <Icon name="chevron-down" className="w-2.5 h-2.5 text-slate-500" />
+                                            <Icon name="chevron-down" className="w-2.5 h-2.5 text-[#989fa9]" />
                                         </button>
                                         {openDropdown === 'custom_date' && (
                                             <>
                                                 <div className="fixed inset-0 z-40 cursor-default" onClick={() => setOpenDropdown(null)}></div>
-                                                <div className="absolute left-0 top-full mt-2 z-50 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl p-4 w-72 max-w-[calc(100vw-32px)] animate-in fade-in zoom-in-95 duration-150 space-y-3.5 font-sans">
-                                                    <div className="flex justify-between items-center pb-2 border-b border-slate-800">
-                                                        <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                                                            <Icon name="calendar" className="w-4 h-4 text-amber-400" />
+                                                <div className="absolute left-0 top-full mt-1 z-50 bg-[#17181b] border border-[#2e3138] rounded-sm p-3.5 w-72 max-w-[calc(100vw-32px)] space-y-3 font-sans">
+                                                    <div className="flex justify-between items-center pb-2 border-b border-[#2e3138]">
+                                                        <span className="text-xs font-semibold text-[#f3f4f6] flex items-center gap-1.5">
+                                                            <Icon name="calendar" className="w-4 h-4 text-[#4c8ed9]" />
                                                             <span>Період дат</span>
                                                         </span>
                                                         <button 
                                                             type="button" 
                                                             onClick={() => { applyDatePreset('all'); setOpenDropdown(null); }} 
-                                                            className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold cursor-pointer"
+                                                            className="text-[11px] text-[#4c8ed9] hover:text-[#6fa8e6] font-medium cursor-pointer"
                                                         >
                                                             Скинути
                                                         </button>
                                                     </div>
                                                     <div className="space-y-2.5 text-xs">
                                                         <div>
-                                                            <span className="text-[10px] font-bold text-slate-400 uppercase font-mono block mb-1">Від дати:</span>
+                                                            <span className="text-[10px] font-semibold text-[#b8bec8] uppercase font-mono block mb-1">Від дати:</span>
                                                             <input 
                                                                 type="date" 
                                                                 value={listDateFrom} 
                                                                 onChange={(e) => { setListDateFrom(e.target.value); setDatePreset('custom'); }} 
-                                                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-amber-500 outline-none font-mono" 
+                                                                className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] focus:border-[#4c8ed9] outline-none font-mono tabular-nums" 
                                                             />
                                                         </div>
                                                         <div>
-                                                            <span className="text-[10px] font-bold text-slate-400 uppercase font-mono block mb-1">До дати:</span>
+                                                            <span className="text-[10px] font-semibold text-[#b8bec8] uppercase font-mono block mb-1">До дати:</span>
                                                             <input 
                                                                 type="date" 
                                                                 value={listDateTo} 
                                                                 onChange={(e) => { setListDateTo(e.target.value); setDatePreset('custom'); }} 
-                                                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-amber-500 outline-none font-mono" 
+                                                                className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] focus:border-[#4c8ed9] outline-none font-mono tabular-nums" 
                                                             />
                                                         </div>
                                                     </div>
-                                                    <div className="pt-2 border-t border-slate-800 flex justify-end">
+                                                    <div className="pt-2 border-t border-[#2e3138] flex justify-end">
                                                         <button 
                                                             type="button" 
                                                             onClick={() => setOpenDropdown(null)} 
-                                                            className="w-full py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow transition cursor-pointer text-center"
+                                                            className="w-full py-1.5 bg-[#2b67ab] hover:bg-[#3577c2] text-white font-medium text-xs rounded-sm border border-[#4c8ed9]/60 transition-colors cursor-pointer text-center"
                                                         >
                                                             Застосувати
                                                         </button>
@@ -4913,22 +4926,22 @@ const MedicalApp = (function() {
                                         onSelectAll={() => setFilterEvacStatuses(prev => Array.from(new Set([...prev, "Не евакуйований", "Евакуйований", "Не потребує евакуації"])))}
                                         onClearAll={() => setFilterEvacStatuses(prev => prev.filter(s => s === "В розшуку" || s === "Повернувся"))}
                                     >
-                                        <div className="flex gap-1 mb-2 p-1 bg-slate-950 rounded-lg border border-slate-800 text-[10px] font-mono">
+                                        <div className="flex gap-1 mb-2 p-1 bg-[#101113] rounded-sm border border-[#2e3138] text-[10px] font-mono tabular-nums">
                                             <button 
                                                 type="button" 
                                                 onClick={() => setFilterEvacStatuses(prev => [...prev.filter(s => s === "В розшуку" || s === "Повернувся"), "Не евакуйований"])} 
-                                                className="flex-1 py-1 rounded bg-red-950/40 hover:bg-red-900/60 text-red-300 font-semibold text-center cursor-pointer transition"
+                                                className="flex-1 py-1 rounded-sm bg-[#d9534f]/10 border border-[#d9534f]/30 hover:bg-[#d9534f]/20 text-[#f3a3a0] font-semibold text-center cursor-pointer transition-colors"
                                                 title="Показати тільки тих, хто очікує на евакуацію"
                                             >
-                                                ⏳ Очікують
+                                                Очікують
                                             </button>
                                             <button 
                                                 type="button" 
                                                 onClick={() => setFilterEvacStatuses(prev => [...prev.filter(s => s === "В розшуку" || s === "Повернувся"), "Евакуйований"])} 
-                                                className="flex-1 py-1 rounded bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 font-semibold text-center cursor-pointer transition"
+                                                className="flex-1 py-1 rounded-sm bg-[#3da372]/10 border border-[#3da372]/30 hover:bg-[#3da372]/20 text-[#8ad8ae] font-semibold text-center cursor-pointer transition-colors"
                                                 title="Показати тільки евакуйованих"
                                             >
-                                                ✅ Евакуйовані
+                                                Евакуйовані
                                             </button>
                                         </div>
                                         <CheckboxList 
@@ -4952,22 +4965,22 @@ const MedicalApp = (function() {
                                         onSelectAll={() => setFilterEvacStatuses(prev => Array.from(new Set([...prev, "В розшуку", "Повернувся"])))}
                                         onClearAll={() => setFilterEvacStatuses(prev => prev.filter(s => s !== "В розшуку" && s !== "Повернувся"))}
                                     >
-                                        <div className="flex gap-1 mb-2 p-1 bg-slate-950 rounded-lg border border-slate-800 text-[10px] font-mono">
+                                        <div className="flex gap-1 mb-2 p-1 bg-[#101113] rounded-sm border border-[#2e3138] text-[10px] font-mono">
                                             <button 
                                                 type="button" 
                                                 onClick={() => setFilterEvacStatuses(prev => [...prev.filter(s => s !== "В розшуку" && s !== "Повернувся"), "В розшуку"])} 
-                                                className="flex-1 py-1 rounded bg-purple-950/50 hover:bg-purple-900/60 text-purple-300 font-semibold text-center cursor-pointer transition"
+                                                className="flex-1 py-1 rounded-sm bg-[#8f5fb8]/15 hover:bg-[#8f5fb8]/25 text-[#c084fc] font-medium text-center cursor-pointer transition-colors"
                                                 title="Показати тих, хто в розшуку"
                                             >
-                                                🔍 В розшуку
+                                                В розшуку
                                             </button>
                                             <button 
                                                 type="button" 
                                                 onClick={() => setFilterEvacStatuses(prev => [...prev.filter(s => s !== "В розшуку" && s !== "Повернувся"), "Повернувся"])} 
-                                                className="flex-1 py-1 rounded bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 font-semibold text-center cursor-pointer transition"
+                                                className="flex-1 py-1 rounded-sm bg-[#3da372]/15 hover:bg-[#3da372]/25 text-[#3da372] font-medium text-center cursor-pointer transition-colors"
                                                 title="Показати тих, хто повернувся"
                                             >
-                                                ✅ Повернувся
+                                                Повернувся
                                             </button>
                                         </div>
                                         <CheckboxList 
@@ -4995,29 +5008,29 @@ const MedicalApp = (function() {
                                             <button 
                                                 type="button" 
                                                 onClick={() => setOpenDropdown(openDropdown === 'other' ? null : 'other')} 
-                                                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition cursor-pointer select-none ${
+                                                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-sm border text-xs font-semibold transition-colors cursor-pointer select-none ${
                                                     otherActiveCount > 0
-                                                        ? 'bg-amber-500/15 border-amber-500/50 text-amber-300'
-                                                        : 'bg-slate-950/80 border-slate-800 text-slate-300 hover:text-white'
+                                                        ? 'bg-[#4c8ed9]/15 border-[#4c8ed9]/50 text-[#e6edf3]'
+                                                        : 'bg-[#101113] border-[#2e3138] text-[#b8bec8] hover:text-[#e6edf3] hover:bg-[#222429]'
                                                 }`}
                                             >
                                                 <Icon name="sliders-horizontal" className="w-3.5 h-3.5" />
                                                 <span>Інше</span>
                                                 {otherActiveCount > 0 && (
-                                                    <span className="w-4 h-4 rounded-full bg-amber-500 text-slate-950 font-bold text-[10px] flex items-center justify-center font-mono">
+                                                    <span className="w-4 h-4 rounded-sm bg-[#2b67ab] text-white font-bold text-[10px] flex items-center justify-center font-mono tabular-nums">
                                                         {otherActiveCount}
                                                     </span>
                                                 )}
-                                                <Icon name={openDropdown === 'other' ? 'chevron-up' : 'chevron-down'} className="w-3 h-3 text-slate-500" />
+                                                <Icon name={openDropdown === 'other' ? 'chevron-up' : 'chevron-down'} className="w-3 h-3 text-[#989fa9]" />
                                             </button>
 
                                             {openDropdown === 'other' && (
                                                 <>
                                                     <div className="fixed inset-0 z-40 cursor-default" onClick={() => setOpenDropdown(null)}></div>
-                                                    <div className="absolute right-0 top-full mt-2 z-50 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl p-4 w-[400px] max-w-[calc(100vw-32px)] animate-in fade-in zoom-in-95 duration-150 space-y-3.5 font-sans">
-                                                        <div className="flex justify-between items-center pb-2.5 border-b border-slate-800">
-                                                            <div className="flex items-center gap-1.5 font-bold text-xs text-white">
-                                                                <Icon name="sliders-horizontal" className="w-3.5 h-3.5 text-amber-400" />
+                                                    <div className="absolute right-0 top-full mt-1.5 z-50 bg-[#17181b] border border-[#2e3138] rounded-sm p-4 w-[400px] max-w-[calc(100vw-32px)] space-y-3.5 font-sans">
+                                                        <div className="flex justify-between items-center pb-2.5 border-b border-[#2e3138]">
+                                                            <div className="flex items-center gap-1.5 font-bold text-xs text-[#e6edf3]">
+                                                                <Icon name="sliders-horizontal" className="w-3.5 h-3.5 text-[#4c8ed9]" />
                                                                 <span>Додаткові фільтри</span>
                                                             </div>
                                                             <button 
@@ -5030,7 +5043,7 @@ const MedicalApp = (function() {
                                                                     setFilterReport("all");
                                                                     setFilterUdp("all");
                                                                 }}
-                                                                className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold cursor-pointer"
+                                                                className="text-[11px] text-[#4c8ed9] hover:text-[#e6edf3] font-semibold cursor-pointer"
                                                             >
                                                                 Скинути ці
                                                             </button>
@@ -5039,16 +5052,16 @@ const MedicalApp = (function() {
                                                         {/* 1. Важкість стану */}
                                                         <div className="space-y-1.5">
                                                             <div className="flex justify-between items-center">
-                                                                <span className="text-[10px] font-bold text-slate-400 uppercase font-mono">Важкість (300):</span>
+                                                                <span className="text-[10px] font-bold text-[#b8bec8] uppercase font-mono">Важкість (300):</span>
                                                                 <div className="flex gap-2 text-[10px] font-mono">
-                                                                    <button type="button" onClick={() => setFilterSeverities(["Легкий", "Середній", "Важкий", "Критичний"])} className="text-amber-400 hover:underline">Всі</button>
-                                                                    <button type="button" onClick={() => setFilterSeverities([])} className="text-slate-400 hover:underline">Зняти</button>
+                                                                    <button type="button" onClick={() => setFilterSeverities(["Легкий", "Середній", "Важкий", "Критичний"])} className="text-[#4c8ed9] hover:underline">Всі</button>
+                                                                    <button type="button" onClick={() => setFilterSeverities([])} className="text-[#b8bec8] hover:underline">Зняти</button>
                                                                 </div>
                                                             </div>
                                                             <div className="grid grid-cols-2 gap-1.5">
                                                                 {["Легкий", "Середній", "Важкий", "Критичний"].map(sev => (
-                                                                    <label key={sev} className="flex items-center gap-1.5 text-xs text-slate-300 bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800/80 cursor-pointer hover:text-white select-none">
-                                                                        <input type="checkbox" checked={filterSeverities.includes(sev)} onChange={() => toggleFilterItem(filterSeverities, setFilterSeverities, sev)} className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0 w-3.5 h-3.5 shrink-0"/>
+                                                                    <label key={sev} className="flex items-center gap-1.5 text-xs text-[#e6edf3] bg-[#101113] px-2.5 py-1.5 rounded-sm border border-[#2e3138] cursor-pointer hover:border-[#3c404a] select-none">
+                                                                        <input type="checkbox" checked={filterSeverities.includes(sev)} onChange={() => toggleFilterItem(filterSeverities, setFilterSeverities, sev)} className="rounded-sm bg-[#101113] border-[#3c404a] text-[#4c8ed9] focus:ring-0 w-3.5 h-3.5 shrink-0"/>
                                                                         <span className="whitespace-nowrap">{sev}</span>
                                                                     </label>
                                                                 ))}
@@ -5058,16 +5071,16 @@ const MedicalApp = (function() {
                                                         {/* 2. Причина ураження */}
                                                         <div className="space-y-1.5">
                                                             <div className="flex justify-between items-center">
-                                                                <span className="text-[10px] font-bold text-slate-400 uppercase font-mono">Причина ({filterCauses.length}/{settings.causes.length}):</span>
+                                                                <span className="text-[10px] font-bold text-[#b8bec8] uppercase font-mono tabular-nums">Причина ({filterCauses.length}/{settings.causes.length}):</span>
                                                                 <div className="flex gap-2 text-[10px] font-mono">
-                                                                    <button type="button" onClick={() => setFilterCauses(settings.causes)} className="text-amber-400 hover:underline">Всі</button>
-                                                                    <button type="button" onClick={() => setFilterCauses([])} className="text-slate-400 hover:underline">Зняти</button>
+                                                                    <button type="button" onClick={() => setFilterCauses(settings.causes)} className="text-[#4c8ed9] hover:underline">Всі</button>
+                                                                    <button type="button" onClick={() => setFilterCauses([])} className="text-[#b8bec8] hover:underline">Зняти</button>
                                                                 </div>
                                                             </div>
-                                                            <div className="max-h-28 overflow-y-auto space-y-1 pr-1 bg-slate-950 p-2 rounded-xl border border-slate-800/80">
+                                                            <div className="max-h-28 overflow-y-auto space-y-1 pr-1 bg-[#101113] p-2 rounded-sm border border-[#2e3138]">
                                                                 {settings.causes.map(c => (
-                                                                    <label key={c} className="flex items-center gap-2 text-xs text-slate-300 hover:text-white cursor-pointer select-none py-0.5">
-                                                                        <input type="checkbox" checked={filterCauses.includes(c)} onChange={() => toggleFilterItem(filterCauses, setFilterCauses, c)} className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0 w-3.5 h-3.5 shrink-0"/>
+                                                                    <label key={c} className="flex items-center gap-2 text-xs text-[#b8bec8] hover:text-[#e6edf3] cursor-pointer select-none py-0.5">
+                                                                        <input type="checkbox" checked={filterCauses.includes(c)} onChange={() => toggleFilterItem(filterCauses, setFilterCauses, c)} className="rounded-sm bg-[#101113] border-[#3c404a] text-[#4c8ed9] focus:ring-0 w-3.5 h-3.5 shrink-0"/>
                                                                         <span className="whitespace-nowrap">{c}</span>
                                                                     </label>
                                                                 ))}
@@ -5077,16 +5090,16 @@ const MedicalApp = (function() {
                                                         {/* 3. Рапорт & УПД */}
                                                         <div className="grid grid-cols-2 gap-2">
                                                             <div className="space-y-1">
-                                                                <span className="text-[10px] font-bold text-slate-400 uppercase font-mono">Рапорт:</span>
-                                                                <select value={filterReport} onChange={(e) => setFilterReport(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white outline-none cursor-pointer">
+                                                                <span className="text-[10px] font-bold text-[#b8bec8] uppercase font-mono">Рапорт:</span>
+                                                                <select value={filterReport} onChange={(e) => setFilterReport(e.target.value)} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2 py-1.5 text-xs text-[#e6edf3] outline-none cursor-pointer focus:border-[#4c8ed9]">
                                                                     <option value="all">Всі випадки</option>
                                                                     <option value="yes">Складено</option>
                                                                     <option value="no">Без рапорту</option>
                                                                 </select>
                                                             </div>
                                                             <div className="space-y-1">
-                                                                <span className="text-[10px] font-bold text-slate-400 uppercase font-mono">УПД:</span>
-                                                                <select value={filterUdp} onChange={(e) => setFilterUdp(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white outline-none cursor-pointer">
+                                                                <span className="text-[10px] font-bold text-[#b8bec8] uppercase font-mono">УПД:</span>
+                                                                <select value={filterUdp} onChange={(e) => setFilterUdp(e.target.value)} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2 py-1.5 text-xs text-[#e6edf3] outline-none cursor-pointer focus:border-[#4c8ed9]">
                                                                     <option value="all">Всі випадки</option>
                                                                     <option value="yes">Під час УПД</option>
                                                                     <option value="no">Без УПД</option>
@@ -5097,15 +5110,15 @@ const MedicalApp = (function() {
                                                         {/* 4. Травми */}
                                                         <div className="space-y-1.5">
                                                             <div className="flex justify-between items-center">
-                                                                <span className="text-[10px] font-bold text-slate-400 uppercase font-mono">Типи травм ({filterInjuries.length}):</span>
+                                                                <span className="text-[10px] font-bold text-[#b8bec8] uppercase font-mono tabular-nums">Типи травм ({filterInjuries.length}):</span>
                                                                 {filterInjuries.length > 0 && (
-                                                                    <button type="button" onClick={() => setFilterInjuries([])} className="text-[10px] font-mono text-slate-400 hover:underline">Зняти</button>
+                                                                    <button type="button" onClick={() => setFilterInjuries([])} className="text-[10px] font-mono text-[#b8bec8] hover:underline">Зняти</button>
                                                                 )}
                                                             </div>
-                                                            <div className="grid grid-cols-2 gap-1.5 max-h-28 overflow-y-auto bg-slate-950 p-2 rounded-xl border border-slate-800/80">
+                                                            <div className="grid grid-cols-2 gap-1.5 max-h-28 overflow-y-auto bg-[#101113] p-2 rounded-sm border border-[#2e3138]">
                                                                 {Object.entries(INJURY_LABELS).map(([k, l]) => ({ k, l })).map(item => (
-                                                                    <label key={item.k} className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white cursor-pointer select-none">
-                                                                        <input type="checkbox" checked={filterInjuries.includes(item.k)} onChange={() => toggleFilterItem(filterInjuries, setFilterInjuries, item.k)} className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0 w-3.5 h-3.5 shrink-0"/>
+                                                                    <label key={item.k} className="flex items-center gap-1.5 text-xs text-[#b8bec8] hover:text-[#e6edf3] cursor-pointer select-none">
+                                                                        <input type="checkbox" checked={filterInjuries.includes(item.k)} onChange={() => toggleFilterItem(filterInjuries, setFilterInjuries, item.k)} className="rounded-sm bg-[#101113] border-[#3c404a] text-[#4c8ed9] focus:ring-0 w-3.5 h-3.5 shrink-0"/>
                                                                         <span className="whitespace-nowrap">{item.l}</span>
                                                                     </label>
                                                                 ))}
@@ -5115,26 +5128,26 @@ const MedicalApp = (function() {
                                                         {/* 5. Статус зброї */}
                                                         <div className="space-y-1.5">
                                                             <div className="flex justify-between items-center">
-                                                                <span className="text-[10px] font-bold text-slate-400 uppercase font-mono">Статус зброї ({filterWeapon.length}):</span>
+                                                                <span className="text-[10px] font-bold text-[#b8bec8] uppercase font-mono tabular-nums">Статус зброї ({filterWeapon.length}):</span>
                                                                 {filterWeapon.length > 0 && (
-                                                                    <button type="button" onClick={() => setFilterWeapon([])} className="text-[10px] font-mono text-slate-400 hover:underline">Зняти</button>
+                                                                    <button type="button" onClick={() => setFilterWeapon([])} className="text-[10px] font-mono text-[#b8bec8] hover:underline">Зняти</button>
                                                                 )}
                                                             </div>
-                                                            <div className="max-h-24 overflow-y-auto space-y-1 bg-slate-950 p-2 rounded-xl border border-slate-800/80">
+                                                            <div className="max-h-24 overflow-y-auto space-y-1 bg-[#101113] p-2 rounded-sm border border-[#2e3138]">
                                                                 {["втрачена", "знищена", "знаходиться у підрозділі", "знаходиться на позиції", "СЗЧ/Дезертирство зі зброєю", "Не вказано"].map(w => (
-                                                                    <label key={w} className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white cursor-pointer select-none py-0.5">
-                                                                        <input type="checkbox" checked={filterWeapon.includes(w)} onChange={() => toggleFilterItem(filterWeapon, setFilterWeapon, w)} className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0 w-3.5 h-3.5 shrink-0"/>
+                                                                    <label key={w} className="flex items-center gap-1.5 text-xs text-[#b8bec8] hover:text-[#e6edf3] cursor-pointer select-none py-0.5">
+                                                                        <input type="checkbox" checked={filterWeapon.includes(w)} onChange={() => toggleFilterItem(filterWeapon, setFilterWeapon, w)} className="rounded-sm bg-[#101113] border-[#3c404a] text-[#4c8ed9] focus:ring-0 w-3.5 h-3.5 shrink-0"/>
                                                                         <span className="whitespace-nowrap">{w}</span>
                                                                     </label>
                                                                 ))}
                                                             </div>
                                                         </div>
 
-                                                        <div className="pt-2 border-t border-slate-800 flex justify-end">
+                                                        <div className="pt-2 border-t border-[#2e3138] flex justify-end">
                                                             <button 
                                                                 type="button" 
                                                                 onClick={() => setOpenDropdown(null)} 
-                                                                className="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow transition cursor-pointer text-center"
+                                                                className="w-full py-2 bg-[#2b67ab] hover:bg-[#3678c4] border border-[#4c8ed9] text-white font-semibold text-xs rounded-sm transition-colors cursor-pointer text-center"
                                                             >
                                                                 Застосувати
                                                             </button>
@@ -5149,126 +5162,132 @@ const MedicalApp = (function() {
                                 {/* Дропдаун: Сортування списку */}
                                 {(activeTab === "list" || activeTab === "awol") && (
                                     <div className="relative">
-                                        <button 
-                                            type="button" 
-                                            onClick={() => setOpenDropdown(openDropdown === 'sort' ? null : 'sort')} 
-                                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition cursor-pointer select-none ${
-                                                sortBy.startsWith('evac') 
-                                                    ? 'bg-emerald-950/70 border-emerald-500/50 text-emerald-300 shadow-sm' 
-                                                    : sortBy !== 'date_desc' 
-                                                        ? 'bg-amber-500/15 border-amber-500/50 text-amber-300 shadow-sm' 
-                                                        : 'bg-slate-950/80 border-slate-800 text-slate-300 hover:text-white'
+                                        <button
+                                            type="button"
+                                            onClick={() => setOpenDropdown(openDropdown === 'sort' ? null : 'sort')}
+                                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-sm border text-xs font-semibold transition-colors cursor-pointer select-none tabular-nums ${
+                                                sortBy.startsWith('evac')
+                                                    ? 'bg-[#3da372]/15 border-[#3da372]/50 text-[#8ad8ae]'
+                                                    : sortBy !== 'date_desc'
+                                                        ? 'bg-[#d99b26]/15 border-[#d99b26]/50 text-[#e7c574]'
+                                                        : 'bg-[#101113] border-[#2e3138] text-[#b8bec8] hover:text-[#e6edf3] hover:border-[#3c404a]'
                                             }`}
                                             title="Сортування списку втрат"
                                         >
-                                            <Icon name="arrow-up-down" className={`w-3.5 h-3.5 ${sortBy.startsWith('evac') ? 'text-emerald-400' : 'text-amber-400'}`} />
-                                            <span className="font-bold text-[11px]">
-                                                {sortBy === 'evac_desc' && '🚑 Евак ↓'}
-                                                {sortBy === 'evac_asc' && '🚑 Евак ↑'}
-                                                {sortBy === 'date_desc' && '⏱️ Подія ↓'}
-                                                {sortBy === 'date_asc' && '⏱️ Подія ↑'}
-                                                {sortBy === 'name_asc' && '👤 А → Я'}
-                                                {sortBy === 'name_desc' && '👤 Я → А'}
-                                                {sortBy === 'severity_desc' && '🚨 Важкість ↓'}
+                                            <Icon name="arrow-up-down" className={`w-3.5 h-3.5 ${sortBy.startsWith('evac') ? 'text-[#8ad8ae]' : sortBy !== 'date_desc' ? 'text-[#e7c574]' : 'text-[#4c8ed9]'}`} />
+                                            <span className="font-bold text-[11px] flex items-center gap-1">
+                                                {(sortBy === 'evac_desc' || sortBy === 'evac_asc') && <Icon name="ambulance" className="w-3 h-3" />}
+                                                {(sortBy === 'date_desc' || sortBy === 'date_asc') && <Icon name="clock" className="w-3 h-3" />}
+                                                {(sortBy === 'name_asc' || sortBy === 'name_desc') && <Icon name="user" className="w-3 h-3" />}
+                                                {sortBy === 'severity_desc' && <Icon name="alert-triangle" className="w-3 h-3 text-[#f3a3a0]" />}
+                                                <span>
+                                                    {sortBy === 'evac_desc' && 'Евак ↓'}
+                                                    {sortBy === 'evac_asc' && 'Евак ↑'}
+                                                    {sortBy === 'date_desc' && 'Подія ↓'}
+                                                    {sortBy === 'date_asc' && 'Подія ↑'}
+                                                    {sortBy === 'name_asc' && 'А → Я'}
+                                                    {sortBy === 'name_desc' && 'Я → А'}
+                                                    {sortBy === 'severity_desc' && 'Важкість ↓'}
+                                                </span>
                                             </span>
-                                            <Icon name={openDropdown === 'sort' ? 'chevron-up' : 'chevron-down'} className="w-3 h-3 text-slate-500" />
+                                            <Icon name={openDropdown === 'sort' ? 'chevron-up' : 'chevron-down'} className="w-3 h-3 text-[#989fa9]" />
                                         </button>
 
                                         {openDropdown === 'sort' && (
                                             <>
                                                 <div className="fixed inset-0 z-40 cursor-default" onClick={() => setOpenDropdown(null)}></div>
-                                                <div className="absolute right-0 top-full mt-2 z-50 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl p-2 w-64 max-w-[calc(100vw-32px)] animate-in fade-in zoom-in-95 duration-150 space-y-1 font-sans">
-                                                    <div className="px-2.5 py-1.5 text-[10px] font-mono uppercase font-bold text-slate-400 border-b border-slate-800 flex items-center justify-between">
+                                                <div className="absolute right-0 top-full mt-1.5 z-50 bg-[#17181b] border border-[#2e3138] rounded-sm p-2 w-64 max-w-[calc(100vw-32px)] space-y-1 font-sans">
+                                                    <div className="px-2.5 py-1.5 text-[10px] font-mono uppercase font-bold text-[#989fa9] border-b border-[#2e3138] flex items-center justify-between">
                                                         <span>Оберіть сортування</span>
                                                     </div>
-                                                    
+
                                                     <div className="pt-1 space-y-0.5 text-xs">
-                                                        <button 
-                                                            type="button" 
+                                                        <button
+                                                            type="button"
                                                             onClick={() => { setSortBy('evac_desc'); setOpenDropdown(null); }}
-                                                            className={`w-full text-left px-2.5 py-2 rounded-xl flex items-center justify-between transition cursor-pointer ${sortBy === 'evac_desc' ? 'bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-800/60' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+                                                            className={`w-full text-left px-2.5 py-2 rounded-sm flex items-center justify-between transition-colors cursor-pointer ${sortBy === 'evac_desc' ? 'bg-[#3da372]/15 text-[#8ad8ae] font-bold border border-[#3da372]/45' : 'text-[#b8bec8] hover:bg-[#222429] hover:text-[#e6edf3] border border-transparent'}`}
                                                         >
                                                             <span className="flex items-center gap-2">
-                                                                <span className="text-emerald-400">🚑</span>
+                                                                <Icon name="ambulance" className="w-3.5 h-3.5 text-[#3da372]" />
                                                                 <span>Дата евакуації (новіші зверху)</span>
                                                             </span>
-                                                            {sortBy === 'evac_desc' && <Icon name="check" className="w-3.5 h-3.5 text-emerald-400" />}
+                                                            {sortBy === 'evac_desc' && <Icon name="check" className="w-3.5 h-3.5 text-[#8ad8ae]" />}
                                                         </button>
 
-                                                        <button 
-                                                            type="button" 
+                                                        <button
+                                                            type="button"
                                                             onClick={() => { setSortBy('evac_asc'); setOpenDropdown(null); }}
-                                                            className={`w-full text-left px-2.5 py-2 rounded-xl flex items-center justify-between transition cursor-pointer ${sortBy === 'evac_asc' ? 'bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-800/60' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+                                                            className={`w-full text-left px-2.5 py-2 rounded-sm flex items-center justify-between transition-colors cursor-pointer ${sortBy === 'evac_asc' ? 'bg-[#3da372]/15 text-[#8ad8ae] font-bold border border-[#3da372]/45' : 'text-[#b8bec8] hover:bg-[#222429] hover:text-[#e6edf3] border border-transparent'}`}
                                                         >
                                                             <span className="flex items-center gap-2">
-                                                                <span className="text-emerald-400">🚑</span>
+                                                                <Icon name="ambulance" className="w-3.5 h-3.5 text-[#3da372]" />
                                                                 <span>Дата евакуації (старіші зверху)</span>
                                                             </span>
-                                                            {sortBy === 'evac_asc' && <Icon name="check" className="w-3.5 h-3.5 text-emerald-400" />}
+                                                            {sortBy === 'evac_asc' && <Icon name="check" className="w-3.5 h-3.5 text-[#8ad8ae]" />}
                                                         </button>
 
-                                                        <div className="my-1 border-t border-slate-800/60"></div>
+                                                        <div className="my-1 border-t border-[#2e3138]"></div>
 
-                                                        <button 
-                                                            type="button" 
+                                                        <button
+                                                            type="button"
                                                             onClick={() => { setSortBy('date_desc'); setOpenDropdown(null); }}
-                                                            className={`w-full text-left px-2.5 py-2 rounded-xl flex items-center justify-between transition cursor-pointer ${sortBy === 'date_desc' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+                                                            className={`w-full text-left px-2.5 py-2 rounded-sm flex items-center justify-between transition-colors cursor-pointer ${sortBy === 'date_desc' ? 'bg-[#d99b26]/15 text-[#e7c574] font-bold border border-[#d99b26]/45' : 'text-[#b8bec8] hover:bg-[#222429] hover:text-[#e6edf3] border border-transparent'}`}
                                                         >
                                                             <span className="flex items-center gap-2">
-                                                                <span className="text-amber-400">⏱️</span>
+                                                                <Icon name="clock" className="w-3.5 h-3.5 text-[#d99b26]" />
                                                                 <span>Дата події (новіші зверху)</span>
                                                             </span>
-                                                            {sortBy === 'date_desc' && <Icon name="check" className="w-3.5 h-3.5 text-amber-400" />}
+                                                            {sortBy === 'date_desc' && <Icon name="check" className="w-3.5 h-3.5 text-[#e7c574]" />}
                                                         </button>
 
-                                                        <button 
-                                                            type="button" 
+                                                        <button
+                                                            type="button"
                                                             onClick={() => { setSortBy('date_asc'); setOpenDropdown(null); }}
-                                                            className={`w-full text-left px-2.5 py-2 rounded-xl flex items-center justify-between transition cursor-pointer ${sortBy === 'date_asc' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+                                                            className={`w-full text-left px-2.5 py-2 rounded-sm flex items-center justify-between transition-colors cursor-pointer ${sortBy === 'date_asc' ? 'bg-[#d99b26]/15 text-[#e7c574] font-bold border border-[#d99b26]/45' : 'text-[#b8bec8] hover:bg-[#222429] hover:text-[#e6edf3] border border-transparent'}`}
                                                         >
                                                             <span className="flex items-center gap-2">
-                                                                <span className="text-amber-400">⏱️</span>
+                                                                <Icon name="clock" className="w-3.5 h-3.5 text-[#d99b26]" />
                                                                 <span>Дата події (старіші зверху)</span>
                                                             </span>
-                                                            {sortBy === 'date_asc' && <Icon name="check" className="w-3.5 h-3.5 text-amber-400" />}
+                                                            {sortBy === 'date_asc' && <Icon name="check" className="w-3.5 h-3.5 text-[#e7c574]" />}
                                                         </button>
 
-                                                        <div className="my-1 border-t border-slate-800/60"></div>
+                                                        <div className="my-1 border-t border-[#2e3138]"></div>
 
-                                                        <button 
-                                                            type="button" 
+                                                        <button
+                                                            type="button"
                                                             onClick={() => { setSortBy('severity_desc'); setOpenDropdown(null); }}
-                                                            className={`w-full text-left px-2.5 py-2 rounded-xl flex items-center justify-between transition cursor-pointer ${sortBy === 'severity_desc' ? 'bg-purple-950/80 text-purple-300 font-bold border border-purple-800/60' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+                                                            className={`w-full text-left px-2.5 py-2 rounded-sm flex items-center justify-between transition-colors cursor-pointer ${sortBy === 'severity_desc' ? 'bg-[#8f5fb8]/15 text-[#d8b4fe] font-bold border border-[#8f5fb8]/45' : 'text-[#b8bec8] hover:bg-[#222429] hover:text-[#e6edf3] border border-transparent'}`}
                                                         >
                                                             <span className="flex items-center gap-2">
-                                                                <span className="text-purple-400">🚨</span>
+                                                                <Icon name="alert-triangle" className="w-3.5 h-3.5 text-[#c084fc]" />
                                                                 <span>Важкість (Критичні → Легкі)</span>
                                                             </span>
-                                                            {sortBy === 'severity_desc' && <Icon name="check" className="w-3.5 h-3.5 text-purple-400" />}
+                                                            {sortBy === 'severity_desc' && <Icon name="check" className="w-3.5 h-3.5 text-[#d8b4fe]" />}
                                                         </button>
 
-                                                        <button 
-                                                            type="button" 
+                                                        <button
+                                                            type="button"
                                                             onClick={() => { setSortBy('name_asc'); setOpenDropdown(null); }}
-                                                            className={`w-full text-left px-2.5 py-2 rounded-xl flex items-center justify-between transition cursor-pointer ${sortBy === 'name_asc' ? 'bg-blue-950/80 text-blue-300 font-bold border border-blue-800/60' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+                                                            className={`w-full text-left px-2.5 py-2 rounded-sm flex items-center justify-between transition-colors cursor-pointer ${sortBy === 'name_asc' ? 'bg-[#4c8ed9]/15 text-[#9bc5f4] font-bold border border-[#4c8ed9]/45' : 'text-[#b8bec8] hover:bg-[#222429] hover:text-[#e6edf3] border border-transparent'}`}
                                                         >
                                                             <span className="flex items-center gap-2">
-                                                                <span className="text-blue-400">👤</span>
+                                                                <Icon name="user" className="w-3.5 h-3.5 text-[#4c8ed9]" />
                                                                 <span>ПІБ бійця (А → Я)</span>
                                                             </span>
-                                                            {sortBy === 'name_asc' && <Icon name="check" className="w-3.5 h-3.5 text-blue-400" />}
+                                                            {sortBy === 'name_asc' && <Icon name="check" className="w-3.5 h-3.5 text-[#9bc5f4]" />}
                                                         </button>
 
-                                                        <button 
-                                                            type="button" 
+                                                        <button
+                                                            type="button"
                                                             onClick={() => { setSortBy('name_desc'); setOpenDropdown(null); }}
-                                                            className={`w-full text-left px-2.5 py-2 rounded-xl flex items-center justify-between transition cursor-pointer ${sortBy === 'name_desc' ? 'bg-blue-950/80 text-blue-300 font-bold border border-blue-800/60' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+                                                            className={`w-full text-left px-2.5 py-2 rounded-sm flex items-center justify-between transition-colors cursor-pointer ${sortBy === 'name_desc' ? 'bg-[#4c8ed9]/15 text-[#9bc5f4] font-bold border border-[#4c8ed9]/45' : 'text-[#b8bec8] hover:bg-[#222429] hover:text-[#e6edf3] border border-transparent'}`}
                                                         >
                                                             <span className="flex items-center gap-2">
-                                                                <span className="text-blue-400">👤</span>
+                                                                <Icon name="user" className="w-3.5 h-3.5 text-[#4c8ed9]" />
                                                                 <span>ПІБ бійця (Я → А)</span>
                                                             </span>
-                                                            {sortBy === 'name_desc' && <Icon name="check" className="w-3.5 h-3.5 text-blue-400" />}
+                                                            {sortBy === 'name_desc' && <Icon name="check" className="w-3.5 h-3.5 text-[#9bc5f4]" />}
                                                         </button>
                                                     </div>
                                                 </div>
@@ -5278,29 +5297,29 @@ const MedicalApp = (function() {
                                 )}
 
                                 {/* РЯДОК 2: Зведена статистика + Записів + Актуальні & Скинути */}
-                                <div className="w-full flex items-center justify-between gap-2 border-t border-slate-800/60 pt-2 flex-wrap">
+                                <div className="w-full flex items-center justify-between gap-2 border-t border-[#2e3138] pt-2 flex-wrap">
                                     {/* Зведена швидка статистика */}
                                     {activeTab === "list" ? (
-                                        <div className="flex items-center gap-2 bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800 text-xs shadow-inner">
-                                            <span className="text-slate-300 text-xs font-semibold flex items-center gap-1" title="Унікальних військових у базі втрат">
-                                                <Icon name="users" className="w-3.5 h-3.5 text-slate-400" />
-                                                <span className="font-mono text-slate-200 font-bold">{stats.lossesSoldiersCount}</span>
-                                                <span className="text-slate-500 text-[10px]">в/сл</span>
+                                        <div className="flex items-center gap-2 bg-[#101113] px-2.5 py-1 rounded-sm border border-[#2e3138] text-xs tabular-nums">
+                                            <span className="text-[#e6edf3] text-xs font-semibold flex items-center gap-1" title="Унікальних військових у базі втрат">
+                                                <Icon name="users" className="w-3.5 h-3.5 text-[#b8bec8]" />
+                                                <span className="font-mono text-[#e6edf3] font-bold">{stats.lossesSoldiersCount}</span>
+                                                <span className="text-[#989fa9] text-[10px]">в/сл</span>
                                             </span>
-                                            <span className="text-slate-700 font-mono">|</span>
-                                            <span className="text-amber-300 text-xs flex items-center gap-1 font-mono" title="Поранення та небойові травми (300)">
-                                                <span className="text-amber-400 font-sans text-[10px] font-semibold">300:</span>
-                                                <span className="text-amber-200 font-bold">{stats.count300}</span>
+                                            <span className="text-[#2e3138] font-mono">|</span>
+                                            <span className="text-[#e7c574] text-xs flex items-center gap-1 font-mono" title="Поранення та небойові травми (300)">
+                                                <span className="text-[#d99b26] font-sans text-[10px] font-semibold">300:</span>
+                                                <span className="text-[#f3d88e] font-bold">{stats.count300}</span>
                                             </span>
-                                            <span className="text-slate-700 font-mono">|</span>
-                                            <span className="text-slate-300 text-xs flex items-center gap-1 font-mono" title="Загибель (200)">
-                                                <span className="text-slate-400 font-sans text-[10px] font-semibold">200:</span>
-                                                <span className="text-slate-200 font-bold">{stats.deadCount}</span>
+                                            <span className="text-[#2e3138] font-mono">|</span>
+                                            <span className="text-[#e6edf3] text-xs flex items-center gap-1 font-mono" title="Загибель (200)">
+                                                <span className="text-[#b8bec8] font-sans text-[10px] font-semibold">200:</span>
+                                                <span className="text-[#e6edf3] font-bold">{stats.deadCount}</span>
                                             </span>
-                                            <span className="text-slate-700 font-mono">|</span>
-                                            <span className="text-blue-300 text-xs flex items-center gap-1 font-mono" title="Зниклі безвісти (ЗБВ)">
-                                                <span className="text-blue-400 font-sans text-[10px] font-semibold">ЗБВ:</span>
-                                                <span className="text-blue-200 font-bold">{stats.miaCount}</span>
+                                            <span className="text-[#2e3138] font-mono">|</span>
+                                            <span className="text-[#9fc5ef] text-xs flex items-center gap-1 font-mono" title="Зниклі безвісти (ЗБВ)">
+                                                <span className="text-[#4c8ed9] font-sans text-[10px] font-semibold">ЗБВ:</span>
+                                                <span className="text-[#c5ddf8] font-bold">{stats.miaCount}</span>
                                             </span>
                                         </div>
                                     ) : activeTab === "awol" ? (() => {
@@ -5309,21 +5328,21 @@ const MedicalApp = (function() {
                                         const awolQuickMode = (hasSearching && hasReturned) ? 'all' : hasSearching ? 'searching' : hasReturned ? 'returned' : 'none';
                                         const ensureAwolTypes = () => setFilterLossTypes(prev => Array.from(new Set([...prev, ...LOSS_TYPES.filter(isAwol)])));
                                         return (
-                                            <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs shadow-inner">
+                                            <div className="flex items-center gap-1 bg-[#101113] p-1 rounded-sm border border-[#2e3138] text-xs tabular-nums">
                                                 <button
                                                     type="button"
                                                     onClick={() => {
                                                         ensureAwolTypes();
                                                         setFilterEvacStatuses(prev => Array.from(new Set([...prev, "В розшуку", "Повернувся"])));
                                                     }}
-                                                    className={`px-2.5 py-1 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer select-none ${
+                                                    className={`px-2.5 py-1 rounded-sm border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer select-none ${
                                                         awolQuickMode === 'all'
-                                                            ? 'bg-purple-500/20 border-purple-500/50 text-purple-200 shadow-sm'
-                                                            : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                                                            ? 'bg-[#8f5fb8]/20 border-[#8f5fb8]/50 text-[#e9d5ff]'
+                                                            : 'border-transparent text-[#b8bec8] hover:text-[#e6edf3] hover:bg-[#222429]'
                                                     }`}
                                                     title="Показати всі записи СЗЧ та повернення"
                                                 >
-                                                    <Icon name="users" className="w-3.5 h-3.5 text-purple-400" />
+                                                    <Icon name="users" className="w-3.5 h-3.5 text-[#c084fc]" />
                                                     <span className="text-[11px]">Усі:</span>
                                                     <span className="font-mono font-bold">{stats.awolTotal}</span>
                                                 </button>
@@ -5333,16 +5352,16 @@ const MedicalApp = (function() {
                                                         ensureAwolTypes();
                                                         setFilterEvacStatuses(prev => [...prev.filter(s => s !== "В розшуку" && s !== "Повернувся"), "В розшуку"]);
                                                     }}
-                                                    className={`px-2.5 py-1 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer select-none ${
+                                                    className={`px-2.5 py-1 rounded-sm border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer select-none ${
                                                         awolQuickMode === 'searching'
-                                                            ? 'bg-fuchsia-500/20 border-fuchsia-500/50 text-fuchsia-200 shadow-sm'
-                                                            : 'border-transparent text-slate-400 hover:text-fuchsia-300 hover:bg-slate-900'
+                                                            ? 'bg-[#8f5fb8]/20 border-[#8f5fb8]/50 text-[#e9d5ff]'
+                                                            : 'border-transparent text-[#b8bec8] hover:text-[#e9d5ff] hover:bg-[#222429]'
                                                     }`}
                                                     title="Показати тільки тих, хто в розшуку (СЗЧ)"
                                                 >
-                                                    <Icon name="user-x" className="w-3.5 h-3.5 text-fuchsia-400" />
+                                                    <Icon name="user-x" className="w-3.5 h-3.5 text-[#c084fc]" />
                                                     <span className="text-[11px]">В розшуку:</span>
-                                                    <span className="font-mono font-bold text-fuchsia-300">{stats.awolCount}</span>
+                                                    <span className="font-mono font-bold text-[#e9d5ff]">{stats.awolCount}</span>
                                                 </button>
                                                 <button
                                                     type="button"
@@ -5350,25 +5369,25 @@ const MedicalApp = (function() {
                                                         ensureAwolTypes();
                                                         setFilterEvacStatuses(prev => [...prev.filter(s => s !== "В розшуку" && s !== "Повернувся"), "Повернувся"]);
                                                     }}
-                                                    className={`px-2.5 py-1 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer select-none ${
+                                                    className={`px-2.5 py-1 rounded-sm border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer select-none ${
                                                         awolQuickMode === 'returned'
-                                                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-200 shadow-sm'
-                                                            : 'border-transparent text-slate-400 hover:text-emerald-300 hover:bg-slate-900'
+                                                            ? 'bg-[#3da372]/20 border-[#3da372]/50 text-[#8ad8ae]'
+                                                            : 'border-transparent text-[#b8bec8] hover:text-[#8ad8ae] hover:bg-[#222429]'
                                                     }`}
                                                     title="Показати тільки тих, хто повернувся з СЗЧ"
                                                 >
-                                                    <Icon name="check-circle" className="w-3.5 h-3.5 text-emerald-400" />
+                                                    <Icon name="check-circle" className="w-3.5 h-3.5 text-[#3da372]" />
                                                     <span className="text-[11px]">Повернулись:</span>
-                                                    <span className="font-mono font-bold text-emerald-300">{stats.awolReturned}</span>
+                                                    <span className="font-mono font-bold text-[#8ad8ae]">{stats.awolReturned}</span>
                                                 </button>
                                             </div>
                                         );
                                     })() : (
-                                        <div className="flex items-center gap-2 bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800 text-xs shadow-inner">
-                                            <span className="text-slate-300 text-xs font-semibold flex items-center gap-1" title="Унікальних військових у базі">
-                                                <Icon name="users" className="w-3.5 h-3.5 text-slate-400" />
-                                                <span className="font-mono text-slate-200 font-bold">{stats.uniqueSoldiersCount}</span>
-                                                <span className="text-slate-500 text-[10px]">в/сл</span>
+                                        <div className="flex items-center gap-2 bg-[#101113] px-2.5 py-1 rounded-sm border border-[#2e3138] text-xs tabular-nums">
+                                            <span className="text-[#e6edf3] text-xs font-semibold flex items-center gap-1" title="Унікальних військових у базі">
+                                                <Icon name="users" className="w-3.5 h-3.5 text-[#b8bec8]" />
+                                                <span className="font-mono text-[#e6edf3] font-bold">{stats.uniqueSoldiersCount}</span>
+                                                <span className="text-[#989fa9] text-[10px]">в/сл</span>
                                             </span>
                                         </div>
                                     )}
@@ -5376,10 +5395,10 @@ const MedicalApp = (function() {
                                     <div className="flex items-center gap-2 flex-wrap">
                                         {activeTab === "list" && (
                                             <div
-                                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-xs transition ${
+                                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm border text-xs transition-colors tabular-nums ${
                                                     feedCutoffEnabled
-                                                        ? "bg-amber-950/25 border-amber-500/40 text-amber-200 shadow-inner"
-                                                        : "bg-slate-950 border-slate-800 text-slate-400"
+                                                        ? "bg-[#4c8ed9]/10 border-[#4c8ed9]/50 text-[#e6edf3]"
+                                                        : "bg-[#101113] border-[#2e3138] text-[#b8bec8]"
                                                 }`}
                                                 title="Показувати в основній стрічці лише записи починаючи з обраної дати (старіші записи згортаються внизу в архів, але враховуються в усій статистиці та черзі евакуації)"
                                             >
@@ -5388,7 +5407,7 @@ const MedicalApp = (function() {
                                                         type="checkbox"
                                                         checked={feedCutoffEnabled}
                                                         onChange={(e) => handleToggleFeedCutoff(e.target.checked)}
-                                                        className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
+                                                        className="rounded-sm bg-[#101113] border-[#3c404a] text-[#4c8ed9] focus:ring-0 w-3.5 h-3.5 cursor-pointer"
                                                     />
                                                     <span className="font-semibold text-[11px] whitespace-nowrap">Відлік з:</span>
                                                 </label>
@@ -5396,16 +5415,16 @@ const MedicalApp = (function() {
                                                     type="date"
                                                     value={feedCutoffDate}
                                                     onChange={(e) => handleChangeFeedCutoffDate(e.target.value)}
-                                                    className="bg-slate-900/90 border border-slate-700/80 rounded-lg px-1.5 py-0.5 text-[11px] font-mono text-amber-300 focus:border-amber-400 outline-none cursor-pointer"
+                                                    className="bg-[#17181b] border border-[#2e3138] rounded-sm px-1.5 py-0.5 text-[11px] font-mono text-[#e6edf3] focus:border-[#4c8ed9] outline-none cursor-pointer"
                                                 />
                                             </div>
                                         )}
 
                                         {(activeTab === "list" || activeTab === "awol") && (
-                                            <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-800 text-xs text-slate-300 shadow-inner" title="Кількість відфільтрованих записів">
-                                                <Icon name="list-filter" className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                                <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">Записів:</span>
-                                                <span className="text-amber-400 font-mono font-bold text-xs">
+                                            <div className="flex items-center gap-1.5 bg-[#101113] px-2.5 py-1.5 rounded-sm border border-[#2e3138] text-xs text-[#e6edf3] tabular-nums" title="Кількість відфільтрованих записів">
+                                                <Icon name="list-filter" className="w-3.5 h-3.5 text-[#4c8ed9] shrink-0" />
+                                                <span className="text-[11px] text-[#b8bec8] font-medium hidden sm:inline">Записів:</span>
+                                                <span className="text-[#4c8ed9] font-mono font-bold text-xs">
                                                     {isFeedCutoffActive && olderArchiveList.length > 0
                                                         ? `${mainFilteredList.length} (+${olderArchiveList.length} в архіві)`
                                                         : (mainFilteredList.length > displayLimit ? `${visibleList.length} з ${mainFilteredList.length}` : mainFilteredList.length)}
@@ -5413,15 +5432,15 @@ const MedicalApp = (function() {
                                             </div>
                                         )}
 
-                                        <label className="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-800 text-xs select-none" title="Показувати тільки один (останній) актуальний стан бійця">
-                                            <input type="checkbox" checked={showOnlyLatest} onChange={(e) => setShowOnlyLatest(e.target.checked)} className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"/>
+                                        <label className="flex items-center gap-1.5 cursor-pointer text-[#b8bec8] hover:text-[#e6edf3] bg-[#101113] px-2.5 py-1.5 rounded-sm border border-[#2e3138] text-xs select-none" title="Показувати тільки один (останній) актуальний стан бійця">
+                                            <input type="checkbox" checked={showOnlyLatest} onChange={(e) => setShowOnlyLatest(e.target.checked)} className="rounded-sm bg-[#101113] border-[#3c404a] text-[#4c8ed9] focus:ring-0 w-3.5 h-3.5 cursor-pointer"/>
                                             <span className="font-medium text-[11px]">Актуальні</span>
                                         </label>
 
                                         <button 
                                             type="button" 
                                             onClick={resetAllFilters} 
-                                            className="px-2.5 py-1.5 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-semibold rounded-xl border border-slate-800 transition cursor-pointer flex items-center gap-1"
+                                            className="px-2.5 py-1.5 bg-[#101113] hover:bg-[#222429] text-[#b8bec8] hover:text-[#e6edf3] text-xs font-semibold rounded-sm border border-[#2e3138] transition-colors cursor-pointer flex items-center gap-1"
                                             title="Скинути всі фільтри"
                                         >
                                             <Icon name="rotate-ccw" className="w-3 h-3" />
@@ -5436,14 +5455,14 @@ const MedicalApp = (function() {
                         {(activeTab === "list" || activeTab === "awol") && (
                             <div className="w-full space-y-3">
                                 {filteredList.length === 0 ? (
-                                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-500 text-sm shadow-xl">
+                                    <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-12 text-center text-[#b8bec8] text-sm">
                                         {activeTab === "awol" ? "Жодного запису СЗЧ не знайдено за вказаними фільтрами" : "Жодного запису не знайдено за вказаними фільтрами"}
                                     </div>
                                 ) : (
                                     <>
                                         {mainFilteredList.length === 0 && olderArchiveList.length > 0 ? (
-                                            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 text-center text-slate-400 text-xs shadow-inner">
-                                                Нових записів з <span className="font-mono font-bold text-amber-300">{feedCutoffDate.split('-').reverse().join('.')}</span> немає. Попередні записи ({olderArchiveList.length}) збережено в обліку нижче.
+                                            <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-6 text-center text-[#b8bec8] text-xs tabular-nums">
+                                                Нових записів з <span className="font-mono font-bold text-[#e6edf3]">{feedCutoffDate.split('-').reverse().join('.')}</span> немає. Попередні записи ({olderArchiveList.length}) збережено в обліку нижче.
                                             </div>
                                         ) : (
                                             <div className="space-y-2.5">
@@ -5452,10 +5471,10 @@ const MedicalApp = (function() {
                                                         key={episode.id} 
                                                         episode={episode} 
                                                         soldier={soldiersMap.get(episode.soldierId)} 
-                                                        soldierEpisodes={episodesBySoldier.get(episode.soldierId) || []}
+                                                        soldierEpisodes={episodesBySoldier.get(episode.soldierId) || EMPTY_EPISODES}
                                                         onEdit={handleStartEdit}
                                                         onNotify={triggerNotification}
-                                                        viewMode="list" onReview={() => openChronology(episode.soldierId)} clockTick={clockTick}
+                                                        viewMode="list" onReview={openChronology} clockTick={clockTick}
                                                     />
                                                 ))}
                                             </div>
@@ -5463,19 +5482,19 @@ const MedicalApp = (function() {
 
                                         {/* Панель порційного підвантаження записів */}
                                         {mainFilteredList.length > displayLimit && (
-                                            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3 pb-2">
+                                            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3 pb-2 tabular-nums">
                                                 <button
                                                     type="button"
                                                     onClick={() => setDisplayLimit(prev => prev + 50)}
-                                                    className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500 text-slate-200 hover:text-amber-300 font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                                                    className="px-5 py-2 bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] hover:border-[#4c8ed9] text-[#e6edf3] font-semibold text-xs rounded-sm transition-colors flex items-center gap-2 cursor-pointer"
                                                 >
-                                                    <Icon name="chevron-down" className="w-4 h-4 text-amber-400" />
+                                                    <Icon name="chevron-down" className="w-4 h-4 text-[#4c8ed9]" />
                                                     <span>Показати ще 50 записів (залишилось {mainFilteredList.length - displayLimit})</span>
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => setDisplayLimit(mainFilteredList.length)}
-                                                    className="px-4 py-2.5 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 font-medium text-xs rounded-xl transition cursor-pointer"
+                                                    className="px-4 py-2 bg-[#101113] hover:bg-[#222429] border border-[#2e3138] text-[#b8bec8] hover:text-[#e6edf3] font-medium text-xs rounded-sm transition-colors cursor-pointer"
                                                 >
                                                     <span>Показати всі ({mainFilteredList.length})</span>
                                                 </button>
@@ -5488,37 +5507,37 @@ const MedicalApp = (function() {
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowOlderArchive(prev => !prev)}
-                                                    className="w-full py-2.5 px-4 bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800 hover:border-slate-700 rounded-xl flex items-center justify-between gap-3 text-xs text-slate-300 transition cursor-pointer shadow-md group"
+                                                    className="w-full py-2.5 px-4 bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] hover:border-[#3c404a] rounded-sm flex items-center justify-between gap-3 text-xs text-[#e6edf3] transition-colors cursor-pointer group tabular-nums"
                                                 >
                                                     <div className="flex items-center gap-2.5 flex-wrap text-left">
-                                                        <Icon name="folder" className="w-4 h-4 text-amber-400/80 shrink-0" />
-                                                        <span className="font-semibold text-slate-200">
+                                                        <Icon name="folder" className="w-4 h-4 text-[#4c8ed9] shrink-0" />
+                                                        <span className="font-semibold text-[#e6edf3]">
                                                             Раніше в обліку (до {feedCutoffDate.split('-').reverse().join('.')})
                                                         </span>
-                                                        <span className="px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-amber-300 font-mono font-bold text-[11px]">
+                                                        <span className="px-2 py-0.5 rounded-sm bg-[#101113] border border-[#2e3138] text-[#e6edf3] font-mono font-bold text-[11px]">
                                                             {olderArchiveList.length} зап.
                                                         </span>
-                                                        <span className="text-[11px] text-slate-500 hidden sm:inline">
+                                                        <span className="text-[11px] text-[#989fa9] hidden sm:inline">
                                                             • враховуються в загальній статистиці та черзі евакуації
                                                         </span>
                                                     </div>
-                                                    <div className="flex items-center gap-1.5 text-amber-400 group-hover:text-amber-300 font-semibold text-[11px] shrink-0">
+                                                    <div className="flex items-center gap-1.5 text-[#4c8ed9] group-hover:text-[#e6edf3] font-semibold text-[11px] shrink-0">
                                                         <span>{showOlderArchive ? "Сховати старі записи" : "Показати старі записи"}</span>
                                                         <Icon name={showOlderArchive ? "chevron-up" : "chevron-down"} className="w-4 h-4" />
                                                     </div>
                                                 </button>
 
                                                 {showOlderArchive && (
-                                                    <div className="mt-2.5 space-y-2.5 pl-2 sm:pl-3 border-l-2 border-slate-800/80">
+                                                    <div className="mt-2.5 space-y-2.5 pl-2 sm:pl-3 border-l-2 border-[#2e3138]">
                                                         {olderArchiveList.map((episode) => (
                                                             <EpisodeCard 
                                                                 key={episode.id} 
                                                                 episode={episode} 
                                                                 soldier={soldiersMap.get(episode.soldierId)} 
-                                                                soldierEpisodes={episodesBySoldier.get(episode.soldierId) || []}
+                                                                soldierEpisodes={episodesBySoldier.get(episode.soldierId) || EMPTY_EPISODES}
                                                                 onEdit={handleStartEdit}
                                                                 onNotify={triggerNotification}
-                                                                viewMode="list" onReview={() => openChronology(episode.soldierId)} clockTick={clockTick}
+                                                                viewMode="list" onReview={openChronology} clockTick={clockTick}
                                                             />
                                                         ))}
                                                     </div>
@@ -5575,27 +5594,27 @@ const MedicalApp = (function() {
                             return (
                                 <div className="flex-1 w-full space-y-4 pb-6">
                                     {/* ВЕРХНЯ ШВИДКА ПАНЕЛЬ ДОПОВІДЕЙ ЕВАКУАЦІЇ */}
-                                    <div className="w-full bg-slate-900 border border-slate-800/90 rounded-2xl p-3 shadow-lg flex items-center justify-between gap-3 flex-wrap">
-                                        <div className="flex items-center gap-2 font-bold text-xs uppercase text-amber-400 font-mono tracking-wider">
-                                            <Icon name="clipboard" className="w-4 h-4 text-amber-400" />
+                                    <div className="w-full bg-[#17181b] border border-[#2e3138] rounded-sm p-3 flex items-center justify-between gap-3 flex-wrap">
+                                        <div className="flex items-center gap-2 font-semibold text-xs uppercase text-[#f3f4f6] font-mono tracking-wider">
+                                            <Icon name="clipboard" className="w-4 h-4 text-[#4c8ed9]" />
                                             <span>Швидкі доповіді:</span>
                                         </div>
 
-                                        <div className="flex items-center gap-2.5 flex-wrap">
+                                        <div className="flex items-center gap-2 flex-wrap">
                                             {/* Кнопка: Всі 300-ті */}
                                             <button 
                                                 type="button" 
                                                 onClick={() => copyGroupList(all300List, 'ЧЕРГА ЕВАКУАЦІЇ 300 (ПОРАНЕНІ)')}
                                                 disabled={all300List.length === 0}
-                                                className={`px-3.5 py-1.5 rounded-xl border flex items-center gap-2 text-xs font-bold transition-all shadow-sm active:scale-95 ${
+                                                className={`px-3 py-1.5 rounded-sm border flex items-center gap-2 text-xs font-medium transition-colors tabular-nums ${
                                                     all300List.length === 0
-                                                        ? 'bg-slate-950/50 text-slate-600 border-slate-800 cursor-not-allowed opacity-50'
-                                                        : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 hover:text-amber-200 border-amber-500/50 hover:border-amber-500 cursor-pointer shadow-amber-950/40'
+                                                        ? 'bg-[#101113] text-[#989fa9] border-[#2e3138] cursor-not-allowed opacity-50'
+                                                        : 'bg-[#d99b26]/15 hover:bg-[#d99b26]/25 text-[#d99b26] border-[#d99b26]/50 cursor-pointer'
                                                 }`}
                                                 title="Скопіювати пронумерований список усіх поранених (Червона + Жовта + Зелена зони)"
                                             >
-                                                <Icon name="activity" className="w-3.5 h-3.5 text-amber-400" />
-                                                <span>📋 Скопіювати всіх 300-х ({all300List.length})</span>
+                                                <Icon name="activity" className="w-3.5 h-3.5 text-[#d99b26]" />
+                                                <span>Скопіювати всіх 300-х ({all300List.length})</span>
                                             </button>
 
                                             {/* Кнопка: Всі 200-ті / ЗБВ */}
@@ -5603,29 +5622,29 @@ const MedicalApp = (function() {
                                                 type="button" 
                                                 onClick={() => copyGroupList(otherList, 'ЗАГИБЛІ ТА ЗБВ (ЧОРНА ЗОНА)')}
                                                 disabled={otherList.length === 0}
-                                                className={`px-3.5 py-1.5 rounded-xl border flex items-center gap-2 text-xs font-bold transition-all shadow-sm active:scale-95 ${
+                                                className={`px-3 py-1.5 rounded-sm border flex items-center gap-2 text-xs font-medium transition-colors tabular-nums ${
                                                     otherList.length === 0
-                                                        ? 'bg-slate-950/50 text-slate-600 border-slate-800 cursor-not-allowed opacity-50'
-                                                        : 'bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-700 hover:border-slate-500 cursor-pointer shadow-slate-950/40'
+                                                        ? 'bg-[#101113] text-[#989fa9] border-[#2e3138] cursor-not-allowed opacity-50'
+                                                        : 'bg-[#222429] hover:bg-[#2e3138] text-[#f3f4f6] border-[#2e3138] hover:border-[#4c8ed9] cursor-pointer'
                                                 }`}
                                                 title="Скопіювати пронумерований список полеглих та ЗБВ на позиціях (Чорна зона)"
                                             >
-                                                <Icon name="shield-alert" className="w-3.5 h-3.5 text-slate-400" />
-                                                <span>📋 Скопіювати всіх 200-х / ЗБВ ({otherList.length})</span>
+                                                <Icon name="shield-alert" className="w-3.5 h-3.5 text-[#b8bec8]" />
+                                                <span>Скопіювати всіх 200-х / ЗБВ ({otherList.length})</span>
                                             </button>
                                         </div>
                                     </div>
 
                                     {/* 4 ЗОНИ СОРТУВАННЯ */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 items-start">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5 items-start">
                                         
                                         {/* 1. ЧЕРВОНА ЗОНА */}
-                                        <div className="bg-slate-900/95 rounded-2xl border border-red-900/50 shadow-xl flex flex-col min-h-[360px] overflow-hidden">
-                                            <div className="p-3.5 border-b border-red-900/50 bg-gradient-to-r from-red-950/80 via-red-900/30 to-slate-900 flex items-center justify-between">
-                                                <div className="flex items-center gap-2 font-bold text-red-400 text-xs tracking-wider uppercase font-mono">
-                                                    <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-md shadow-red-500/50"></div>
+                                        <div className="bg-[#17181b] rounded-sm border border-[#d9534f]/50 flex flex-col min-h-[360px] overflow-hidden">
+                                            <div className="p-3 border-b border-[#2e3138] bg-[#d9534f]/10 flex items-center justify-between">
+                                                <div className="flex items-center gap-2 font-semibold text-[#f3a3a0] text-xs tracking-wider uppercase font-mono">
+                                                    <div className="w-2 h-2 rounded-full bg-[#d9534f]"></div>
                                                     <span>ЧЕРВОНА ЗОНА</span>
-                                                    <span className="bg-red-500/20 text-red-300 border border-red-500/40 px-1.5 py-0.2 rounded font-mono text-[10px] font-bold">
+                                                    <span className="bg-[#101113] text-[#f3a3a0] border border-[#d9534f]/40 px-1.5 py-0.5 rounded-sm font-mono text-[10px] font-semibold tabular-nums">
                                                         {critAndHeavyList.length}
                                                     </span>
                                                 </div>
@@ -5634,22 +5653,22 @@ const MedicalApp = (function() {
                                                         <button 
                                                             type="button" 
                                                             onClick={() => copyGroupList(critAndHeavyList, 'ЧЕРВОНА ЗОНА (КРИТИЧНІ / ВАЖКІ)')}
-                                                            className="p-1 rounded-lg bg-red-950 hover:bg-red-900/60 text-red-300 border border-red-800/80 transition cursor-pointer" 
+                                                            className="p-1 rounded-sm bg-[#101113] hover:bg-[#222429] text-[#f3a3a0] border border-[#2e3138] transition-colors cursor-pointer" 
                                                             title="Скопіювати список бійців Червоної зони"
                                                         >
                                                             <Icon name="copy" className="w-3.5 h-3.5" />
                                                         </button>
                                                     )}
-                                                    <span className="text-[10px] text-red-300 font-mono font-bold bg-red-950/80 px-2 py-0.5 rounded-lg border border-red-800/80 shadow-inner">
+                                                    <span className="text-[10px] text-[#f3a3a0] font-mono font-medium bg-[#101113] px-2 py-0.5 rounded-sm border border-[#2e3138]">
                                                         Критичні / Важкі
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="p-3 flex-1 overflow-y-auto space-y-3">
+                                            <div className="p-2.5 flex-1 overflow-y-auto space-y-2.5">
                                                 {critAndHeavyList.map(renderTriageCard)}
                                                 {critAndHeavyList.length === 0 && (
-                                                    <div className="text-center text-slate-500 text-xs py-14 font-mono flex flex-col items-center gap-1.5">
-                                                        <Icon name="shield-check" className="w-6 h-6 text-slate-600" />
+                                                    <div className="text-center text-[#989fa9] text-xs py-14 font-mono flex flex-col items-center gap-1.5">
+                                                        <Icon name="shield-check" className="w-5 h-5 text-[#989fa9]" />
                                                         <span>Порожньо</span>
                                                     </div>
                                                 )}
@@ -5657,12 +5676,12 @@ const MedicalApp = (function() {
                                         </div>
 
                                         {/* 2. ЖОВТА ЗОНА */}
-                                        <div className="bg-slate-900/95 rounded-2xl border border-amber-900/50 shadow-xl flex flex-col min-h-[360px] overflow-hidden">
-                                            <div className="p-3.5 border-b border-amber-900/50 bg-gradient-to-r from-amber-950/80 via-amber-900/30 to-slate-900 flex items-center justify-between">
-                                                <div className="flex items-center gap-2 font-bold text-amber-400 text-xs tracking-wider uppercase font-mono">
-                                                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-md shadow-amber-500/50"></div>
+                                        <div className="bg-[#17181b] rounded-sm border border-[#d99b26]/50 flex flex-col min-h-[360px] overflow-hidden">
+                                            <div className="p-3 border-b border-[#2e3138] bg-[#d99b26]/10 flex items-center justify-between">
+                                                <div className="flex items-center gap-2 font-semibold text-[#d99b26] text-xs tracking-wider uppercase font-mono">
+                                                    <div className="w-2 h-2 rounded-full bg-[#d99b26]"></div>
                                                     <span>ЖОВТА ЗОНА</span>
-                                                    <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.2 rounded font-mono text-[10px] font-bold">
+                                                    <span className="bg-[#101113] text-[#d99b26] border border-[#d99b26]/40 px-1.5 py-0.5 rounded-sm font-mono text-[10px] font-semibold tabular-nums">
                                                         {medList.length}
                                                     </span>
                                                 </div>
@@ -5671,22 +5690,22 @@ const MedicalApp = (function() {
                                                         <button 
                                                             type="button" 
                                                             onClick={() => copyGroupList(medList, 'ЖОВТА ЗОНА (СЕРЕДНІ)')}
-                                                            className="p-1 rounded-lg bg-amber-950 hover:bg-amber-900/60 text-amber-300 border border-amber-800/80 transition cursor-pointer" 
+                                                            className="p-1 rounded-sm bg-[#101113] hover:bg-[#222429] text-[#d99b26] border border-[#2e3138] transition-colors cursor-pointer" 
                                                             title="Скопіювати список бійців Жовтої зони"
                                                         >
                                                             <Icon name="copy" className="w-3.5 h-3.5" />
                                                         </button>
                                                     )}
-                                                    <span className="text-[10px] text-amber-300 font-mono font-bold bg-amber-950/80 px-2 py-0.5 rounded-lg border border-amber-800/80 shadow-inner">
+                                                    <span className="text-[10px] text-[#d99b26] font-mono font-medium bg-[#101113] px-2 py-0.5 rounded-sm border border-[#2e3138]">
                                                         Середні
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="p-3 flex-1 overflow-y-auto space-y-3">
+                                            <div className="p-2.5 flex-1 overflow-y-auto space-y-2.5">
                                                 {medList.map(renderTriageCard)}
                                                 {medList.length === 0 && (
-                                                    <div className="text-center text-slate-500 text-xs py-14 font-mono flex flex-col items-center gap-1.5">
-                                                        <Icon name="shield-check" className="w-6 h-6 text-slate-600" />
+                                                    <div className="text-center text-[#989fa9] text-xs py-14 font-mono flex flex-col items-center gap-1.5">
+                                                        <Icon name="shield-check" className="w-5 h-5 text-[#989fa9]" />
                                                         <span>Порожньо</span>
                                                     </div>
                                                 )}
@@ -5694,12 +5713,12 @@ const MedicalApp = (function() {
                                         </div>
 
                                         {/* 3. ЗЕЛЕНА ЗОНА */}
-                                        <div className="bg-slate-900/95 rounded-2xl border border-emerald-900/50 shadow-xl flex flex-col min-h-[360px] overflow-hidden">
-                                            <div className="p-3.5 border-b border-emerald-900/50 bg-gradient-to-r from-emerald-950/80 via-emerald-900/30 to-slate-900 flex items-center justify-between">
-                                                <div className="flex items-center gap-2 font-bold text-emerald-400 text-xs tracking-wider uppercase font-mono">
-                                                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-md shadow-emerald-500/50"></div>
+                                        <div className="bg-[#17181b] rounded-sm border border-[#3da372]/50 flex flex-col min-h-[360px] overflow-hidden">
+                                            <div className="p-3 border-b border-[#2e3138] bg-[#3da372]/10 flex items-center justify-between">
+                                                <div className="flex items-center gap-2 font-semibold text-[#3da372] text-xs tracking-wider uppercase font-mono">
+                                                    <div className="w-2 h-2 rounded-full bg-[#3da372]"></div>
                                                     <span>ЗЕЛЕНА ЗОНА</span>
-                                                    <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.2 rounded font-mono text-[10px] font-bold">
+                                                    <span className="bg-[#101113] text-[#3da372] border border-[#3da372]/40 px-1.5 py-0.5 rounded-sm font-mono text-[10px] font-semibold tabular-nums">
                                                         {lightList.length}
                                                     </span>
                                                 </div>
@@ -5708,22 +5727,22 @@ const MedicalApp = (function() {
                                                         <button 
                                                             type="button" 
                                                             onClick={() => copyGroupList(lightList, 'ЗЕЛЕНА ЗОНА (ЛЕГКІ)')}
-                                                            className="p-1 rounded-lg bg-emerald-950 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/80 transition cursor-pointer" 
+                                                            className="p-1 rounded-sm bg-[#101113] hover:bg-[#222429] text-[#3da372] border border-[#2e3138] transition-colors cursor-pointer" 
                                                             title="Скопіювати список бійців Зеленої зони"
                                                         >
                                                             <Icon name="copy" className="w-3.5 h-3.5" />
                                                         </button>
                                                     )}
-                                                    <span className="text-[10px] text-emerald-300 font-mono font-bold bg-emerald-950/80 px-2 py-0.5 rounded-lg border border-emerald-800/80 shadow-inner">
+                                                    <span className="text-[10px] text-[#3da372] font-mono font-medium bg-[#101113] px-2 py-0.5 rounded-sm border border-[#2e3138]">
                                                         Легкі
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="p-3 flex-1 overflow-y-auto space-y-3">
+                                            <div className="p-2.5 flex-1 overflow-y-auto space-y-2.5">
                                                 {lightList.map(renderTriageCard)}
                                                 {lightList.length === 0 && (
-                                                    <div className="text-center text-slate-500 text-xs py-14 font-mono flex flex-col items-center gap-1.5">
-                                                        <Icon name="shield-check" className="w-6 h-6 text-slate-600" />
+                                                    <div className="text-center text-[#989fa9] text-xs py-14 font-mono flex flex-col items-center gap-1.5">
+                                                        <Icon name="shield-check" className="w-5 h-5 text-[#989fa9]" />
                                                         <span>Порожньо</span>
                                                     </div>
                                                 )}
@@ -5731,12 +5750,12 @@ const MedicalApp = (function() {
                                         </div>
 
                                         {/* 4. ЧОРНА ЗОНА */}
-                                        <div className="bg-slate-900/95 rounded-2xl border border-slate-800 shadow-xl flex flex-col min-h-[360px] overflow-hidden">
-                                            <div className="p-3.5 border-b border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-900 flex items-center justify-between">
-                                                <div className="flex items-center gap-2 font-bold text-slate-400 text-xs tracking-wider uppercase font-mono">
-                                                    <div className="w-2.5 h-2.5 rounded-full bg-zinc-500 shadow-md shadow-zinc-500/50"></div>
+                                        <div className="bg-[#17181b] rounded-sm border border-[#2e3138] flex flex-col min-h-[360px] overflow-hidden">
+                                            <div className="p-3 border-b border-[#2e3138] bg-[#101113] flex items-center justify-between">
+                                                <div className="flex items-center gap-2 font-semibold text-[#b8bec8] text-xs tracking-wider uppercase font-mono">
+                                                    <div className="w-2 h-2 rounded-full bg-[#989fa9]"></div>
                                                     <span>ЧОРНА ЗОНА</span>
-                                                    <span className="bg-zinc-800 text-zinc-300 border border-zinc-700 px-1.5 py-0.2 rounded font-mono text-[10px] font-bold">
+                                                    <span className="bg-[#17181b] text-[#f3f4f6] border border-[#2e3138] px-1.5 py-0.5 rounded-sm font-mono text-[10px] font-semibold tabular-nums">
                                                         {otherList.length}
                                                     </span>
                                                 </div>
@@ -5745,22 +5764,22 @@ const MedicalApp = (function() {
                                                         <button 
                                                             type="button" 
                                                             onClick={() => copyGroupList(otherList, 'ЧОРНА ЗОНА (ЗАГИБЛІ / ЗБВ)')}
-                                                            className="p-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-700 transition cursor-pointer" 
+                                                            className="p-1 rounded-sm bg-[#17181b] hover:bg-[#222429] text-[#f3f4f6] border border-[#2e3138] transition-colors cursor-pointer" 
                                                             title="Скопіювати список полеглих та ЗБВ Чорної зони"
                                                         >
                                                             <Icon name="copy" className="w-3.5 h-3.5" />
                                                         </button>
                                                     )}
-                                                    <span className="text-[10px] text-slate-400 font-mono font-bold bg-slate-950 border border-slate-800 px-2 py-0.5 rounded-lg shadow-inner">
+                                                    <span className="text-[10px] text-[#b8bec8] font-mono font-medium bg-[#17181b] border border-[#2e3138] px-2 py-0.5 rounded-sm">
                                                         200 / ЗБВ
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="p-3 flex-1 overflow-y-auto space-y-3">
+                                            <div className="p-2.5 flex-1 overflow-y-auto space-y-2.5">
                                                 {otherList.map(renderTriageCard)}
                                                 {otherList.length === 0 && (
-                                                    <div className="text-center text-slate-500 text-xs py-14 font-mono flex flex-col items-center gap-1.5">
-                                                        <Icon name="shield-check" className="w-6 h-6 text-slate-600" />
+                                                    <div className="text-center text-[#989fa9] text-xs py-14 font-mono flex flex-col items-center gap-1.5">
+                                                        <Icon name="shield-check" className="w-5 h-5 text-[#989fa9]" />
                                                         <span>Порожньо</span>
                                                     </div>
                                                 )}
@@ -5777,40 +5796,40 @@ const MedicalApp = (function() {
                             <div className="flex-1 w-full space-y-5 pb-6">
                                 
                                 {/* ПАНЕЛЬ ФІЛЬТРІВ ТА ПЕРІОДУ АНАЛІТИКИ */}
-                                <div className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-lg flex items-center justify-between gap-3 flex-wrap">
+                                <div className="w-full bg-[#17181b] border border-[#2e3138] rounded-sm p-3 flex items-center justify-between gap-3 flex-wrap">
                                     <div className="flex items-center gap-3 flex-wrap">
-                                        <div className="flex items-center gap-1.5 font-bold text-xs uppercase text-cyan-400 font-mono tracking-wider">
-                                            <Icon name="bar-chart-2" className="w-4 h-4 text-cyan-400" />
+                                        <div className="flex items-center gap-1.5 font-bold text-xs uppercase text-[#4c8ed9] font-mono tracking-wider">
+                                            <Icon name="bar-chart-2" className="w-4 h-4 text-[#4c8ed9]" />
                                             <span>Аналітика:</span>
                                         </div>
 
                                         {/* Швидкі пресети періоду дат */}
-                                        <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-medium">
+                                        <div className="flex items-center bg-[#101113] p-1 rounded-sm border border-[#2e3138] text-xs font-medium tabular-nums">
                                             <button 
                                                 type="button" 
                                                 onClick={() => applyAnDatePreset('all')} 
-                                                className={`px-2.5 py-1 rounded-lg transition cursor-pointer select-none ${anDatePreset === 'all' ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40 shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                                                className={`px-2.5 py-1 rounded-sm transition-colors cursor-pointer select-none border ${anDatePreset === 'all' ? 'bg-[#4c8ed9]/15 text-[#e6edf3] font-bold border-[#4c8ed9]/50' : 'border-transparent text-[#b8bec8] hover:text-[#e6edf3] hover:bg-[#222429]'}`}
                                             >
                                                 Всі дати
                                             </button>
                                             <button 
                                                 type="button" 
                                                 onClick={() => applyAnDatePreset('1')} 
-                                                className={`px-2.5 py-1 rounded-lg transition cursor-pointer select-none ${anDatePreset === '1' ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40 shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                                                className={`px-2.5 py-1 rounded-sm transition-colors cursor-pointer select-none border ${anDatePreset === '1' ? 'bg-[#4c8ed9]/15 text-[#e6edf3] font-bold border-[#4c8ed9]/50' : 'border-transparent text-[#b8bec8] hover:text-[#e6edf3] hover:bg-[#222429]'}`}
                                             >
                                                 За добу
                                             </button>
                                             <button 
                                                 type="button" 
                                                 onClick={() => applyAnDatePreset('3')} 
-                                                className={`px-2.5 py-1 rounded-lg transition cursor-pointer select-none ${anDatePreset === '3' ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40 shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                                                className={`px-2.5 py-1 rounded-sm transition-colors cursor-pointer select-none border ${anDatePreset === '3' ? 'bg-[#4c8ed9]/15 text-[#e6edf3] font-bold border-[#4c8ed9]/50' : 'border-transparent text-[#b8bec8] hover:text-[#e6edf3] hover:bg-[#222429]'}`}
                                             >
                                                 3 дні
                                             </button>
                                             <button 
                                                 type="button" 
                                                 onClick={() => applyAnDatePreset('7')} 
-                                                className={`px-2.5 py-1 rounded-lg transition cursor-pointer select-none ${anDatePreset === '7' ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40 shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                                                className={`px-2.5 py-1 rounded-sm transition-colors cursor-pointer select-none border ${anDatePreset === '7' ? 'bg-[#4c8ed9]/15 text-[#e6edf3] font-bold border-[#4c8ed9]/50' : 'border-transparent text-[#b8bec8] hover:text-[#e6edf3] hover:bg-[#222429]'}`}
                                             >
                                                 7 днів
                                             </button>
@@ -5820,55 +5839,55 @@ const MedicalApp = (function() {
                                                 <button 
                                                     type="button" 
                                                     onClick={() => setOpenDropdown(openDropdown === 'an_custom_date' ? null : 'an_custom_date')} 
-                                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition cursor-pointer select-none border ${anDatePreset === 'custom' ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-500/40 shadow-sm' : 'border-transparent text-slate-400 hover:text-white'}`}
+                                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm transition-colors cursor-pointer select-none border ${anDatePreset === 'custom' ? 'bg-[#4c8ed9]/15 text-[#e6edf3] font-bold border-[#4c8ed9]/50' : 'border-transparent text-[#b8bec8] hover:text-[#e6edf3] hover:bg-[#222429]'}`}
                                                     title="Вибрати точний період дат у календарі"
                                                 >
-                                                    <Icon name="calendar" className="w-3.5 h-3.5 text-cyan-400" />
-                                                    <span>{anDatePreset === 'custom' && anDateFrom ? `${anDateFrom.slice(5)} — ${anDateTo ? anDateTo.slice(5) : '...'}` : 'Календар'}</span>
-                                                    <Icon name="chevron-down" className="w-2.5 h-2.5 text-slate-500" />
+                                                    <Icon name="calendar" className="w-3.5 h-3.5 text-[#4c8ed9]" />
+                                                    <span className="font-mono">{anDatePreset === 'custom' && anDateFrom ? `${anDateFrom.slice(5)} — ${anDateTo ? anDateTo.slice(5) : '...'}` : 'Календар'}</span>
+                                                    <Icon name="chevron-down" className="w-2.5 h-2.5 text-[#989fa9]" />
                                                 </button>
                                                 {openDropdown === 'an_custom_date' && (
                                                     <>
                                                         <div className="fixed inset-0 z-40 cursor-default" onClick={() => setOpenDropdown(null)}></div>
-                                                        <div className="absolute left-0 top-full mt-2 z-50 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl p-4 w-72 animate-in fade-in zoom-in-95 duration-150 space-y-3.5 font-sans">
-                                                            <div className="flex justify-between items-center pb-2 border-b border-slate-800">
-                                                                <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                                                                    <Icon name="calendar" className="w-4 h-4 text-cyan-400" />
+                                                        <div className="absolute left-0 top-full mt-1.5 z-50 bg-[#17181b] border border-[#2e3138] rounded-sm p-4 w-72 space-y-3.5 font-sans">
+                                                            <div className="flex justify-between items-center pb-2 border-b border-[#2e3138]">
+                                                                <span className="text-xs font-bold text-[#e6edf3] flex items-center gap-1.5">
+                                                                    <Icon name="calendar" className="w-4 h-4 text-[#4c8ed9]" />
                                                                     <span>Період аналітики</span>
                                                                 </span>
                                                                 <button 
                                                                     type="button" 
                                                                     onClick={() => { applyAnDatePreset('all'); setOpenDropdown(null); }} 
-                                                                    className="text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold cursor-pointer"
+                                                                    className="text-[10px] text-[#4c8ed9] hover:text-[#e6edf3] font-semibold cursor-pointer"
                                                                 >
                                                                     Скинути
                                                                 </button>
                                                             </div>
                                                             <div className="space-y-2.5 text-xs">
                                                                 <div>
-                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase font-mono block mb-1">Від дати:</span>
+                                                                    <span className="text-[10px] font-bold text-[#b8bec8] uppercase font-mono block mb-1">Від дати:</span>
                                                                     <input 
                                                                         type="date" 
                                                                         value={anDateFrom} 
                                                                         onChange={(e) => { setAnDateFrom(e.target.value); setAnDatePreset('custom'); }} 
-                                                                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-cyan-500 outline-none font-mono" 
+                                                                        className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#e6edf3] focus:border-[#4c8ed9] outline-none font-mono" 
                                                                     />
                                                                 </div>
                                                                 <div>
-                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase font-mono block mb-1">До дати:</span>
+                                                                    <span className="text-[10px] font-bold text-[#b8bec8] uppercase font-mono block mb-1">До дати:</span>
                                                                     <input 
                                                                         type="date" 
                                                                         value={anDateTo} 
                                                                         onChange={(e) => { setAnDateTo(e.target.value); setAnDatePreset('custom'); }} 
-                                                                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-cyan-500 outline-none font-mono" 
+                                                                        className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#e6edf3] focus:border-[#4c8ed9] outline-none font-mono" 
                                                                     />
                                                                 </div>
                                                             </div>
-                                                            <div className="pt-2 border-t border-slate-800 flex justify-end">
+                                                            <div className="pt-2 border-t border-[#2e3138] flex justify-end">
                                                                 <button 
                                                                     type="button" 
                                                                     onClick={() => setOpenDropdown(null)} 
-                                                                    className="w-full py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl shadow transition cursor-pointer text-center"
+                                                                    className="w-full py-1.5 bg-[#2b67ab] hover:bg-[#3678c4] border border-[#4c8ed9] text-white font-semibold text-xs rounded-sm transition-colors cursor-pointer text-center"
                                                                 >
                                                                     Застосувати
                                                                 </button>
@@ -5880,9 +5899,9 @@ const MedicalApp = (function() {
                                         </div>
 
                                         {/* Дропдаун УПД */}
-                                        <div className="flex items-center gap-1.5 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
-                                            <span className="text-slate-400 font-mono text-[10px] uppercase">УПД:</span>
-                                            <select value={anUdp} onChange={(e) => setAnUdp(e.target.value)} className="bg-transparent text-white focus:outline-none cursor-pointer text-xs font-medium">
+                                        <div className="flex items-center gap-1.5 bg-[#101113] px-3 py-1.5 rounded-sm border border-[#2e3138] text-xs">
+                                            <span className="text-[#b8bec8] font-mono text-[10px] uppercase">УПД:</span>
+                                            <select value={anUdp} onChange={(e) => setAnUdp(e.target.value)} className="bg-transparent text-[#e6edf3] focus:outline-none cursor-pointer text-xs font-medium">
                                                 <option value="all">Всі випадки</option>
                                                 <option value="yes">Тільки під час УПД</option>
                                                 <option value="no">Без УПД</option>
@@ -5890,13 +5909,13 @@ const MedicalApp = (function() {
                                         </div>
 
                                         {/* Глибокий фільтр: Сектор / Позиція */}
-                                        <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-800 text-xs">
-                                            <Icon name="map-pin" className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                            <span className="text-slate-400 font-mono text-[10px] uppercase hidden sm:inline">Сектор:</span>
+                                        <div className="flex items-center gap-1.5 bg-[#101113] px-2.5 py-1.5 rounded-sm border border-[#2e3138] text-xs tabular-nums">
+                                            <Icon name="map-pin" className="w-3.5 h-3.5 text-[#4c8ed9] shrink-0" />
+                                            <span className="text-[#b8bec8] font-mono text-[10px] uppercase hidden sm:inline">Сектор:</span>
                                             <select 
                                                 value={anSector} 
                                                 onChange={(e) => setAnSector(e.target.value)} 
-                                                className="bg-transparent text-amber-300 focus:outline-none cursor-pointer text-xs font-bold max-w-[180px] truncate"
+                                                className="bg-transparent text-[#e6edf3] focus:outline-none cursor-pointer text-xs font-semibold max-w-[180px] truncate"
                                             >
                                                 <option value="all">Усі позиції / сектори</option>
                                                 {availableAnSectors.map(([sec, cnt]) => (
@@ -5907,7 +5926,7 @@ const MedicalApp = (function() {
                                                 <button 
                                                     type="button" 
                                                     onClick={() => setAnSector("all")} 
-                                                    className="text-slate-500 hover:text-red-400 transition ml-0.5 cursor-pointer" 
+                                                    className="text-[#989fa9] hover:text-[#f3a3a0] transition-colors ml-0.5 cursor-pointer" 
                                                     title="Скинути фільтр сектора"
                                                 >
                                                     <Icon name="x" className="w-3 h-3" />
@@ -5916,105 +5935,105 @@ const MedicalApp = (function() {
                                         </div>
 
                                         {/* Відбір актуальних епізодів */}
-                                        <label className="flex items-center gap-1.5 cursor-pointer bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-800 text-slate-300 hover:text-white text-xs select-none" title="Показувати тільки останній стан бійця">
-                                            <input type="checkbox" checked={anShowLatest} onChange={(e) => setAnShowLatest(e.target.checked)} className="rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer shrink-0"/>
+                                        <label className="flex items-center gap-1.5 cursor-pointer bg-[#101113] px-2.5 py-1.5 rounded-sm border border-[#2e3138] text-[#b8bec8] hover:text-[#e6edf3] text-xs select-none" title="Показувати тільки останній стан бійця">
+                                            <input type="checkbox" checked={anShowLatest} onChange={(e) => setAnShowLatest(e.target.checked)} className="rounded-sm bg-[#101113] border-[#3c404a] text-[#4c8ed9] focus:ring-0 w-3.5 h-3.5 cursor-pointer shrink-0"/>
                                             <span className="font-medium text-[11px]">Тільки актуальні</span>
                                         </label>
 
-                                        <label className="flex items-center gap-1.5 cursor-pointer bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-800 text-slate-300 hover:text-white text-xs select-none" title="Об'єднати групи: 200+ЗБВ та Поранення+Бойові травми">
-                                            <input type="checkbox" checked={groupAnalytics} onChange={(e) => setGroupAnalytics(e.target.checked)} className="rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer shrink-0"/>
-                                            <span className="font-medium text-[11px]">Об'єднати групи</span>
+                                        <label className="flex items-center gap-1.5 cursor-pointer bg-[#101113] px-2.5 py-1.5 rounded-sm border border-[#2e3138] text-[#b8bec8] hover:text-[#e6edf3] text-xs select-none" title="Об&apos;єднати групи: 200+ЗБВ та Поранення+Бойові травми">
+                                            <input type="checkbox" checked={groupAnalytics} onChange={(e) => setGroupAnalytics(e.target.checked)} className="rounded-sm bg-[#101113] border-[#3c404a] text-[#4c8ed9] focus:ring-0 w-3.5 h-3.5 cursor-pointer shrink-0"/>
+                                            <span className="font-medium text-[11px]">Об&apos;єднати групи</span>
                                         </label>
                                     </div>
 
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        <button 
+                                        <button
                                             type="button"
-                                            onClick={handleOpenPrintableReport} 
-                                            className="px-3 py-1.5 bg-purple-950/80 hover:bg-purple-900/90 text-purple-300 font-semibold border border-purple-700/60 rounded-xl transition-all flex items-center gap-1.5 text-xs shadow-sm hover:shadow-purple-950/50 active:scale-95 cursor-pointer select-none" 
+                                            onClick={handleOpenPrintableReport}
+                                            className="px-3 py-1.5 bg-[#8f5fb8]/15 hover:bg-[#8f5fb8]/25 text-[#d8b4fe] font-semibold border border-[#8f5fb8]/50 rounded-sm transition-colors flex items-center gap-1.5 text-xs cursor-pointer select-none"
                                             title="Згенерувати офіційне бойове донесення у форматі A4 для друку або збереження в PDF"
                                         >
-                                            <Icon name="printer" className="w-3.5 h-3.5 text-purple-400" /> 
+                                            <Icon name="printer" className="w-3.5 h-3.5 text-[#c084fc]" />
                                             <span>Доповідь (A4 / PDF)</span>
                                         </button>
-                                        <button 
+                                        <button
                                             type="button"
-                                            onClick={handleExportAnalyticsText} 
-                                            className="px-3 py-1.5 bg-blue-950/80 hover:bg-blue-900/90 text-blue-300 font-semibold border border-blue-700/60 rounded-xl transition-all flex items-center gap-1.5 text-xs shadow-sm hover:shadow-blue-950/50 active:scale-95 cursor-pointer select-none" 
+                                            onClick={handleExportAnalyticsText}
+                                            className="px-3 py-1.5 bg-[#4c8ed9]/15 hover:bg-[#4c8ed9]/25 text-[#9bc5f4] font-semibold border border-[#4c8ed9]/50 rounded-sm transition-colors flex items-center gap-1.5 text-xs cursor-pointer select-none"
                                             title="Згенерувати текстовий звіт в буфер обміну"
                                         >
-                                            <Icon name="file-text" className="w-3.5 h-3.5 text-blue-400" /> 
+                                            <Icon name="file-text" className="w-3.5 h-3.5 text-[#4c8ed9]" />
                                             <span>Звіт (Текст)</span>
                                         </button>
-                                        <button 
+                                        <button
                                             type="button"
-                                            onClick={handleExportAnalyticsExcel} 
-                                            className="px-3 py-1.5 bg-emerald-950/80 hover:bg-emerald-900/90 text-emerald-300 font-semibold border border-emerald-700/60 rounded-xl transition-all flex items-center gap-1.5 text-xs shadow-sm hover:shadow-emerald-950/50 active:scale-95 cursor-pointer select-none" 
+                                            onClick={handleExportAnalyticsExcel}
+                                            className="px-3 py-1.5 bg-[#3da372]/15 hover:bg-[#3da372]/25 text-[#8ad8ae] font-semibold border border-[#3da372]/50 rounded-sm transition-colors flex items-center gap-1.5 text-xs cursor-pointer select-none"
                                             title="Експорт аналітики: 6 аркушів Excel"
                                         >
-                                            <Icon name="table" className="w-3.5 h-3.5 text-emerald-400" /> 
+                                            <Icon name="table" className="w-3.5 h-3.5 text-[#3da372]" />
                                             <span>Експорт (Excel)</span>
                                         </button>
                                     </div>
 
-                                    <button 
-                                        type="button" 
-                                        onClick={resetAnalyticsFilters} 
-                                        className="px-3 py-1.5 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-semibold rounded-xl border border-slate-800 transition cursor-pointer flex items-center gap-1.5 select-none"
+                                    <button
+                                        type="button"
+                                        onClick={resetAnalyticsFilters}
+                                        className="px-3 py-1.5 bg-[#101113] hover:bg-[#222429] text-[#b8bec8] hover:text-[#e6edf3] text-xs font-semibold rounded-sm border border-[#2e3138] hover:border-[#3c404a] transition-colors cursor-pointer flex items-center gap-1.5 select-none"
                                         title="Скинути параметри аналітики"
                                     >
                                         <Icon name="rotate-ccw" className="w-3.5 h-3.5" />
                                         <span>Скинути</span>
                                     </button>
                                 </div>
-                                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 px-4 shadow-sm flex flex-wrap items-center justify-between gap-3 sticky top-0 z-10">
-                                    <div className="flex flex-wrap items-center gap-3">
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase mr-1 flex items-center gap-1"><Icon name="eye" className="w-3.5 h-3.5 text-slate-400" /> Відображати:</span>
-                                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-zinc-300 text-xs font-bold bg-slate-950 px-2 py-1 rounded-lg border border-slate-800/80 hover:text-white"><input type="checkbox" checked={dynFilters.show200} onChange={e => setDynFilters(p => ({...p, show200: e.target.checked}))} className="rounded bg-slate-900 border-slate-700 text-zinc-500 focus:ring-0 w-3.5 h-3.5"/> Бойові 200</label>
-                                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-zinc-400 text-xs font-bold bg-slate-950 px-2 py-1 rounded-lg border border-slate-800/80 hover:text-white"><input type="checkbox" checked={dynFilters.show200pvr} onChange={e => setDynFilters(p => ({...p, show200pvr: e.target.checked}))} className="rounded bg-slate-900 border-slate-700 text-zinc-500 focus:ring-0 w-3.5 h-3.5"/> 200 (ПВР)</label>
-                                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-stone-400 text-xs font-bold bg-slate-950 px-2 py-1 rounded-lg border border-slate-800/80 hover:text-white"><input type="checkbox" checked={dynFilters.showNonCombatDead} onChange={e => setDynFilters(p => ({...p, showNonCombatDead: e.target.checked}))} className="rounded bg-slate-900 border-slate-700 text-stone-500 focus:ring-0 w-3.5 h-3.5"/> Небойові 200</label>
-                                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-red-400 text-xs font-bold bg-slate-950 px-2 py-1 rounded-lg border border-slate-800/80 hover:text-white"><input type="checkbox" checked={dynFilters.showWound} onChange={e => setDynFilters(p => ({...p, showWound: e.target.checked}))} className="rounded bg-slate-900 border-slate-700 text-red-500 focus:ring-0 w-3.5 h-3.5"/> Поранення</label>
-                                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-amber-500 text-xs font-bold bg-slate-950 px-2 py-1 rounded-lg border border-slate-800/80 hover:text-white"><input type="checkbox" checked={dynFilters.showCombatTr} onChange={e => setDynFilters(p => ({...p, showCombatTr: e.target.checked}))} className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0 w-3.5 h-3.5"/> Бойові тр.</label>
-                                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-yellow-400 text-xs font-bold bg-slate-950 px-2 py-1 rounded-lg border border-slate-800/80 hover:text-white"><input type="checkbox" checked={dynFilters.showNonCombatTr} onChange={e => setDynFilters(p => ({...p, showNonCombatTr: e.target.checked}))} className="rounded bg-slate-900 border-slate-700 text-yellow-500 focus:ring-0 w-3.5 h-3.5"/> Небойові тр.</label>
-                                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-blue-400 text-xs font-bold bg-slate-950 px-2 py-1 rounded-lg border border-slate-800/80 hover:text-white"><input type="checkbox" checked={dynFilters.showMIA} onChange={e => setDynFilters(p => ({...p, showMIA: e.target.checked}))} className="rounded bg-slate-900 border-slate-700 text-blue-500 focus:ring-0 w-3.5 h-3.5"/> ЗБВ</label>
-                                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-fuchsia-400 text-xs font-bold bg-slate-950 px-2 py-1 rounded-lg border border-slate-800/80 hover:text-white"><input type="checkbox" checked={dynFilters.showAWOL} onChange={e => setDynFilters(p => ({...p, showAWOL: e.target.checked}))} className="rounded bg-slate-900 border-slate-700 text-fuchsia-500 focus:ring-0 w-3.5 h-3.5"/> СЗЧ / Дезерт.</label>
+                                <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-2.5 px-4 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-10">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-[10px] text-[#b8bec8] font-bold uppercase mr-1 flex items-center gap-1"><Icon name="eye" className="w-3.5 h-3.5 text-[#b8bec8]" /> Відображати:</span>
+                                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-[#e6edf3] text-xs font-semibold bg-[#101113] px-2 py-1 rounded-sm border border-[#2e3138] hover:border-[#3c404a]"><input type="checkbox" checked={dynFilters.show200} onChange={e => setDynFilters(p => ({...p, show200: e.target.checked}))} className="rounded-sm bg-[#101113] border-[#3c404a] text-[#b8bec8] focus:ring-0 w-3.5 h-3.5"/> Бойові 200</label>
+                                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-[#b8bec8] text-xs font-semibold bg-[#101113] px-2 py-1 rounded-sm border border-[#2e3138] hover:text-[#e6edf3]"><input type="checkbox" checked={dynFilters.show200pvr} onChange={e => setDynFilters(p => ({...p, show200pvr: e.target.checked}))} className="rounded-sm bg-[#101113] border-[#3c404a] text-[#b8bec8] focus:ring-0 w-3.5 h-3.5"/> 200 (ПВР)</label>
+                                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-[#b8bec8] text-xs font-semibold bg-[#101113] px-2 py-1 rounded-sm border border-[#2e3138] hover:text-[#e6edf3]"><input type="checkbox" checked={dynFilters.showNonCombatDead} onChange={e => setDynFilters(p => ({...p, showNonCombatDead: e.target.checked}))} className="rounded-sm bg-[#101113] border-[#3c404a] text-[#b8bec8] focus:ring-0 w-3.5 h-3.5"/> Небойові 200</label>
+                                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-[#f3a3a0] text-xs font-semibold bg-[#101113] px-2 py-1 rounded-sm border border-[#2e3138] hover:border-[#3c404a]"><input type="checkbox" checked={dynFilters.showWound} onChange={e => setDynFilters(p => ({...p, showWound: e.target.checked}))} className="rounded-sm bg-[#101113] border-[#3c404a] text-[#d9534f] focus:ring-0 w-3.5 h-3.5"/> Поранення</label>
+                                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-[#e7c574] text-xs font-semibold bg-[#101113] px-2 py-1 rounded-sm border border-[#2e3138] hover:border-[#3c404a]"><input type="checkbox" checked={dynFilters.showCombatTr} onChange={e => setDynFilters(p => ({...p, showCombatTr: e.target.checked}))} className="rounded-sm bg-[#101113] border-[#3c404a] text-[#d99b26] focus:ring-0 w-3.5 h-3.5"/> Бойові тр.</label>
+                                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-[#facc15] text-xs font-semibold bg-[#101113] px-2 py-1 rounded-sm border border-[#2e3138] hover:border-[#3c404a]"><input type="checkbox" checked={dynFilters.showNonCombatTr} onChange={e => setDynFilters(p => ({...p, showNonCombatTr: e.target.checked}))} className="rounded-sm bg-[#101113] border-[#3c404a] text-[#d99b26] focus:ring-0 w-3.5 h-3.5"/> Небойові тр.</label>
+                                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-[#9fc5ef] text-xs font-semibold bg-[#101113] px-2 py-1 rounded-sm border border-[#2e3138] hover:border-[#3c404a]"><input type="checkbox" checked={dynFilters.showMIA} onChange={e => setDynFilters(p => ({...p, showMIA: e.target.checked}))} className="rounded-sm bg-[#101113] border-[#3c404a] text-[#4c8ed9] focus:ring-0 w-3.5 h-3.5"/> ЗБВ</label>
+                                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-[#d8b4fe] text-xs font-semibold bg-[#101113] px-2 py-1 rounded-sm border border-[#2e3138] hover:border-[#3c404a]"><input type="checkbox" checked={dynFilters.showAWOL} onChange={e => setDynFilters(p => ({...p, showAWOL: e.target.checked}))} className="rounded-sm bg-[#101113] border-[#3c404a] text-[#8f5fb8] focus:ring-0 w-3.5 h-3.5"/> СЗЧ / Дезерт.</label>
                                     </div>
                                     
-                                    <div className="flex items-center gap-2 border-l border-slate-800 pl-3">
-                                        <label title={window.ChartDataLabels ? 'Показати значення на діаграмах' : 'Не завантажено бібліотеку підписів. Перевірте Інтернет і перезавантажте програму.'} className="flex items-center gap-1.5 cursor-pointer select-none text-emerald-400 text-xs font-bold bg-slate-950 px-2 py-1 rounded-lg border border-slate-800/80"><input type="checkbox" checked={showChartLabels} disabled={!window.ChartDataLabels} onChange={e => setShowChartLabels(e.target.checked)} className="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0 w-3.5 h-3.5 disabled:opacity-50"/> Цифри</label>
-                                        <label className={`flex items-center gap-1.5 cursor-pointer select-none text-xs font-bold bg-slate-950 px-2 py-1 rounded-lg border border-slate-800/80 ${showChartLabels ? 'text-emerald-400' : 'text-slate-600'}`}><input type="checkbox" checked={showChartPercentages} onChange={e => setShowChartPercentages(e.target.checked)} disabled={!showChartLabels} className="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0 w-3.5 h-3.5 disabled:opacity-50"/> у %</label>
+                                    <div className="flex items-center gap-2 border-l border-[#2e3138] pl-3">
+                                        <label title={window.ChartDataLabels ? 'Показати значення на діаграмах' : 'Не завантажено бібліотеку підписів. Перевірте Інтернет і перезавантажте програму.'} className="flex items-center gap-1.5 cursor-pointer select-none text-[#8ad8ae] text-xs font-semibold bg-[#101113] px-2 py-1 rounded-sm border border-[#2e3138]"><input type="checkbox" checked={showChartLabels} disabled={!window.ChartDataLabels} onChange={e => setShowChartLabels(e.target.checked)} className="rounded-sm bg-[#101113] border-[#3c404a] text-[#3da372] focus:ring-0 w-3.5 h-3.5 disabled:opacity-50"/> Цифри</label>
+                                        <label className={`flex items-center gap-1.5 cursor-pointer select-none text-xs font-semibold bg-[#101113] px-2 py-1 rounded-sm border border-[#2e3138] ${showChartLabels ? 'text-[#8ad8ae]' : 'text-[#989fa9]'}`}><input type="checkbox" checked={showChartPercentages} onChange={e => setShowChartPercentages(e.target.checked)} disabled={!showChartLabels} className="rounded-sm bg-[#101113] border-[#3c404a] text-[#3da372] focus:ring-0 w-3.5 h-3.5 disabled:opacity-50"/> у %</label>
                                     </div>
                                 </div>
 
-                                <p className="text-xs text-slate-400">Галочки вище фільтрують усі показники евакуації та діаграми аналітики.</p>
-                                <div className="medical-charts-grid grid grid-cols-1 lg:grid-cols-12 gap-6">
-                                    <div className="bg-tactical-950/60 border border-tactical-800 rounded-xl p-5 shadow-sm lg:col-span-6 flex flex-col">
+                                <p className="text-xs text-[#b8bec8]">Галочки вище фільтрують усі показники евакуації та діаграми аналітики.</p>
+                                <div className="medical-charts-grid grid grid-cols-1 lg:grid-cols-12 gap-5 tabular-nums">
+                                    <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-4 lg:col-span-6 flex flex-col">
                                         <div className="flex items-center gap-2 mb-4">
-                                            <div className="p-1.5 bg-indigo-950/50 rounded-lg"><Icon name="timer" className="w-4 h-4 text-indigo-400" /></div>
-                                            <h3 className="font-bold text-white text-sm">Середній час евакуації (у днях)</h3>
+                                            <div className="p-1.5 bg-[#101113] border border-[#2e3138] rounded-sm"><Icon name="timer" className="w-4 h-4 text-[#4c8ed9]" /></div>
+                                            <h3 className="font-bold text-[#e6edf3] text-sm">Середній час евакуації (у днях)</h3>
                                         </div>
                                         <ChartComponent 
                                             title="Середній_час_евакуації" showLabels={showChartLabels} showPercentages={false}
                                             className="flex-1 min-h-[250px] w-full relative" type="bar"
                                             data={chartData.evacChartDataConfig}
-                                            options={{ plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#1f2937' }, title: { display: true, text: 'Дні', color: '#9ca3af' } } } }}
+                                            options={{ plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#2e3138' }, title: { display: true, text: 'Дні', color: '#b8bec8' } } } }}
                                         />
                                     </div>
 
-                                    <div className="bg-tactical-950/60 border border-tactical-800 rounded-xl p-5 shadow-sm lg:col-span-6 flex flex-col relative overflow-hidden group">
+                                    <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-4 lg:col-span-6 flex flex-col relative overflow-hidden">
                                         <div className="flex items-center gap-2 mb-4">
-                                            <div className="p-1.5 bg-cyan-950/50 rounded-lg"><Icon name="truck" className="w-4 h-4 text-cyan-400" /></div>
-                                            <h3 className="font-bold text-white text-sm">Розширений звіт з евакуації за період</h3>
+                                            <div className="p-1.5 bg-[#101113] border border-[#2e3138] rounded-sm"><Icon name="truck" className="w-4 h-4 text-[#4c8ed9]" /></div>
+                                            <h3 className="font-bold text-[#e6edf3] text-sm">Розширений звіт з евакуації за період</h3>
                                         </div>
                                         
-                                        <div className="grid grid-cols-2 gap-4 flex-1">
-                                            <div className="bg-tactical-900/40 rounded-lg p-4 border border-tactical-800 flex flex-col justify-center">
-                                                <div className="text-[10px] text-tactical-400 font-bold uppercase mb-1">Фактично евакуйовано</div>
-                                                <div className="text-4xl font-bold text-cyan-400 mb-2">{evacStats.actualEvacTotal}</div>
-                                                <div className="space-y-1.5 text-[11px] text-tactical-300 border-t border-tactical-800/50 pt-2">
+                                        <div className="grid grid-cols-2 gap-3 flex-1">
+                                            <div className="bg-[#101113] rounded-sm p-4 border border-[#2e3138] flex flex-col justify-center">
+                                                <div className="text-[10px] text-[#b8bec8] font-bold uppercase mb-1">Фактично евакуйовано</div>
+                                                <div className="text-4xl font-bold text-[#4c8ed9] mb-2 font-mono">{evacStats.actualEvacTotal}</div>
+                                                <div className="space-y-1.5 text-[11px] text-[#b8bec8] border-t border-[#2e3138] pt-2">
                                                     <div className="flex justify-between" title="Поранені та евакуйовані в цьому ж періоді">
                                                         <span>З цього періоду:</span>
-                                                        <span className="font-bold text-cyan-200">
+                                                        <span className="font-bold font-mono text-[#c5ddf8]">
                                                             {(dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr) && (dynFilters.show200 || dynFilters.show200pvr || dynFilters.showNonCombatDead)
                                                                 ? `300: ${evacStats.evacPeriod300} / 200: ${evacStats.evacPeriod200}`
                                                                 : (dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr)
@@ -6026,7 +6045,7 @@ const MedicalApp = (function() {
                                                     </div>
                                                     <div className="flex justify-between" title="Евакуйовані зараз, але поранені раніше">
                                                         <span>З минулих періодів:</span>
-                                                        <span className="font-bold text-cyan-200">
+                                                        <span className="font-bold font-mono text-[#c5ddf8]">
                                                             {(dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr) && (dynFilters.show200 || dynFilters.show200pvr || dynFilters.showNonCombatDead)
                                                                 ? `300: ${evacStats.evacBefore300} / 200: ${evacStats.evacBefore200}`
                                                                 : (dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr)
@@ -6039,17 +6058,17 @@ const MedicalApp = (function() {
                                                 </div>
                                             </div>
 
-                                            <div className="bg-tactical-900/40 rounded-lg p-4 border border-tactical-800 flex flex-col justify-center relative">
+                                            <div className="bg-[#101113] rounded-sm p-4 border border-[#2e3138] flex flex-col justify-center relative">
                                                 <div className="absolute top-4 right-4 text-right">
-                                                    <div className="text-[10px] font-bold text-tactical-500 uppercase">Успішність</div>
-                                                    <div className={`text-lg font-bold ${evacStats.evacSuccessRate > 50 ? 'text-emerald-400' : 'text-red-400'}`}>{evacStats.evacSuccessRate}%</div>
+                                                    <div className="text-[10px] font-bold text-[#989fa9] uppercase">Успішність</div>
+                                                    <div className={`text-lg font-bold font-mono ${evacStats.evacSuccessRate > 50 ? 'text-[#3da372]' : 'text-[#d9534f]'}`}>{evacStats.evacSuccessRate}%</div>
                                                 </div>
-                                                <div className="text-[10px] text-tactical-400 font-bold uppercase mb-1">Втрати цього періоду</div>
-                                                <div className="text-2xl font-bold text-white mb-2">Всього: {evacStats.totalPeriod300 + evacStats.totalPeriod200}</div>
-                                                <div className="space-y-1.5 text-[11px] text-tactical-300 border-t border-tactical-800/50 pt-2">
+                                                <div className="text-[10px] text-[#b8bec8] font-bold uppercase mb-1">Втрати цього періоду</div>
+                                                <div className="text-2xl font-bold text-[#e6edf3] mb-2 font-mono">Всього: {evacStats.totalPeriod300 + evacStats.totalPeriod200}</div>
+                                                <div className="space-y-1.5 text-[11px] text-[#b8bec8] border-t border-[#2e3138] pt-2">
                                                     <div className="flex justify-between" title="Вже вивезені">
                                                         <span>Вже евакуйовано:</span>
-                                                        <span className="font-bold text-emerald-400">
+                                                        <span className="font-bold font-mono text-[#8ad8ae]">
                                                             {(dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr) && (dynFilters.show200 || dynFilters.show200pvr || dynFilters.showNonCombatDead)
                                                                 ? `300: ${evacStats.periodEvacuated300} / 200: ${evacStats.periodEvacuated200}`
                                                                 : (dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr)
@@ -6061,7 +6080,7 @@ const MedicalApp = (function() {
                                                     </div>
                                                     <div className="flex justify-between" title="Все ще чекають">
                                                         <span>Очікують евакуації:</span>
-                                                        <span className="font-bold text-red-400">
+                                                        <span className="font-bold font-mono text-[#f3a3a0]">
                                                             {(dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr) && (dynFilters.show200 || dynFilters.show200pvr || dynFilters.showNonCombatDead)
                                                                 ? `300: ${evacStats.periodWaiting300} / 200: ${evacStats.periodWaiting200}`
                                                                 : (dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr)
@@ -6074,21 +6093,21 @@ const MedicalApp = (function() {
                                                 </div>
                                             </div>
 
-                                            <div className="bg-red-950/20 rounded-lg p-4 border border-red-900/30 col-span-2 flex justify-between items-center">
+                                            <div className="bg-[#d9534f]/10 rounded-sm p-4 border border-[#d9534f]/40 col-span-2 flex justify-between items-center">
                                                 <div>
-                                                    <div className="text-[11px] text-red-400 font-bold uppercase mb-1 flex items-center gap-1.5"><Icon name="alert-triangle" className="w-3.5 h-3.5"/> Глобальна черга на евакуацію</div>
-                                                    <div className="text-[10px] text-tactical-400">Всі, хто залишався неевакуйованим на момент кінця вказаного періоду.</div>
+                                                    <div className="text-[11px] text-[#f3a3a0] font-bold uppercase mb-1 flex items-center gap-1.5"><Icon name="alert-triangle" className="w-3.5 h-3.5 text-[#d9534f]"/> Глобальна черга на евакуацію</div>
+                                                    <div className="text-[10px] text-[#b8bec8]">Всі, хто залишався неевакуйованим на момент кінця вказаного періоду.</div>
                                                 </div>
-                                                <div className="text-right border-l border-red-900/30 pl-4">
+                                                <div className="text-right border-l border-[#d9534f]/30 pl-4 font-mono">
                                                     {(dynFilters.showWound || dynFilters.showCombatTr || dynFilters.showNonCombatTr) && (
-                                                        <div className="font-bold text-white text-sm whitespace-nowrap mb-0.5">300: <span className="text-red-400 text-lg">{evacStats.globalWaiting300}</span> <span className="text-[9px] text-tactical-500 font-normal">({evacStats.globalWaitingCritHeavy} важкі)</span></div>
+                                                        <div className="font-bold text-[#e6edf3] text-sm whitespace-nowrap mb-0.5">300: <span className="text-[#f3a3a0] text-lg">{evacStats.globalWaiting300}</span> <span className="text-[9px] text-[#b8bec8] font-normal font-sans">({evacStats.globalWaitingCritHeavy} важкі)</span></div>
                                                     )}
-                                                    <div className="font-bold text-white text-sm whitespace-nowrap flex items-center justify-end gap-2">
+                                                    <div className="font-bold text-[#e6edf3] text-sm whitespace-nowrap flex items-center justify-end gap-2">
                                                         {(dynFilters.show200 || dynFilters.show200pvr || dynFilters.showNonCombatDead) && (
-                                                            <span>200: <span className="text-tactical-300 text-lg">{evacStats.globalWaiting200}</span></span>
+                                                            <span>200: <span className="text-[#e6edf3] text-lg">{evacStats.globalWaiting200}</span></span>
                                                         )}
                                                         {!groupAnalytics && dynFilters.showMIA && evacStats.globalWaitingMia > 0 && (
-                                                            <span className="text-blue-400 font-semibold text-xs ml-1">/ ЗБВ: <span className="text-blue-300 text-base font-bold">{evacStats.globalWaitingMia}</span></span>
+                                                            <span className="text-[#9fc5ef] font-semibold text-xs ml-1">/ ЗБВ: <span className="text-[#c5ddf8] text-base font-bold">{evacStats.globalWaitingMia}</span></span>
                                                         )}
                                                     </div>
                                                 </div>
@@ -6110,10 +6129,10 @@ const MedicalApp = (function() {
                                     />
 
                                     {/* ПАРА 1: Локації (Статус) + Структура */}
-                                    <div className="bg-tactical-950/60 border border-tactical-800 rounded-xl p-5 shadow-sm lg:col-span-8 flex flex-col overflow-hidden">
+                                    <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-4 lg:col-span-8 flex flex-col overflow-hidden">
                                         <div className="flex items-center gap-2 mb-4 shrink-0">
-                                            <div className="p-1.5 bg-tactical-800 rounded-lg"><Icon name="map-pin" className="w-4 h-4 text-tactical-300" /></div>
-                                            <h3 className="font-bold text-white text-sm">Фактичне місце (за статусом втрат)</h3>
+                                            <div className="p-1.5 bg-[#101113] border border-[#2e3138] rounded-sm"><Icon name="map-pin" className="w-4 h-4 text-[#b8bec8]" /></div>
+                                            <h3 className="font-bold text-[#e6edf3] text-sm">Фактичне місце (за статусом втрат)</h3>
                                         </div>
                                         <div className="overflow-y-auto pr-2">
                                             <div style={{ height: `${locChartHeight}px` }} className="w-full relative">
@@ -6134,15 +6153,15 @@ const MedicalApp = (function() {
                                                             { label: 'Дезертирство', data: chartData.actLocs.labels.map(l => chartData.actLocs.data[l]['Дезертирство']), backgroundColor: '#db2777' }
                                                         ]
                                                     }}
-                                                    options={{ indexAxis: 'y', plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', axis: 'y', intersect: false } }, scales: { x: { stacked: true, grid: { color: '#1f2937' }, ticks: { precision: 0 } }, y: { stacked: true, grid: { display: false }, ticks: { autoSkip: false } } } }}
+                                                    options={{ indexAxis: 'y', plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', axis: 'y', intersect: false } }, scales: { x: { stacked: true, grid: { color: '#2e3138' }, ticks: { precision: 0 } }, y: { stacked: true, grid: { display: false }, ticks: { autoSkip: false } } } }}
                                                 />
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="bg-tactical-950/60 border border-tactical-800 rounded-xl p-5 shadow-sm lg:col-span-4 flex flex-col">
+                                    <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-4 lg:col-span-4 flex flex-col">
                                         <div className="flex items-center gap-2 mb-4">
-                                            <div className="p-1.5 bg-red-950/50 rounded-lg"><Icon name="pie-chart" className="w-4 h-4 text-red-500" /></div>
-                                            <h3 className="font-bold text-white text-sm">Структура втрат</h3>
+                                            <div className="p-1.5 bg-[#101113] border border-[#2e3138] rounded-sm"><Icon name="pie-chart" className="w-4 h-4 text-[#d9534f]" /></div>
+                                            <h3 className="font-bold text-[#e6edf3] text-sm">Структура втрат</h3>
                                         </div>
                                         <ChartComponent 
                                             title="Структура_втрат" showLabels={showChartLabels} showPercentages={showChartPercentages}
@@ -6167,18 +6186,18 @@ const MedicalApp = (function() {
                                                         ...(dynFilters.showNonCombatTr ? ['#fde047'] : []), ...(dynFilters.showMIA ? ['#3b82f6'] : []), 
                                                         ...(dynFilters.showAWOL ? ['#c026d3', '#db2777'] : [])
                                                     ],
-                                                    borderColor: '#151e0f', borderWidth: 3, hoverOffset: 4
+                                                    borderColor: '#17181b', borderWidth: 2, hoverOffset: 4
                                                 }]
                                             }}
-                                            options={{ cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#9ca3af' } } } }}
+                                            options={{ cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#b8bec8' } } } }}
                                         />
                                     </div>
 
                                     {/* ПАРА 2: Локації (Важкість) + Важкість */}
-                                    <div className="bg-tactical-950/60 border border-tactical-800 rounded-xl p-5 shadow-sm lg:col-span-8 flex flex-col overflow-hidden">
+                                    <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-4 lg:col-span-8 flex flex-col overflow-hidden">
                                         <div className="flex items-center gap-2 mb-4 shrink-0">
-                                            <div className="p-1.5 bg-tactical-800 rounded-lg"><Icon name="activity" className="w-4 h-4 text-amber-500" /></div>
-                                            <h3 className="font-bold text-white text-sm">Фактичне місце (за важкістю 300-х)</h3>
+                                            <div className="p-1.5 bg-[#101113] border border-[#2e3138] rounded-sm"><Icon name="activity" className="w-4 h-4 text-[#d99b26]" /></div>
+                                            <h3 className="font-bold text-[#e6edf3] text-sm">Фактичне місце (за важкістю 300-х)</h3>
                                         </div>
                                         <div className="overflow-y-auto pr-2">
                                             <div style={{ height: `${locChartHeight}px` }} className="w-full relative">
@@ -6194,15 +6213,15 @@ const MedicalApp = (function() {
                                                             { label: 'Критичний', data: chartData.actLocsSev.labels.map(l => chartData.actLocsSev.data[l]['Критичний']), backgroundColor: '#a855f7' }
                                                         ]
                                                     }}
-                                                    options={{ indexAxis: 'y', plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', axis: 'y', intersect: false } }, scales: { x: { stacked: true, grid: { color: '#1f2937' }, ticks: { precision: 0 } }, y: { stacked: true, grid: { display: false }, ticks: { autoSkip: false } } } }}
+                                                    options={{ indexAxis: 'y', plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', axis: 'y', intersect: false } }, scales: { x: { stacked: true, grid: { color: '#2e3138' }, ticks: { precision: 0 } }, y: { stacked: true, grid: { display: false }, ticks: { autoSkip: false } } } }}
                                                 />
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="bg-tactical-950/60 border border-tactical-800 rounded-xl p-5 shadow-sm lg:col-span-4 flex flex-col">
+                                    <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-4 lg:col-span-4 flex flex-col">
                                         <div className="flex items-center gap-2 mb-4">
-                                            <div className="p-1.5 bg-purple-950/50 rounded-lg"><Icon name="heart-pulse" className="w-4 h-4 text-purple-500" /></div>
-                                            <h3 className="font-bold text-white text-sm">Важкість (Всі 300-ті)</h3>
+                                            <div className="p-1.5 bg-[#101113] border border-[#2e3138] rounded-sm"><Icon name="heart-pulse" className="w-4 h-4 text-[#c084fc]" /></div>
+                                            <h3 className="font-bold text-[#e6edf3] text-sm">Важкість (Всі 300-ті)</h3>
                                         </div>
                                         <ChartComponent 
                                             title="Важкість" showLabels={showChartLabels} showPercentages={showChartPercentages}
@@ -6212,19 +6231,19 @@ const MedicalApp = (function() {
                                                 datasets: [{ 
                                                     data: Object.values(chartData.severity), 
                                                     backgroundColor: Object.keys(chartData.severity).map(k => SEVERITY_COLORS[k] || '#6b7280'), 
-                                                    borderColor: '#151e0f', 
-                                                    borderWidth: 3 
+                                                    borderColor: '#17181b', 
+                                                    borderWidth: 2 
                                                 }]
                                             }}
-                                            options={{ cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#9ca3af' } } } }}
+                                            options={{ cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#b8bec8' } } } }}
                                         />
                                     </div>
 
                                     {/* ПАРА 3: Локації (Причини) + Причини (Бублик) */}
-                                    <div className="bg-tactical-950/60 border border-tactical-800 rounded-xl p-5 shadow-sm lg:col-span-8 flex flex-col overflow-hidden">
+                                    <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-4 lg:col-span-8 flex flex-col overflow-hidden">
                                         <div className="flex items-center gap-2 mb-4 shrink-0">
-                                            <div className="p-1.5 bg-tactical-800 rounded-lg"><Icon name="crosshair" className="w-4 h-4 text-red-500" /></div>
-                                            <h3 className="font-bold text-white text-sm">Фактичне місце (за зброєю / причиною ураження)</h3>
+                                            <div className="p-1.5 bg-[#101113] border border-[#2e3138] rounded-sm"><Icon name="crosshair" className="w-4 h-4 text-[#d9534f]" /></div>
+                                            <h3 className="font-bold text-[#e6edf3] text-sm">Фактичне місце (за зброєю / причиною ураження)</h3>
                                         </div>
                                         <div className="overflow-y-auto pr-2">
                                             <div style={{ height: `${locChartHeight}px` }} className="w-full relative">
@@ -6232,15 +6251,15 @@ const MedicalApp = (function() {
                                                     title="Локації_за_причинами" showLabels={showChartLabels} showPercentages={showChartPercentages}
                                                     className="w-full h-full" type="bar"
                                                     data={chartData.locCause}
-                                                    options={{ indexAxis: 'y', plugins: { legend: { position: 'top', labels: { boxWidth: 12, padding: 15 } }, tooltip: { mode: 'index', axis: 'y', intersect: false } }, scales: { x: { stacked: true, grid: { color: '#1f2937' }, ticks: { precision: 0 } }, y: { stacked: true, grid: { display: false }, ticks: { autoSkip: false } } } }}
+                                                    options={{ indexAxis: 'y', plugins: { legend: { position: 'top', labels: { boxWidth: 12, padding: 15 } }, tooltip: { mode: 'index', axis: 'y', intersect: false } }, scales: { x: { stacked: true, grid: { color: '#2e3138' }, ticks: { precision: 0 } }, y: { stacked: true, grid: { display: false }, ticks: { autoSkip: false } } } }}
                                                 />
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="bg-tactical-950/60 border border-tactical-800 rounded-xl p-5 shadow-sm lg:col-span-4 flex flex-col">
+                                    <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-4 lg:col-span-4 flex flex-col">
                                         <div className="flex items-center gap-2 mb-4">
-                                            <div className="p-1.5 bg-amber-950/50 rounded-lg"><Icon name="zap" className="w-4 h-4 text-amber-500" /></div>
-                                            <h3 className="font-bold text-white text-sm">Причини подій</h3>
+                                            <div className="p-1.5 bg-[#101113] border border-[#2e3138] rounded-sm"><Icon name="zap" className="w-4 h-4 text-[#d99b26]" /></div>
+                                            <h3 className="font-bold text-[#e6edf3] text-sm">Причини подій</h3>
                                         </div>
                                         <ChartComponent 
                                             title="Причини_подій" showLabels={showChartLabels} showPercentages={showChartPercentages}
@@ -6253,18 +6272,18 @@ const MedicalApp = (function() {
                                                         return d['200'] + d['200 ПВР'] + d['Неб. смерть'] + d['Поранення'] + d['Бойове'] + d['Небойове'] + d['ЗБВ'] + d['СЗЧ'] + d['Дезертирство'];
                                                     }),
                                                     backgroundColor: chartData.reasons.labels.map(r => chartData.causeColors[r]),
-                                                    borderColor: '#151e0f', borderWidth: 3
+                                                    borderColor: '#17181b', borderWidth: 2
                                                 }]
                                             }}
-                                            options={{ cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#9ca3af' } } } }}
+                                            options={{ cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#b8bec8' } } } }}
                                         />
                                     </div>
 
                                     {/* Інші графіки */}
-                                    <div className="bg-tactical-950/60 border border-tactical-800 rounded-xl p-5 shadow-sm lg:col-span-6 flex flex-col">
+                                    <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-4 lg:col-span-6 flex flex-col">
                                         <div className="flex items-center gap-2 mb-4">
-                                            <div className="p-1.5 bg-blue-950/50 rounded-lg"><Icon name="shield" className="w-4 h-4 text-blue-400" /></div>
-                                            <h3 className="font-bold text-white text-sm">Втрати по підрозділах</h3>
+                                            <div className="p-1.5 bg-[#101113] border border-[#2e3138] rounded-sm"><Icon name="shield" className="w-4 h-4 text-[#4c8ed9]" /></div>
+                                            <h3 className="font-bold text-[#e6edf3] text-sm">Втрати по підрозділах</h3>
                                         </div>
                                         <ChartComponent 
                                             title="Втрати_по_підрозділах" showLabels={showChartLabels} showPercentages={showChartPercentages}
@@ -6283,23 +6302,23 @@ const MedicalApp = (function() {
                                                     { label: 'Дезертирство', data: chartData.units.labels.map(u => chartData.units.data[u]['Дезертирство']), backgroundColor: '#db2777' }
                                                 ]
                                             }}
-                                            options={{ plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }, scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, grid: { color: '#1f2937' }, ticks: { precision: 0 } } } }}
+                                            options={{ plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }, scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, grid: { color: '#2e3138' }, ticks: { precision: 0 } } } }}
                                         />
                                     </div>
 
-                                    <div className="bg-tactical-950/60 border border-tactical-800 rounded-xl p-5 shadow-sm lg:col-span-6 flex flex-col">
+                                    <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-4 lg:col-span-6 flex flex-col">
                                         <div className="flex items-center gap-2 mb-4">
-                                            <div className="p-1.5 bg-red-950/50 rounded-lg"><Icon name="activity" className="w-4 h-4 text-red-400" /></div>
-                                            <h3 className="font-bold text-white text-sm">Типи травм (по епізодах)</h3>
+                                            <div className="p-1.5 bg-[#101113] border border-[#2e3138] rounded-sm"><Icon name="activity" className="w-4 h-4 text-[#d9534f]" /></div>
+                                            <h3 className="font-bold text-[#e6edf3] text-sm">Типи травм (по епізодах)</h3>
                                         </div>
                                         <ChartComponent 
                                             title="Типи_травм" showLabels={showChartLabels} showPercentages={showChartPercentages}
                                             className="flex-1 min-h-[260px] w-full relative" type="bar"
                                             data={{
                                                 labels: Object.keys(chartData.injuryStats),
-                                                datasets: [{ label: 'К-ть епізодів', data: Object.values(chartData.injuryStats), backgroundColor: '#ef4444', borderRadius: 4 }]
+                                                datasets: [{ label: 'К-ть епізодів', data: Object.values(chartData.injuryStats), backgroundColor: '#d9534f', borderRadius: 2 }]
                                             }}
-                                            options={{ plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { maxRotation: 45, minRotation: 45 } }, y: { grid: { color: '#1f2937' }, ticks: { precision: 0 } } } }}
+                                            options={{ plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { maxRotation: 45, minRotation: 45 } }, y: { grid: { color: '#2e3138' }, ticks: { precision: 0 } } } }}
                                         />
                                     </div>
                                 </div>
@@ -6309,34 +6328,34 @@ const MedicalApp = (function() {
                         {/* ТАБ: ЛОГИ */}
                         {activeTab === "logs" && (
                             <div className="flex-1 flex flex-col md:flex-row gap-4 overflow-hidden">
-                                <div className="w-full md:w-64 bg-tactical-950/60 border border-tactical-800 p-3 rounded-lg shrink-0 flex flex-col gap-3">
-                                    <div className="text-[10px] text-tactical-400 uppercase font-bold">Фільтр логів за часом</div>
+                                <div className="w-full md:w-64 bg-[#17181b] border border-[#2e3138] p-3 rounded-sm shrink-0 flex flex-col gap-3">
+                                    <div className="text-[10px] text-[#b8bec8] uppercase font-bold">Фільтр логів за часом</div>
                                     <div className="space-y-2">
-                                        <input type="datetime-local" value={logTimeFrom} onChange={(e) => setLogTimeFrom(e.target.value)} className="w-full bg-tactical-900 border border-tactical-800 rounded px-2 py-1 text-[10px] text-white font-mono focus:outline-none" />
-                                        <input type="datetime-local" value={logTimeTo} onChange={(e) => setLogTimeTo(e.target.value)} className="w-full bg-tactical-900 border border-tactical-800 rounded px-2 py-1 text-[10px] text-white font-mono focus:outline-none" />
+                                        <input type="datetime-local" value={logTimeFrom} onChange={(e) => setLogTimeFrom(e.target.value)} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2 py-1 text-[10px] text-[#e6edf3] font-mono focus:outline-none focus:border-[#4c8ed9]" />
+                                        <input type="datetime-local" value={logTimeTo} onChange={(e) => setLogTimeTo(e.target.value)} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2 py-1 text-[10px] text-[#e6edf3] font-mono focus:outline-none focus:border-[#4c8ed9]" />
                                     </div>
                                     {(logTimeFrom || logTimeTo) && (
-                                        <button onClick={() => { setLogTimeFrom(""); setLogTimeTo(""); }} className="w-full py-1 bg-tactical-800 hover:bg-tactical-700 text-[10px] text-tactical-300 rounded transition">Очистити часовий фільтр</button>
+                                        <button onClick={() => { setLogTimeFrom(""); setLogTimeTo(""); }} className="w-full py-1 bg-[#222429] hover:bg-[#2e3138] border border-[#2e3138] text-[10px] text-[#e6edf3] rounded-sm transition-colors cursor-pointer">Очистити часовий фільтр</button>
                                     )}
                                 </div>
-                                <div className="flex-1 bg-tactical-950/30 border border-tactical-800/60 rounded-lg p-3 overflow-y-auto space-y-2 relative">
+                                <div className="flex-1 bg-[#101113] border border-[#2e3138] rounded-sm p-3 overflow-y-auto space-y-2 relative">
                                     {filteredLogs.length === 0 ? (
-                                        <div className="m-auto text-center text-tactical-500 text-xs py-10">Немає записів за цей період</div>
+                                        <div className="m-auto text-center text-[#989fa9] text-xs py-10">Немає записів за цей період</div>
                                     ) : (
                                         filteredLogs.map(log => (
-                                            <div key={log.id} className={`border p-3 rounded-lg flex flex-col gap-1 transition-all relative ${log.undone ? 'opacity-40 bg-zinc-950/60 border-zinc-800/40' : getLogRowStyle(log.action, log.details)}`}>
+                                            <div key={log.id} className={`border p-3 rounded-sm flex flex-col gap-1 transition-colors relative ${log.undone ? 'opacity-45 bg-[#17181b] border-[#2e3138]' : getLogRowStyle(log.action, log.details)}`}>
                                                 {log.undone && (
                                                     <div className="absolute top-1.5 left-2 flex items-center gap-1.5">
-                                                        <span className="text-[9px] font-bold text-zinc-500 bg-zinc-900/80 border border-zinc-700/50 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
+                                                        <span className="text-[9px] font-bold text-[#b8bec8] bg-[#101113] border border-[#2e3138] px-1.5 py-0.5 rounded-sm uppercase tracking-wider flex items-center gap-1">
                                                             <Icon name="undo-2" className="w-2.5 h-2.5" /> скасовано
                                                         </span>
                                                     </div>
                                                 )}
-                                                <div className={`flex justify-between items-center text-[10px] opacity-80 border-b border-white/5 pb-1 ${log.undone ? 'mt-4' : ''}`}>
-                                                    <span className={`font-mono ${log.undone ? 'line-through text-zinc-500' : ''}`}>{formatLogTime(log.timestamp)}</span>
-                                                    <span className={`font-black uppercase tracking-wider ${log.undone ? 'line-through text-zinc-500' : ''}`}>{log.action}</span>
+                                                <div className={`flex justify-between items-center text-[10px] opacity-85 border-b border-[#2e3138]/80 pb-1 tabular-nums ${log.undone ? 'mt-4' : ''}`}>
+                                                    <span className={`font-mono ${log.undone ? 'line-through text-[#989fa9]' : ''}`}>{formatLogTime(log.timestamp)}</span>
+                                                    <span className={`font-bold uppercase tracking-wider ${log.undone ? 'line-through text-[#989fa9]' : ''}`}>{log.action}</span>
                                                 </div>
-                                                <p className={`text-xs pt-1 leading-relaxed ${log.undone ? 'line-through text-zinc-500' : ''}`}>{log.details}</p>
+                                                <p className={`text-xs pt-1 leading-relaxed ${log.undone ? 'line-through text-[#989fa9]' : ''}`}>{log.details}</p>
                                             </div>
                                         ))
                                     )}
@@ -6347,21 +6366,21 @@ const MedicalApp = (function() {
 
                     {/* МОДАЛЬНІ ВІКНА */}
                     {(isAddWoundedOpen || isEditOpen) && (
-                        <div onClick={(e) => { if (e.target === e.currentTarget) { setIsAddWoundedOpen(false); setIsEditOpen(false); } }} className="fixed inset-0 z-[200] bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-hidden animate-in fade-in duration-200">
-                            <form onSubmit={isEditOpen ? handleUpdateWounded : handleSaveWounded} className="bg-slate-900 border border-slate-700/80 w-full max-w-7xl max-h-[94vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+                        <div onClick={(e) => { if (e.target === e.currentTarget) { setIsAddWoundedOpen(false); setIsEditOpen(false); } }} className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-2 sm:p-4 overflow-hidden overscroll-contain">
+                            <form onSubmit={isEditOpen ? handleUpdateWounded : handleSaveWounded} className="bg-[#17181b] border border-[#2e3138] w-full max-w-7xl max-h-[94vh] rounded-sm flex flex-col overflow-hidden">
                                 {/* Header */}
-                                <div className="px-6 py-4 bg-slate-950/70 border-b border-slate-800 flex justify-between items-center shrink-0">
+                                <div className="px-5 py-3.5 bg-[#101113] border-b border-[#2e3138] flex justify-between items-center shrink-0">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-                                            <Icon name={isEditOpen ? "file-pen-line" : "file-plus-2"} className="w-5 h-5" />
+                                        <div className="w-9 h-9 rounded-sm bg-[#222429] border border-[#2e3138] flex items-center justify-center text-[#4c8ed9] shrink-0">
+                                            <Icon name={isEditOpen ? "file-pen-line" : "file-plus-2"} className="w-4 h-4" />
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-white text-base tracking-tight">
+                                            <h3 className="font-bold text-[#e6edf3] text-base tracking-tight">
                                                 {isEditOpen
                                                     ? (isAwol(lossType) ? 'Редагування запису СЗЧ / Повернення' : 'Редагування та статус запису')
                                                     : (isAwol(lossType) ? 'Новий запис СЗЧ / Повернення' : 'Створення нового запису')}
                                             </h3>
-                                            <p className="text-[11px] text-slate-400 font-mono">
+                                            <p className="text-[11px] text-[#b8bec8] font-mono tabular-nums">
                                                 {isEditOpen
                                                     ? `ID епізоду: ${currentEpisode?.id || '—'}`
                                                     : (isAwol(lossType) ? 'Облік СЗЧ, дезертирства та повернення військовослужбовців' : 'Внесення події/поранення військовослужбовця')}
@@ -6371,59 +6390,59 @@ const MedicalApp = (function() {
                                     <button 
                                         type="button" 
                                         onClick={() => { setIsAddWoundedOpen(false); setIsEditOpen(false); }} 
-                                        className="w-8 h-8 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+                                        className="w-8 h-8 rounded-sm bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] text-[#b8bec8] hover:text-[#e6edf3] flex items-center justify-center transition-colors cursor-pointer"
                                     >
                                         <Icon name="x" className="w-4 h-4" />
                                     </button>
                                 </div>
 
-                                <div className="p-5 overflow-y-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4">
+                                <div className="p-5 overflow-y-auto overscroll-contain flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4">
                                     {/* 1. Ліва колонка */}
                                     <div className={`${isAny300(lossType) ? 'lg:col-span-3' : 'lg:col-span-6'} space-y-4 flex flex-col`}>
-                                        <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3 relative">
+                                        <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-4 space-y-3 relative">
                                             <div className="flex justify-between items-center gap-2 mb-1">
-                                                <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider flex items-center gap-1.5 whitespace-nowrap shrink-0">
-                                                    <Icon name="user-check" className="w-3.5 h-3.5 text-amber-400" />
+                                                <label className="text-[10px] text-[#b8bec8] font-bold uppercase font-mono tracking-wider flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                                                    <Icon name="user-check" className="w-3.5 h-3.5 text-[#4c8ed9]" />
                                                     <span>Анкетні дані</span>
                                                 </label>
                                                 {(selectedSoldierId || rosterSelection) && !isEditOpen && (
                                                     <button 
                                                         type="button" 
                                                         onClick={clearSelectedSoldier} 
-                                                        className="text-[9px] text-emerald-400 hover:text-red-300 flex items-center gap-1 bg-emerald-950/60 hover:bg-red-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60 hover:border-red-800/60 font-mono font-bold whitespace-nowrap shrink-0 transition cursor-pointer"
-                                                        title="Клікніть, щоб відв'язати бійця"
+                                                        className="text-[9px] text-[#8ad8ae] hover:text-[#f3a3a0] flex items-center gap-1 bg-[#3da372]/15 hover:bg-[#d9534f]/15 px-1.5 py-0.5 rounded-sm border border-[#3da372]/40 hover:border-[#d9534f]/40 font-mono font-bold whitespace-nowrap shrink-0 transition-colors cursor-pointer"
+                                                        title="Клікніть, щоб відв&apos;язати бійця"
                                                     >
                                                         <Icon name="check-circle" className="w-2.5 h-2.5" />
-                                                        <span>Прив'язано ✕</span>
+                                                        <span>Прив&apos;язано ✕</span>
                                                     </button>
                                                 )}
                                             </div>
                                             <div className="space-y-2.5">
-                                                {!isEditOpen && <p className="text-[10px] text-slate-400">Пошук за ПІБ або позивним у медичній базі та журналі О/С. Довідник О/С: {personnelDirectory.entries.length} записів. Вибір не змінює старі картки.</p>}
-                                                {!isEditOpen && personnelDirectory.warning && <p role="alert" className="text-[10px] text-amber-300">{personnelDirectory.warning}</p>}
+                                                {!isEditOpen && <p className="text-[10px] text-[#b8bec8] tabular-nums">Пошук за ПІБ або позивним у медичній базі та журналі О/С. Довідник О/С: {personnelDirectory.entries.length} записів. Вибір не змінює старі картки.</p>}
+                                                {!isEditOpen && personnelDirectory.warning && <p role="alert" className="text-[10px] text-[#e7c574]">{personnelDirectory.warning}</p>}
                                                 <input 
                                                     type="text" 
                                                     placeholder="ПІБ повністю..." 
                                                     value={newSoldierName} 
                                                     onChange={(e) => handleSmartInput('name', e.target.value)} 
-                                                    className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition font-sans" 
+                                                    className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-3 py-2 text-xs text-[#e6edf3] placeholder-[#989fa9] outline-none transition-colors font-sans" 
                                                 />
                                                 <input 
                                                     type="text" 
                                                     placeholder="Позивний (за наявності)..." 
                                                     value={newSoldierCallsign} 
                                                     onChange={(e) => handleSmartInput('callsign', e.target.value)} 
-                                                    className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition font-sans" 
+                                                    className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-3 py-2 text-xs text-[#e6edf3] placeholder-[#989fa9] outline-none transition-colors font-sans" 
                                                 />
                                                 
                                                 {searchMatches.length > 0 && !selectedSoldierId && !isEditOpen && (
-                                                    <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in duration-150">
-                                                        <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-slate-800 bg-slate-950/90 shrink-0">
-                                                            <span className="text-[9px] text-slate-400 uppercase font-bold font-mono">Знайдені збіги в базі:</span>
+                                                    <div className="bg-[#17181b] border border-[#3c404a] rounded-sm overflow-hidden flex flex-col">
+                                                        <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-[#2e3138] bg-[#101113] shrink-0">
+                                                            <span className="text-[9px] text-[#b8bec8] uppercase font-bold font-mono">Знайдені збіги в базі:</span>
                                                             <button 
                                                                 type="button" 
                                                                 onClick={() => setSearchMatches([])} 
-                                                                className="text-[10px] text-amber-400 hover:text-white font-semibold flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 cursor-pointer transition"
+                                                                className="text-[10px] text-[#4c8ed9] hover:text-[#e6edf3] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-sm bg-[#222429] hover:bg-[#2e3138] cursor-pointer transition-colors"
                                                             >
                                                                 <span>Створити як нового</span>
                                                                 <Icon name="x" className="w-2.5 h-2.5" />
@@ -6433,13 +6452,13 @@ const MedicalApp = (function() {
                                                             {searchMatches.map(s => {
                                                                 const hasMedLink = s.source === 'roster' && Boolean(MedicalPersonnelDirectory.resolve(s, soldiers).match);
                                                                 return (
-                                                                    <button type="button" key={`${s.source}:${s.id}`} onClick={() => selectExistingSoldier(s)} data-testid="personnel-match" data-source={s.source} className="block w-full text-left p-2.5 rounded-lg border border-transparent hover:border-amber-500/40 bg-slate-950/50 hover:bg-slate-800 cursor-pointer text-xs transition">
-                                                                        <div className="font-bold text-white flex items-center justify-between gap-2">
+                                                                    <button type="button" key={`${s.source}:${s.id}`} onClick={() => selectExistingSoldier(s)} data-testid="personnel-match" data-source={s.source} className="block w-full text-left p-2.5 rounded-sm border border-transparent hover:border-[#4c8ed9]/50 bg-[#101113] hover:bg-[#222429] cursor-pointer text-xs transition-colors">
+                                                                        <div className="font-bold text-[#e6edf3] flex items-center justify-between gap-2">
                                                                             <span className="truncate">{s.name}</span>
-                                                                            {s.callsign && <span className="text-amber-400 font-mono shrink-0">«{formatCallsignUI(s.callsign)}»</span>}
+                                                                            {s.callsign && <span className="text-[#4c8ed9] font-mono shrink-0">«{formatCallsignUI(s.callsign)}»</span>}
                                                                         </div>
-                                                                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">{s.rank || '—'} | {s.unit || '—'}</div>
-                                                                        <div className="text-[10px] text-emerald-400 mt-1">
+                                                                        <div className="text-[10px] text-[#b8bec8] font-mono mt-0.5">{s.rank || '—'} | {s.unit || '—'}</div>
+                                                                        <div className="text-[10px] text-[#8ad8ae] mt-1">
                                                                             {s.source === 'roster' ? (hasMedLink ? 'Журнал О/С · Медична база' : 'Журнал О/С') : 'Медична база'}
                                                                         </div>
                                                                     </button>
@@ -6449,18 +6468,18 @@ const MedicalApp = (function() {
                                                     </div>
                                                 )}
                                             </div>
-                                            {rosterSelection && <p data-testid="roster-selection" className="text-[10px] text-emerald-300">Обрано з О/С: {rosterSelection.name || rosterSelection.callsign}. {selectedSoldierId ? 'Буде використана існуюча медична картка; її анкетні дані не перезаписуються.' : 'Медична картка створиться лише після збереження події.'}</p>}
-                                            {!!rosterCandidates.length && <div role="alert" className="border border-amber-600 rounded-lg p-2 space-y-2 text-xs">
-                                                <p className="text-amber-300">Є неоднозначний збіг зі старою базою. Оберіть, чи це та сама людина. Автоматичного об’єднання не буде.</p>
-                                                {rosterCandidates.map(person => <button key={person.id} type="button" onClick={() => chooseRosterPerson(rosterSelection, person)} className="block w-full text-left bg-slate-800 p-2 rounded">Це та сама людина: {person.name} · {person.callsign || 'без позивного'} · {person.rank || '—'} · {person.unit || '—'} · ID {person.id}</button>)}
-                                                <button type="button" onClick={() => chooseRosterPerson(rosterSelection)} className="text-amber-300 underline">Це інша особа — створити окрему картку</button>
+                                            {rosterSelection && <p data-testid="roster-selection" className="text-[10px] text-[#8ad8ae]">Обрано з О/С: {rosterSelection.name || rosterSelection.callsign}. {selectedSoldierId ? 'Буде використана існуюча медична картка; її анкетні дані не перезаписуються.' : 'Медична картка створиться лише після збереження події.'}</p>}
+                                            {!!rosterCandidates.length && <div role="alert" className="border border-[#d99b26]/60 bg-[#d99b26]/10 rounded-sm p-2 space-y-2 text-xs">
+                                                <p className="text-[#f3d88e]">Є неоднозначний збіг зі старою базою. Оберіть, чи це та сама людина. Автоматичного об’єднання не буде.</p>
+                                                {rosterCandidates.map(person => <button key={person.id} type="button" onClick={() => chooseRosterPerson(rosterSelection, person)} className="block w-full text-left bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] p-2 rounded-sm">Це та сама людина: {person.name} · {person.callsign || 'без позивного'} · {person.rank || '—'} · {person.unit || '—'} · ID {person.id}</button>)}
+                                                <button type="button" onClick={() => chooseRosterPerson(rosterSelection)} className="text-[#f3d88e] underline cursor-pointer">Це інша особа — створити окрему картку</button>
                                             </div>}
                                             <div className="grid grid-cols-2 gap-2 pt-1">
-                                                <select aria-label="Звання військовослужбовця" value={newSoldierRank} onChange={(e) => setNewSoldierRank(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-2.5 py-2 text-xs text-white outline-none cursor-pointer">
+                                                <select aria-label="Звання військовослужбовця" value={newSoldierRank} onChange={(e) => setNewSoldierRank(e.target.value)} className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-2.5 py-2 text-xs text-[#e6edf3] outline-none cursor-pointer">
                                                     <option value="">-- Звання --</option>
                                                     {dictionaryOptions('ranks', settings.ranks || [], newSoldierRank).map(r => <option key={r} value={r}>{r}</option>)}
                                                 </select>
-                                                <select aria-label="Підрозділ військовослужбовця" value={newSoldierUnit} onChange={(e) => setNewSoldierUnit(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-2.5 py-2 text-xs text-white outline-none cursor-pointer">
+                                                <select aria-label="Підрозділ військовослужбовця" value={newSoldierUnit} onChange={(e) => setNewSoldierUnit(e.target.value)} className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-2.5 py-2 text-xs text-[#e6edf3] outline-none cursor-pointer">
                                                     <option value="">-- Підрозділ --</option>
                                                     {dictionaryOptions('units', settings.units || [], newSoldierUnit).map(u => <option key={u} value={u}>{u}</option>)}
                                                 </select>
@@ -6472,22 +6491,22 @@ const MedicalApp = (function() {
                                             const activeUnevac = soldierHistory.find(e => e.evacStatus === 'Не евакуйований');
                                             if (!activeUnevac || isEditOpen) return null;
                                             return (
-                                                <div className="bg-amber-950/40 border border-amber-500/50 rounded-2xl p-3.5 space-y-2 text-xs animate-in fade-in duration-150 shadow-lg shadow-amber-950/20">
-                                                    <div className="flex items-center gap-2 text-amber-300 font-bold">
-                                                        <Icon name="alert-triangle" className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+                                                <div className="bg-[#d99b26]/10 border border-[#d99b26]/50 rounded-sm p-3.5 space-y-2 text-xs">
+                                                    <div className="flex items-center gap-2 text-[#f3d88e] font-bold">
+                                                        <Icon name="alert-triangle" className="w-4 h-4 text-[#d99b26] shrink-0" />
                                                         <span>У бійця вже є відкритий запис у черзі!</span>
                                                     </div>
-                                                    <p className="text-[11px] text-slate-300 leading-relaxed">
-                                                        Попередній статус: <strong className="text-amber-300 font-mono">{activeUnevac.lossType}</strong> від <span className="font-mono text-slate-200">{formatEpisodeDateUI(activeUnevac.date)}</span> (<span className="text-red-400 font-bold">{activeUnevac.evacStatus}</span>).
+                                                    <p className="text-[11px] text-[#e6edf3] leading-relaxed tabular-nums">
+                                                        Попередній статус: <strong className="text-[#f3d88e] font-mono">{activeUnevac.lossType}</strong> від <span className="font-mono text-[#e6edf3]">{formatEpisodeDateUI(activeUnevac.date)}</span> (<span className="text-[#f3a3a0] font-bold">{activeUnevac.evacStatus}</span>).
                                                     </p>
-                                                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-amber-500/20 flex-wrap">
-                                                        <span className="text-[10px] text-slate-400 italic">
+                                                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#d99b26]/25 flex-wrap">
+                                                        <span className="text-[10px] text-[#b8bec8] italic">
                                                             Створення нового запису оновить актуальний статус бійця в черзі, зберігши історію.
                                                         </span>
                                                         <button
                                                             type="button"
                                                             onClick={() => handleStartEdit(activeUnevac)}
-                                                            className="text-[10px] text-amber-300 hover:text-white bg-amber-900/60 hover:bg-amber-800 border border-amber-700/60 px-2.5 py-1 rounded-lg font-bold transition shrink-0 cursor-pointer flex items-center gap-1"
+                                                            className="text-[10px] text-[#f3d88e] hover:text-[#e6edf3] bg-[#d99b26]/15 hover:bg-[#d99b26]/25 border border-[#d99b26]/50 px-2.5 py-1 rounded-sm font-bold transition-colors shrink-0 cursor-pointer flex items-center gap-1"
                                                         >
                                                             <span>Редагувати старий запис</span>
                                                             <Icon name="arrow-right" className="w-3 h-3" />
@@ -6498,24 +6517,24 @@ const MedicalApp = (function() {
                                         })()}
 
                                         {soldierHistory.length > 0 && (
-                                            <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-2.5">
-                                                <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider flex items-center justify-between gap-1.5">
+                                            <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-4 space-y-2.5">
+                                                <label className="text-[10px] text-[#b8bec8] font-bold uppercase font-mono tracking-wider flex items-center justify-between gap-1.5 tabular-nums">
                                                     <span className="flex items-center gap-1.5">
-                                                        <Icon name="history" className="w-3.5 h-3.5 text-amber-400" />
+                                                        <Icon name="history" className="w-3.5 h-3.5 text-[#4c8ed9]" />
                                                         <span>Історія епізодів бійця ({soldierHistory.length})</span>
                                                     </span>
-                                                    <span className="text-[9px] text-slate-500 font-normal">Клікніть для редагування</span>
+                                                    <span className="text-[9px] text-[#989fa9] font-normal">Клікніть для редагування</span>
                                                 </label>
                                                 <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
                                                     {soldierHistory.map(h => (
-                                                        <div key={h.id} className="bg-slate-900/80 hover:bg-slate-900 border border-slate-800/80 hover:border-amber-500/40 p-2.5 rounded-xl text-xs flex justify-between items-start gap-2 transition cursor-pointer group" title="Натисніть для переходу до запису" onClick={() => handleStartEdit(h)}>
+                                                        <div key={h.id} className="bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] hover:border-[#4c8ed9] p-2.5 rounded-sm text-xs flex justify-between items-start gap-2 transition-colors cursor-pointer group tabular-nums" title="Натисніть для переходу до запису" onClick={() => handleStartEdit(h)}>
                                                             <div>
-                                                                <div className="text-white font-bold group-hover:text-amber-300 transition-colors">{h.lossType}</div>
-                                                                <div className="text-[10px] text-slate-400 font-mono mt-0.5">{localMedicalInput(h.date).replace('T', ' ') || 'Некоректна дата'}</div>
+                                                                <div className="text-[#e6edf3] font-bold group-hover:text-[#4c8ed9] transition-colors">{h.lossType}</div>
+                                                                <div className="text-[10px] text-[#b8bec8] font-mono mt-0.5">{localMedicalInput(h.date).replace('T', ' ') || 'Некоректна дата'}</div>
                                                             </div>
                                                             <div className="text-right font-mono">
-                                                                {isAny300(h.lossType) && <div className="text-[10px] text-amber-400 font-bold">{h.severity || 'Невідомо'}</div>}
-                                                                <div className={`text-[10px] font-semibold mt-0.5 ${h.evacStatus === 'Евакуйований' ? 'text-emerald-400' : 'text-red-400'}`}>{h.evacStatus}</div>
+                                                                {isAny300(h.lossType) && <div className="text-[10px] text-[#e7c574] font-bold">{h.severity || 'Невідомо'}</div>}
+                                                                <div className={`text-[10px] font-semibold mt-0.5 ${h.evacStatus === 'Евакуйований' ? 'text-[#8ad8ae]' : 'text-[#f3a3a0]'}`}>{h.evacStatus}</div>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -6523,9 +6542,9 @@ const MedicalApp = (function() {
                                             </div>
                                         )}
 
-                                        <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
+                                        <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-4 space-y-3">
                                             <div>
-                                                <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Тип події</label>
+                                                <label className="text-[10px] text-[#b8bec8] font-bold uppercase font-mono tracking-wider block mb-1.5">Тип події</label>
                                                 <select aria-label="Тип медичного запису" value={lossType} onChange={(e) => {
                                                     const newType = e.target.value;
                                                     if (isEditOpen && currentEpisode) {
@@ -6546,7 +6565,7 @@ const MedicalApp = (function() {
                                                         setAwolStatus("В розшуку");
                                                     }
                                                     setLossType(newType);
-                                                }} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none cursor-pointer">
+                                                }} className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-3 py-2 text-xs font-bold text-[#e6edf3] outline-none cursor-pointer">
                                                     <option value="">-- Оберіть тип події --</option>
                                                     {LOSS_TYPES.filter(type => {
                                                         if (type === "200 (від ран)") {
@@ -6560,8 +6579,8 @@ const MedicalApp = (function() {
                                             
                                             {isAny300(lossType) && (
                                                 <div>
-                                                    <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Важкість ураження</label>
-                                                    <select aria-label="Важкість у медичному записі" value={severity} onChange={(e) => setSeverity(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer">
+                                                    <label className="text-[10px] text-[#b8bec8] font-bold uppercase font-mono tracking-wider block mb-1.5">Важкість ураження</label>
+                                                    <select aria-label="Важкість у медичному записі" value={severity} onChange={(e) => setSeverity(e.target.value)} className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-3 py-2 text-xs text-[#e6edf3] outline-none cursor-pointer">
                                                         <option value="">-- Оберіть важкість --</option>
                                                         <option value="Легкий">Легкий</option>
                                                         <option value="Середній">Середній</option>
@@ -6573,8 +6592,8 @@ const MedicalApp = (function() {
 
                                             {!isAwol(lossType) && (
                                                 <div>
-                                                    <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Причина події</label>
-                                                    <select aria-label="Причина медичного запису" value={cause} onChange={(e) => setCause(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer">
+                                                    <label className="text-[10px] text-[#b8bec8] font-bold uppercase font-mono tracking-wider block mb-1.5">Причина події</label>
+                                                    <select aria-label="Причина медичного запису" value={cause} onChange={(e) => setCause(e.target.value)} className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-3 py-2 text-xs text-[#e6edf3] outline-none cursor-pointer">
                                                         <option value="">-- Оберіть причину --</option>
                                                         {dictionaryOptions('causes', settings.causes, cause).map(c => <option key={c} value={c}>{c}</option>)}
                                                     </select>
@@ -6586,44 +6605,55 @@ const MedicalApp = (function() {
                                     {/* 2. Середня колонка */}
                                     <div className={`${isAny300(lossType) ? 'lg:col-span-4' : 'lg:col-span-6'} space-y-4`}>
                                         {!isAwol(lossType) && (
-                                            <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
+                                            <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-4 space-y-3">
                                                 <div>
-                                                    <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Час події</label>
-                                                    <input aria-label="Дата й час медичного запису" type="datetime-local" value={episodeDate} onChange={(e) => setEpisodeDate(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none transition" />
+                                                    <div className="flex justify-between items-center mb-1.5">
+                                                        <label className="text-[10px] text-[#b8bec8] font-bold uppercase font-mono tracking-wider">Час події</label>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setEpisodeDate(localMedicalInput(new Date()))}
+                                                            className="text-[10px] font-mono font-bold text-[#4c8ed9] hover:text-[#e6edf3] bg-[#4c8ed9]/10 hover:bg-[#4c8ed9]/20 border border-[#4c8ed9]/40 rounded-sm px-1.5 py-0.5 transition-colors cursor-pointer flex items-center gap-1"
+                                                            title="Підставити поточну дату та час"
+                                                        >
+                                                            <Icon name="clock" className="w-2.5 h-2.5" />
+                                                            <span>Зараз</span>
+                                                        </button>
+                                                    </div>
+                                                    <input aria-label="Дата й час медичного запису" type="datetime-local" value={episodeDate} onChange={(e) => setEpisodeDate(e.target.value)} className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-3 py-2 text-xs font-mono text-[#e6edf3] outline-none transition-colors" />
                                                 </div>
                                                 
-                                                <label className={`flex items-center gap-2.5 text-xs font-bold p-3 rounded-xl border cursor-pointer select-none transition ${inUdp ? 'bg-red-950/60 border-red-800/80 text-red-300 shadow-sm' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'}`}>
-                                                    <input type="checkbox" checked={inUdp} onChange={(e) => setInUdp(e.target.checked)} className="rounded bg-slate-950 border-slate-700 text-red-500 focus:ring-0 w-4 h-4 cursor-pointer" />
+                                                <label className={`flex items-center gap-2.5 text-xs font-bold p-3 rounded-sm border cursor-pointer select-none transition-colors ${inUdp ? 'bg-[#d9534f]/15 border-[#d9534f]/50 text-[#f3a3a0]' : 'bg-[#17181b] border-[#2e3138] text-[#b8bec8] hover:text-[#e6edf3]'}`}>
+                                                    <input type="checkbox" checked={inUdp} onChange={(e) => setInUdp(e.target.checked)} className="rounded-sm bg-[#101113] border-[#3c404a] text-[#d9534f] focus:ring-0 w-4 h-4 cursor-pointer" />
                                                     <span className="flex items-center gap-1.5">
-                                                        <Icon name="zap" className="w-4 h-4 text-red-400" />
+                                                        <Icon name="zap" className="w-4 h-4 text-[#d9534f]" />
                                                         <span>Отримано під час УПД</span>
                                                     </span>
                                                 </label>
 
                                                 <div>
-                                                    <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Фактичне місце отримання</label>
-                                                    <input aria-label="Фактичне місце отримання" list="med-actual-locs" placeholder="Оберіть або введіть своє..." value={actualLoc} onChange={(e) => setActualLoc(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition font-sans" />
+                                                    <label className="text-[10px] text-[#b8bec8] font-bold uppercase font-mono tracking-wider block mb-1.5">Фактичне місце отримання</label>
+                                                    <input aria-label="Фактичне місце отримання" list="med-actual-locs" placeholder="Оберіть або введіть своє..." value={actualLoc} onChange={(e) => setActualLoc(e.target.value)} className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-3 py-2 text-xs text-[#e6edf3] placeholder-[#989fa9] outline-none transition-colors font-sans" />
                                                     <datalist id="med-actual-locs">{dictionaryOptions('actualPlaces', episodes.map(episode => episode.actualLoc), actualLoc).map(name => <option key={name} value={name} />)}</datalist>
                                                 </div>
                                                 <div>
-                                                    <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Документальне місце</label>
-                                                    <input aria-label="Документальне місце" list="med-document-locs" placeholder="Оберіть або введіть своє..." value={docLoc} onChange={(e) => setDocLoc(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition font-sans" />
+                                                    <label className="text-[10px] text-[#b8bec8] font-bold uppercase font-mono tracking-wider block mb-1.5">Документальне місце</label>
+                                                    <input aria-label="Документальне місце" list="med-document-locs" placeholder="Оберіть або введіть своє..." value={docLoc} onChange={(e) => setDocLoc(e.target.value)} className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-3 py-2 text-xs text-[#e6edf3] placeholder-[#989fa9] outline-none transition-colors font-sans" />
                                                     <datalist id="med-document-locs">
                                                         {dictionaryOptions('docPlaces', episodes.map(episode => episode.docLoc), docLoc).map(name => <option key={name} value={name} />)}
                                                     </datalist>
                                                 </div>
                                                 <div>
-                                                    <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Опис / Нотатки</label>
-                                                    <textarea rows="2" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Короткий опис обставин..." className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition font-sans resize-none"></textarea>
+                                                    <label className="text-[10px] text-[#b8bec8] font-bold uppercase font-mono tracking-wider block mb-1.5">Опис / Нотатки</label>
+                                                    <textarea rows="2" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Короткий опис обставин..." className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-3 py-2 text-xs text-[#e6edf3] placeholder-[#989fa9] outline-none transition-colors font-sans resize-none"></textarea>
                                                 </div>
                                             </div>
                                         )}
 
                                         {!isAwol(lossType) && lossType !== "Зниклий безвісти (ЗБВ)" && (
-                                            <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
+                                            <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-4 space-y-3">
                                                 <div>
-                                                    <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Статус евакуації</label>
-                                                    <select value={evacStatus} onChange={(e) => setEvacStatus(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer">
+                                                    <label className="text-[10px] text-[#b8bec8] font-bold uppercase font-mono tracking-wider block mb-1.5">Статус евакуації</label>
+                                                    <select value={evacStatus} onChange={(e) => setEvacStatus(e.target.value)} className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-3 py-2 text-xs text-[#e6edf3] outline-none cursor-pointer">
                                                         <option value="Не евакуйований">Не евакуйований</option>
                                                         <option value="Евакуйований">Евакуйований</option>
                                                         <option value="Не потребує евакуації">Не потребує евакуації</option>
@@ -6632,10 +6662,10 @@ const MedicalApp = (function() {
                                                 {evacStatus === "Евакуйований" && (
                                                     <div>
                                                         <div className="flex justify-between items-center mb-1.5">
-                                                            <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider">Дата евакуації</label>
-                                                            <span className="text-[9px] text-slate-500 font-mono">за замовч. сьогодні</span>
+                                                            <label className="text-[10px] text-[#b8bec8] font-bold uppercase font-mono tracking-wider">Дата евакуації</label>
+                                                            <span className="text-[9px] text-[#989fa9] font-mono">за замовч. сьогодні</span>
                                                         </div>
-                                                        <input type="date" value={evacDate} onChange={(e) => setEvacDate(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none transition" />
+                                                        <input type="date" value={evacDate} onChange={(e) => setEvacDate(e.target.value)} className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-3 py-2 text-xs font-mono text-[#e6edf3] outline-none transition-colors" />
                                                     </div>
                                                 )}
                                             </div>
@@ -6653,72 +6683,81 @@ const MedicalApp = (function() {
                                                 }
                                             };
                                             return (
-                                                <div className={`${isReturnedForm ? 'bg-emerald-950/25 border-emerald-800/50' : 'bg-fuchsia-950/25 border-fuchsia-800/50'} border rounded-2xl p-4 space-y-3.5 transition-colors`}>
+                                                <div className={`${isReturnedForm ? 'bg-[#3da372]/10 border-[#3da372]/40' : 'bg-[#8f5fb8]/10 border-[#8f5fb8]/40'} border rounded-sm p-4 space-y-3.5 transition-colors`}>
                                                     {/* 1. Наочний перемикач статусу: В розшуку vs Повернувся */}
                                                     <div>
-                                                        <label className={`text-[10px] ${isReturnedForm ? 'text-emerald-400' : 'text-fuchsia-400'} font-bold uppercase font-mono tracking-wider block mb-1.5`}>
+                                                        <label className={`text-[10px] ${isReturnedForm ? 'text-[#8ad8ae]' : 'text-[#d8b4fe]'} font-bold uppercase font-mono tracking-wider block mb-1.5`}>
                                                             Статус обліку {lossType === "Дезертирство" ? "дезертирства" : "СЗЧ"}
                                                         </label>
-                                                        <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950/90 border border-slate-800 rounded-xl">
+                                                        <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#101113] border border-[#2e3138] rounded-sm">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setAwolMode("В розшуку")}
-                                                                className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                                                                className={`py-2 px-3 rounded-sm text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                                                                     !isReturnedForm
-                                                                        ? 'bg-fuchsia-600/30 border border-fuchsia-500/60 text-fuchsia-200 shadow-sm'
-                                                                        : 'border border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                                                                        ? 'bg-[#8f5fb8]/20 border border-[#8f5fb8]/60 text-[#e9d5ff]'
+                                                                        : 'border border-transparent text-[#b8bec8] hover:text-[#e6edf3] hover:bg-[#222429]'
                                                                 }`}
                                                             >
-                                                                <Icon name="user-x" className="w-3.5 h-3.5 text-fuchsia-400" />
+                                                                <Icon name="user-x" className="w-3.5 h-3.5 text-[#c084fc]" />
                                                                 <span>В розшуку (СЗЧ)</span>
                                                             </button>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setAwolMode("Повернувся")}
-                                                                className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                                                                className={`py-2 px-3 rounded-sm text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                                                                     isReturnedForm
-                                                                        ? 'bg-emerald-600/30 border border-emerald-500/60 text-emerald-200 shadow-sm'
-                                                                        : 'border border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                                                                        ? 'bg-[#3da372]/20 border border-[#3da372]/60 text-[#8ad8ae]'
+                                                                        : 'border border-transparent text-[#b8bec8] hover:text-[#e6edf3] hover:bg-[#222429]'
                                                                 }`}
                                                             >
-                                                                <Icon name="check-circle" className="w-3.5 h-3.5 text-emerald-400" />
+                                                                <Icon name="check-circle" className="w-3.5 h-3.5 text-[#3da372]" />
                                                                 <span>Повернувся в стрій</span>
                                                             </button>
                                                         </div>
                                                     </div>
 
                                                     {/* 2. Дати в одному блоці пліч-о-пліч: Дата та час СЗЧ (вибуття) + Дата повернення */}
-                                                    <div className={`grid grid-cols-1 ${isReturnedForm ? 'sm:grid-cols-2' : ''} gap-3 bg-slate-950/60 border border-slate-800/80 rounded-xl p-3`}>
+                                                    <div className={`grid grid-cols-1 ${isReturnedForm ? 'sm:grid-cols-2' : ''} gap-3 bg-[#101113] border border-[#2e3138] rounded-sm p-3`}>
                                                         <div>
                                                             <div className="flex justify-between items-center mb-1.5">
-                                                                <label className="text-[10px] text-fuchsia-300 font-bold uppercase font-mono tracking-wider flex items-center gap-1">
-                                                                    <Icon name="calendar" className="w-3 h-3 text-fuchsia-400" />
+                                                                <label className="text-[10px] text-[#d8b4fe] font-bold uppercase font-mono tracking-wider flex items-center gap-1">
+                                                                    <Icon name="calendar" className="w-3 h-3 text-[#c084fc]" />
                                                                     <span>Дата та час СЗЧ (вибуття)</span>
                                                                 </label>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setEpisodeDate(localMedicalInput(new Date()))}
+                                                                    className="text-[10px] font-mono font-bold text-[#d8b4fe] hover:text-[#e6edf3] bg-[#8f5fb8]/15 hover:bg-[#8f5fb8]/25 border border-[#8f5fb8]/40 rounded-sm px-1.5 py-0.5 transition-colors cursor-pointer flex items-center gap-1"
+                                                                    title="Підставити поточну дату та час"
+                                                                >
+                                                                    <Icon name="clock" className="w-2.5 h-2.5" />
+                                                                    <span>Зараз</span>
+                                                                </button>
                                                             </div>
                                                             <input
                                                                 aria-label="Дата й час медичного запису"
                                                                 type="datetime-local"
                                                                 value={episodeDate}
                                                                 onChange={(e) => setEpisodeDate(e.target.value)}
-                                                                className="w-full bg-slate-900 border border-slate-800 focus:border-fuchsia-500/80 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none transition"
+                                                                className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#c084fc] rounded-sm px-3 py-2 text-xs font-mono text-[#e6edf3] outline-none transition-colors"
                                                             />
                                                         </div>
 
                                                         {isReturnedForm && (
                                                             <div>
                                                                 <div className="flex justify-between items-center mb-1.5">
-                                                                    <label className="text-[10px] text-emerald-300 font-bold uppercase font-mono tracking-wider flex items-center gap-1">
-                                                                        <Icon name="check-circle" className="w-3 h-3 text-emerald-400" />
+                                                                    <label className="text-[10px] text-[#8ad8ae] font-bold uppercase font-mono tracking-wider flex items-center gap-1">
+                                                                        <Icon name="check-circle" className="w-3 h-3 text-[#3da372]" />
                                                                         <span>Дата повернення</span>
                                                                     </label>
-                                                                    <span className="text-[9px] text-slate-500 font-mono">за замовч. сьогодні</span>
+                                                                    <span className="text-[9px] text-[#989fa9] font-mono">за замовч. сьогодні</span>
                                                                 </div>
                                                                 <input
                                                                     type="date"
                                                                     value={evacDate}
                                                                     onChange={(e) => setEvacDate(e.target.value)}
-                                                                    className="w-full bg-slate-900 border border-emerald-800/70 focus:border-emerald-500/80 rounded-xl px-3 py-2 text-xs font-mono text-emerald-200 outline-none transition"
+                                                                    className="w-full bg-[#17181b] border border-[#3da372]/50 focus:border-[#3da372] rounded-sm px-3 py-2 text-xs font-mono text-[#8ad8ae] outline-none transition-colors"
                                                                 />
                                                             </div>
                                                         )}
@@ -6726,14 +6765,14 @@ const MedicalApp = (function() {
 
                                                     {/* 3. Звідки вибув / Обставини СЗЧ */}
                                                     <div>
-                                                        <label className={`text-[10px] ${isReturnedForm ? 'text-emerald-400' : 'text-fuchsia-400'} font-bold uppercase font-mono tracking-wider block mb-1.5`}>
+                                                        <label className={`text-[10px] ${isReturnedForm ? 'text-[#8ad8ae]' : 'text-[#d8b4fe]'} font-bold uppercase font-mono tracking-wider block mb-1.5`}>
                                                             Звідки вибув / Обставини {lossType === "Повернення з СЗЧ" ? "СЗЧ" : lossType}
                                                         </label>
                                                         <select
                                                             aria-label="Звідки вибув / Обставини СЗЧ"
                                                             value={cause}
                                                             onChange={(e) => setCause(e.target.value)}
-                                                            className={`w-full bg-slate-900 border border-slate-800 ${isReturnedForm ? 'focus:border-emerald-500/80' : 'focus:border-fuchsia-500/80'} rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer`}
+                                                            className={`w-full bg-[#17181b] border border-[#2e3138] ${isReturnedForm ? 'focus:border-[#3da372]' : 'focus:border-[#c084fc]'} rounded-sm px-3 py-2 text-xs text-[#e6edf3] outline-none cursor-pointer`}
                                                         >
                                                             <option value="">-- Оберіть звідки вибув --</option>
                                                             {DEFAULT_AWOL_CAUSES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -6741,11 +6780,11 @@ const MedicalApp = (function() {
                                                         </select>
                                                     </div>
 
-                                                    {/* 4. Місце / локація вибуття (необов'язково) */}
+                                                    {/* 4. Місце / локація вибуття (необов’язково) */}
                                                     <div>
                                                         <div className="flex justify-between items-center mb-1.5">
-                                                            <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider">Місце / локація вибуття</label>
-                                                            <span className="text-[9px] text-slate-500 font-mono">необов'язково</span>
+                                                            <label className="text-[10px] text-[#b8bec8] font-bold uppercase font-mono tracking-wider">Місце / локація вибуття</label>
+                                                            <span className="text-[9px] text-[#989fa9] font-mono">необов&apos;язково</span>
                                                         </div>
                                                         <input
                                                             aria-label="Фактичне місце отримання"
@@ -6753,49 +6792,49 @@ const MedicalApp = (function() {
                                                             placeholder="Напр.: н.п. Лиман, НЦ, маршрут переміщення..."
                                                             value={actualLoc}
                                                             onChange={(e) => setActualLoc(e.target.value)}
-                                                            className="w-full bg-slate-900 border border-slate-800 focus:border-fuchsia-500/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition font-sans"
+                                                            className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#c084fc] rounded-sm px-3 py-2 text-xs text-[#e6edf3] placeholder-[#989fa9] outline-none transition-colors font-sans"
                                                         />
                                                         <datalist id="med-actual-locs">{dictionaryOptions('actualPlaces', episodes.map(episode => episode.actualLoc), actualLoc).map(name => <option key={name} value={name} />)}</datalist>
                                                     </div>
 
                                                     {/* 5. Опис / Нотатки */}
                                                     <div>
-                                                        <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Опис / Нотатки</label>
+                                                        <label className="text-[10px] text-[#b8bec8] font-bold uppercase font-mono tracking-wider block mb-1.5">Опис / Нотатки</label>
                                                         <textarea
                                                             rows="2"
                                                             value={notes}
                                                             onChange={(e) => setNotes(e.target.value)}
                                                             placeholder="Додаткові деталі вибуття або обставини повернення..."
-                                                            className="w-full bg-slate-900 border border-slate-800 focus:border-fuchsia-500/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition font-sans resize-none"
+                                                            className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#c084fc] rounded-sm px-3 py-2 text-xs text-[#e6edf3] placeholder-[#989fa9] outline-none transition-colors font-sans resize-none"
                                                         ></textarea>
                                                     </div>
                                                 </div>
                                             );
                                         })()}
 
-                                        <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
-                                            <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-300 hover:text-white cursor-pointer select-none">
+                                        <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-4 space-y-3">
+                                            <label className="flex items-center gap-2.5 text-xs font-semibold text-[#e6edf3] cursor-pointer select-none">
                                                 <input type="checkbox" checked={hasReport} onChange={(e) => {
                                                     setHasReport(e.target.checked);
                                                     if(!e.target.checked) setWeaponStatus("");
-                                                }} className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0 w-4 h-4 cursor-pointer"/> 
+                                                }} className="rounded-sm bg-[#17181b] border-[#3c404a] text-[#4c8ed9] focus:ring-0 w-4 h-4 cursor-pointer"/> 
                                                 <span>Складено рапорт</span>
                                             </label>
                                             {hasReport && (
-                                                <div className="space-y-3 pl-4 border-l-2 border-slate-800 mt-2">
+                                                <div className="space-y-3 pl-4 border-l-2 border-[#2e3138] mt-2">
                                                     <div>
                                                         <div className="flex justify-between items-center mb-1.5">
-                                                            <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider">Дата рапорту</label>
-                                                            <span className="text-[9px] text-slate-500 font-mono">за замовч. сьогодні</span>
+                                                            <label className="text-[10px] text-[#b8bec8] font-bold uppercase font-mono tracking-wider">Дата рапорту</label>
+                                                            <span className="text-[9px] text-[#989fa9] font-mono">за замовч. сьогодні</span>
                                                         </div>
-                                                        <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none transition" />
+                                                        <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-3 py-2 text-xs font-mono text-[#e6edf3] outline-none transition-colors" />
                                                     </div>
                                                     <div>
-                                                        <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider mb-1.5 flex items-center gap-1.5">
-                                                            <Icon name="crosshair" className="w-3.5 h-3.5 text-amber-400" />
+                                                        <label className="text-[10px] text-[#b8bec8] font-bold uppercase font-mono tracking-wider mb-1.5 flex items-center gap-1.5">
+                                                            <Icon name="crosshair" className="w-3.5 h-3.5 text-[#4c8ed9]" />
                                                             <span>Статус зброї</span>
                                                         </label>
-                                                        <select value={weaponStatus} onChange={(e) => setWeaponStatus(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer">
+                                                        <select value={weaponStatus} onChange={(e) => setWeaponStatus(e.target.value)} className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-3 py-2 text-xs text-[#e6edf3] outline-none cursor-pointer">
                                                             <option value="">-- Все ок / Не вказувати --</option>
                                                             <option value="втрачена">Втрачена</option>
                                                             <option value="знищена">Знищена</option>
@@ -6809,23 +6848,23 @@ const MedicalApp = (function() {
                                         </div>
                                     </div>
 
-                                    {/* 3. Права колонка: Інтерактивна тактична карта тіла (Органічний анатомічний силует) */}
+                                    {/* 3. Права колонка: Інтерактивна карта тіла */}
                                     {isAny300(lossType) ? (
-                                        <div className="lg:col-span-5 bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex flex-col shadow-2xl space-y-3 relative overflow-visible">
+                                        <div className="lg:col-span-5 bg-[#101113] border border-[#2e3138] rounded-sm p-4 flex flex-col space-y-3 relative overflow-visible">
                                             
                                             {/* Заголовок анатомічного блоку */}
-                                            <div className="w-full flex items-center justify-between border-b border-slate-800/80 pb-2">
-                                                <div className="flex items-center gap-2 text-xs font-bold uppercase text-amber-400 font-mono tracking-wider">
-                                                    <Icon name="activity" className="w-4 h-4 text-amber-400" />
+                                            <div className="w-full flex items-center justify-between border-b border-[#2e3138] pb-2">
+                                                <div className="flex items-center gap-2 text-xs font-bold uppercase text-[#e6edf3] font-mono tracking-wider">
+                                                    <Icon name="activity" className="w-4 h-4 text-[#4c8ed9]" />
                                                     <span>Карта уражень</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] text-slate-500 font-mono">Вигляд спереду</span>
+                                                    <span className="text-[10px] text-[#989fa9] font-mono">Вигляд спереду</span>
                                                     {Object.keys(injuries).some(k => Object.values(injuries[k] || {}).some(Boolean)) && (
                                                         <button 
                                                             type="button" 
                                                             onClick={() => setInjuries({})} 
-                                                            className="text-[10px] text-red-400 hover:text-red-300 font-semibold cursor-pointer flex items-center gap-1 bg-red-950/40 px-1.5 py-0.5 rounded border border-red-900/60 transition"
+                                                            className="text-[10px] text-[#f3a3a0] hover:text-[#e6edf3] font-semibold cursor-pointer flex items-center gap-1 bg-[#d9534f]/10 hover:bg-[#d9534f]/20 px-1.5 py-0.5 rounded-sm border border-[#d9534f]/40 transition-colors"
                                                             title="Скинути всі травми"
                                                         >
                                                             <Icon name="trash-2" className="w-3 h-3" />
@@ -6837,33 +6876,23 @@ const MedicalApp = (function() {
 
                                             {/* Тіло блоку: Силует зліва + Панель вибору кнопок справа */}
                                             <div className="w-full flex-1 flex flex-col sm:flex-row items-stretch gap-3.5 min-h-[360px]">
-                                                {/* Силует HUD */}
-                                                <div className="relative w-full sm:w-[140px] shrink-0 border border-slate-800/80 rounded-2xl bg-gradient-to-b from-slate-950 via-slate-900/95 to-slate-950 p-2 shadow-inner flex items-center justify-center group">
-                                                    <div className="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:12px_12px] opacity-20 pointer-events-none rounded-2xl"></div>
+                                                {/* Силует */}
+                                                <div className="relative w-full sm:w-[140px] shrink-0 border border-[#2e3138] rounded-sm bg-[#17181b] p-2 flex items-center justify-center group">
+                                                    <span className="absolute top-2.5 left-2.5 text-[9px] font-mono font-bold text-[#b8bec8] bg-[#101113] px-1.5 py-0.5 rounded-sm border border-[#2e3138]" title="Права сторона бійця">П</span>
+                                                    <span className="absolute top-2.5 right-2.5 text-[9px] font-mono font-bold text-[#b8bec8] bg-[#101113] px-1.5 py-0.5 rounded-sm border border-[#2e3138]" title="Ліва сторона бійця">Л</span>
 
-                                                    <span className="absolute top-2.5 left-2.5 text-[9px] font-mono font-bold text-slate-500 bg-slate-950/90 px-1.5 py-0.5 rounded-md border border-slate-800/80 shadow-sm" title="Права сторона бійця">П</span>
-                                                    <span className="absolute top-2.5 right-2.5 text-[9px] font-mono font-bold text-slate-500 bg-slate-950/90 px-1.5 py-0.5 rounded-md border border-slate-800/80 shadow-sm" title="Ліва сторона бійця">Л</span>
-
-                                                    <svg viewBox="0 0 220 380" className="w-full h-auto max-h-[350px] drop-shadow-lg select-none">
-                                                        <defs>
-                                                            <filter id="glow-red-med" x="-20%" y="-20%" width="140%" height="140%">
-                                                                <feGaussianBlur stdDeviation="3" result="blur" />
-                                                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                                                            </filter>
-                                                        </defs>
-
+                                                    <svg viewBox="0 0 220 380" className="w-full h-auto max-h-[350px] select-none">
                                                         {/* Голова */}
                                                         <g onClick={() => setSelectedRegion('head')} className="cursor-pointer">
                                                             <path 
                                                                 d="M110,18 C94,18 84,32 84,48 C84,65 96,78 110,82 C124,78 136,65 136,48 C136,32 126,18 110,18 Z" 
-                                                                fill={hasAnyInjury('head') ? '#ef4444' : (selectedRegion === 'head' ? '#1e293b' : '#0f172a')} 
-                                                                stroke={selectedRegion === 'head' ? '#f59e0b' : (hasAnyInjury('head') ? '#f87171' : '#334155')} 
+                                                                fill={hasAnyInjury('head') ? '#d9534f' : (selectedRegion === 'head' ? '#222429' : '#101113')} 
+                                                                stroke={selectedRegion === 'head' ? '#4c8ed9' : (hasAnyInjury('head') ? '#f3a3a0' : '#3c404a')} 
                                                                 strokeWidth={selectedRegion === 'head' ? '2.5' : '1.5'} 
-                                                                filter={hasAnyInjury('head') ? 'url(#glow-red-med)' : undefined}
-                                                                className="transition-all hover:stroke-amber-400"
+                                                                className="transition-colors hover:stroke-[#4c8ed9]"
                                                             />
                                                             {hasAnyInjury('head') && (
-                                                                <circle cx="110" cy="48" r="5" fill="#fff" className="animate-pulse" />
+                                                                <circle cx="110" cy="48" r="4.5" fill="#e6edf3" />
                                                             )}
                                                         </g>
 
@@ -6871,11 +6900,10 @@ const MedicalApp = (function() {
                                                         <g onClick={() => setSelectedRegion('neck')} className="cursor-pointer">
                                                             <path 
                                                                 d="M102,82 L118,82 L122,96 L98,96 Z" 
-                                                                fill={hasAnyInjury('neck') ? '#ef4444' : (selectedRegion === 'neck' ? '#1e293b' : '#0f172a')} 
-                                                                stroke={selectedRegion === 'neck' ? '#f59e0b' : (hasAnyInjury('neck') ? '#f87171' : '#334155')} 
+                                                                fill={hasAnyInjury('neck') ? '#d9534f' : (selectedRegion === 'neck' ? '#222429' : '#101113')} 
+                                                                stroke={selectedRegion === 'neck' ? '#4c8ed9' : (hasAnyInjury('neck') ? '#f3a3a0' : '#3c404a')} 
                                                                 strokeWidth={selectedRegion === 'neck' ? '2.5' : '1.5'} 
-                                                                filter={hasAnyInjury('neck') ? 'url(#glow-red-med)' : undefined}
-                                                                className="transition-all hover:stroke-amber-400"
+                                                                className="transition-colors hover:stroke-[#4c8ed9]"
                                                             />
                                                         </g>
 
@@ -6883,14 +6911,13 @@ const MedicalApp = (function() {
                                                         <g onClick={() => setSelectedRegion('chest')} className="cursor-pointer">
                                                             <path 
                                                                 d="M98,96 L122,96 L148,104 L142,165 L78,165 L72,104 Z" 
-                                                                fill={hasAnyInjury('chest') ? '#ef4444' : (selectedRegion === 'chest' ? '#1e293b' : '#0f172a')} 
-                                                                stroke={selectedRegion === 'chest' ? '#f59e0b' : (hasAnyInjury('chest') ? '#f87171' : '#334155')} 
+                                                                fill={hasAnyInjury('chest') ? '#d9534f' : (selectedRegion === 'chest' ? '#222429' : '#101113')} 
+                                                                stroke={selectedRegion === 'chest' ? '#4c8ed9' : (hasAnyInjury('chest') ? '#f3a3a0' : '#3c404a')} 
                                                                 strokeWidth={selectedRegion === 'chest' ? '2.5' : '1.5'} 
-                                                                filter={hasAnyInjury('chest') ? 'url(#glow-red-med)' : undefined}
-                                                                className="transition-all hover:stroke-amber-400"
+                                                                className="transition-colors hover:stroke-[#4c8ed9]"
                                                             />
                                                             {hasAnyInjury('chest') && (
-                                                                <circle cx="110" cy="130" r="5" fill="#fff" className="animate-pulse" />
+                                                                <circle cx="110" cy="130" r="4.5" fill="#e6edf3" />
                                                             )}
                                                         </g>
 
@@ -6898,14 +6925,13 @@ const MedicalApp = (function() {
                                                         <g onClick={() => setSelectedRegion('abdomen')} className="cursor-pointer">
                                                             <path 
                                                                 d="M78,165 L142,165 L136,215 L84,215 Z" 
-                                                                fill={hasAnyInjury('abdomen') ? '#ef4444' : (selectedRegion === 'abdomen' ? '#1e293b' : '#0f172a')} 
-                                                                stroke={selectedRegion === 'abdomen' ? '#f59e0b' : (hasAnyInjury('abdomen') ? '#f87171' : '#334155')} 
+                                                                fill={hasAnyInjury('abdomen') ? '#d9534f' : (selectedRegion === 'abdomen' ? '#222429' : '#101113')} 
+                                                                stroke={selectedRegion === 'abdomen' ? '#4c8ed9' : (hasAnyInjury('abdomen') ? '#f3a3a0' : '#3c404a')} 
                                                                 strokeWidth={selectedRegion === 'abdomen' ? '2.5' : '1.5'} 
-                                                                filter={hasAnyInjury('abdomen') ? 'url(#glow-red-med)' : undefined}
-                                                                className="transition-all hover:stroke-amber-400"
+                                                                className="transition-colors hover:stroke-[#4c8ed9]"
                                                             />
                                                             {hasAnyInjury('abdomen') && (
-                                                                <circle cx="110" cy="190" r="5" fill="#fff" className="animate-pulse" />
+                                                                <circle cx="110" cy="190" r="4.5" fill="#e6edf3" />
                                                             )}
                                                         </g>
 
@@ -6913,14 +6939,13 @@ const MedicalApp = (function() {
                                                         <g onClick={() => setSelectedRegion('arm_r')} className="cursor-pointer">
                                                             <path 
                                                                 d="M72,104 C60,110 46,135 40,165 C34,195 28,225 34,230 C40,235 48,225 54,195 C60,165 72,140 78,120 Z" 
-                                                                fill={hasAnyInjury('arm_r') ? '#ef4444' : (selectedRegion === 'arm_r' ? '#1e293b' : '#0f172a')} 
-                                                                stroke={selectedRegion === 'arm_r' ? '#f59e0b' : (hasAnyInjury('arm_r') ? '#f87171' : '#334155')} 
+                                                                fill={hasAnyInjury('arm_r') ? '#d9534f' : (selectedRegion === 'arm_r' ? '#222429' : '#101113')} 
+                                                                stroke={selectedRegion === 'arm_r' ? '#4c8ed9' : (hasAnyInjury('arm_r') ? '#f3a3a0' : '#3c404a')} 
                                                                 strokeWidth={selectedRegion === 'arm_r' ? '2.5' : '1.5'} 
-                                                                filter={hasAnyInjury('arm_r') ? 'url(#glow-red-med)' : undefined}
-                                                                className="transition-all hover:stroke-amber-400"
+                                                                className="transition-colors hover:stroke-[#4c8ed9]"
                                                             />
                                                             {hasAnyInjury('arm_r') && (
-                                                                <circle cx="48" cy="165" r="5" fill="#fff" className="animate-pulse" />
+                                                                <circle cx="48" cy="165" r="4.5" fill="#e6edf3" />
                                                             )}
                                                         </g>
 
@@ -6928,14 +6953,13 @@ const MedicalApp = (function() {
                                                         <g onClick={() => setSelectedRegion('arm_l')} className="cursor-pointer">
                                                             <path 
                                                                 d="M148,104 C160,110 174,135 180,165 C186,195 192,225 186,230 C180,235 172,225 166,195 C160,165 148,140 142,120 Z" 
-                                                                fill={hasAnyInjury('arm_l') ? '#ef4444' : (selectedRegion === 'arm_l' ? '#1e293b' : '#0f172a')} 
-                                                                stroke={selectedRegion === 'arm_l' ? '#f59e0b' : (hasAnyInjury('arm_l') ? '#f87171' : '#334155')} 
+                                                                fill={hasAnyInjury('arm_l') ? '#d9534f' : (selectedRegion === 'arm_l' ? '#222429' : '#101113')} 
+                                                                stroke={selectedRegion === 'arm_l' ? '#4c8ed9' : (hasAnyInjury('arm_l') ? '#f3a3a0' : '#3c404a')} 
                                                                 strokeWidth={selectedRegion === 'arm_l' ? '2.5' : '1.5'} 
-                                                                filter={hasAnyInjury('arm_l') ? 'url(#glow-red-med)' : undefined}
-                                                                className="transition-all hover:stroke-amber-400"
+                                                                className="transition-colors hover:stroke-[#4c8ed9]"
                                                             />
                                                             {hasAnyInjury('arm_l') && (
-                                                                <circle cx="172" cy="165" r="5" fill="#fff" className="animate-pulse" />
+                                                                <circle cx="172" cy="165" r="4.5" fill="#e6edf3" />
                                                             )}
                                                         </g>
 
@@ -6943,14 +6967,13 @@ const MedicalApp = (function() {
                                                         <g onClick={() => setSelectedRegion('leg_r')} className="cursor-pointer">
                                                             <path 
                                                                 d="M84,215 L106,215 L100,290 L98,365 L74,365 L72,290 Z" 
-                                                                fill={hasAnyInjury('leg_r') ? '#ef4444' : (selectedRegion === 'leg_r' ? '#1e293b' : '#0f172a')} 
-                                                                stroke={selectedRegion === 'leg_r' ? '#f59e0b' : (hasAnyInjury('leg_r') ? '#f87171' : '#334155')} 
+                                                                fill={hasAnyInjury('leg_r') ? '#d9534f' : (selectedRegion === 'leg_r' ? '#222429' : '#101113')} 
+                                                                stroke={selectedRegion === 'leg_r' ? '#4c8ed9' : (hasAnyInjury('leg_r') ? '#f3a3a0' : '#3c404a')} 
                                                                 strokeWidth={selectedRegion === 'leg_r' ? '2.5' : '1.5'} 
-                                                                filter={hasAnyInjury('leg_r') ? 'url(#glow-red-med)' : undefined}
-                                                                className="transition-all hover:stroke-amber-400"
+                                                                className="transition-colors hover:stroke-[#4c8ed9]"
                                                             />
                                                             {hasAnyInjury('leg_r') && (
-                                                                <circle cx="86" cy="285" r="5" fill="#fff" className="animate-pulse" />
+                                                                <circle cx="86" cy="285" r="4.5" fill="#e6edf3" />
                                                             )}
                                                         </g>
 
@@ -6958,24 +6981,23 @@ const MedicalApp = (function() {
                                                         <g onClick={() => setSelectedRegion('leg_l')} className="cursor-pointer">
                                                             <path 
                                                                 d="M114,215 L136,215 L148,290 L146,365 L122,365 L120,290 Z" 
-                                                                fill={hasAnyInjury('leg_l') ? '#ef4444' : (selectedRegion === 'leg_l' ? '#1e293b' : '#0f172a')} 
-                                                                stroke={selectedRegion === 'leg_l' ? '#f59e0b' : (hasAnyInjury('leg_l') ? '#f87171' : '#334155')} 
+                                                                fill={hasAnyInjury('leg_l') ? '#d9534f' : (selectedRegion === 'leg_l' ? '#222429' : '#101113')} 
+                                                                stroke={selectedRegion === 'leg_l' ? '#4c8ed9' : (hasAnyInjury('leg_l') ? '#f3a3a0' : '#3c404a')} 
                                                                 strokeWidth={selectedRegion === 'leg_l' ? '2.5' : '1.5'} 
-                                                                filter={hasAnyInjury('leg_l') ? 'url(#glow-red-med)' : undefined}
-                                                                className="transition-all hover:stroke-amber-400"
+                                                                className="transition-colors hover:stroke-[#4c8ed9]"
                                                             />
                                                             {hasAnyInjury('leg_l') && (
-                                                                <circle cx="134" cy="285" r="5" fill="#fff" className="animate-pulse" />
+                                                                <circle cx="134" cy="285" r="4.5" fill="#e6edf3" />
                                                             )}
                                                         </g>
                                                     </svg>
                                                 </div>
 
                                                 {/* Панель вибору травм для активної зони з повним текстом */}
-                                                <div className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-col justify-start space-y-2.5 shadow-md min-w-0">
-                                                    <div className="text-xs font-bold text-amber-400 uppercase font-mono border-b border-slate-800 pb-1.5 flex justify-between items-center shrink-0">
+                                                <div className="flex-1 bg-[#17181b] border border-[#2e3138] rounded-sm p-3 flex flex-col justify-start space-y-2.5 min-w-0">
+                                                    <div className="text-xs font-bold text-[#e6edf3] uppercase font-mono border-b border-[#2e3138] pb-1.5 flex justify-between items-center shrink-0">
                                                         <span className="flex items-center gap-1.5 min-w-0">
-                                                            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0"></span>
+                                                            <span className="w-2 h-2 rounded-full bg-[#4c8ed9] shrink-0"></span>
                                                             <span className="truncate">{BODY_REGIONS.find(r => r.id === selectedRegion)?.name || 'Зона'}</span>
                                                         </span>
                                                         {hasAnyInjury(selectedRegion) && (
@@ -6986,7 +7008,7 @@ const MedicalApp = (function() {
                                                                     delete updated[selectedRegion];
                                                                     setInjuries(updated);
                                                                 }}
-                                                                className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold cursor-pointer hover:underline shrink-0 ml-1"
+                                                                className="text-[10px] text-[#4c8ed9] hover:text-[#e6edf3] font-semibold cursor-pointer hover:underline shrink-0 ml-1"
                                                             >
                                                                 Очистити
                                                             </button>
@@ -6995,81 +7017,81 @@ const MedicalApp = (function() {
 
                                                     {(() => {
                                                         let injuryOptions = [
-                                                            { key: 'shrapnel', icon: '💥', label: 'Уламкове', desc: 'Ураження уламками снарядів, мін, гранат, ВОГ або FPV-дронів' },
-                                                            { key: 'bullet', icon: '🩸', label: 'Кульове', desc: 'Вогнепальне поранення кулями стрілецької зброї' },
-                                                            { key: 'fracture', icon: '🦴', label: 'Перелом', desc: 'Закритий або відкритий перелом кісток внаслідок удару, вибуху чи завалу' },
-                                                            { key: 'burn', icon: '🔥', label: 'Опік', desc: 'Термічний або хімічний опік шкіри та тканин' },
-                                                            { key: 'laceration', icon: '🩹', label: 'Рвана рана', desc: 'Рвана, забійна або різана рана м’яких тканин' },
-                                                            { key: 'contusion', icon: '🛡️', label: 'Забій', desc: 'Закрите механічне ушкодження тканин без порушення цілісності шкіри' }
+                                                            { key: 'shrapnel', icon: 'crosshair', label: 'Уламкове', desc: 'Ураження уламками снарядів, мін, гранат, ВОГ або FPV-дронів' },
+                                                            { key: 'bullet', icon: 'target', label: 'Кульове', desc: 'Вогнепальне поранення кулями стрілецької зброї' },
+                                                            { key: 'fracture', icon: 'activity', label: 'Перелом', desc: 'Закритий або відкритий перелом кісток внаслідок удару, вибуху чи завалу' },
+                                                            { key: 'burn', icon: 'flame', label: 'Опік', desc: 'Термічний або хімічний опік шкіри та тканин' },
+                                                            { key: 'laceration', icon: 'alert-triangle', label: 'Рвана рана', desc: 'Рвана, забійна або різана рана м’яких тканин' },
+                                                            { key: 'contusion', icon: 'shield', label: 'Забій', desc: 'Закрите механічне ушкодження тканин без порушення цілісності шкіри' }
                                                         ];
 
                                                         if (selectedRegion === 'arm_l' || selectedRegion === 'arm_r') {
                                                             injuryOptions = [
-                                                                { key: 'shrapnel', icon: '💥', label: 'Уламкове', desc: 'Ураження уламками снарядів, мін, гранат, ВОГ або FPV-дронів' },
-                                                                { key: 'bullet', icon: '🩸', label: 'Кульове', desc: 'Вогнепальне кульове поранення руки' },
-                                                                { key: 'amputation', icon: '✂️', label: 'Ампутація руки', desc: 'Повний або неповний травматичний відрив верхньої кінцівки (вище кисті)' },
-                                                                { key: 'amp_hand', icon: '🖐️', label: 'Ампутація кисті', desc: 'Травматичний відрив або розтрощення кисті руки' },
-                                                                { key: 'amp_fingers', icon: '🤏', label: 'Ампутація пальців', desc: 'Травматичний відрив або розтрощення пальців руки' },
-                                                                { key: 'fracture', icon: '🦴', label: 'Перелом', desc: 'Перелом плечової, променевої, ліктьової кістки або пальців' },
-                                                                { key: 'rupture', icon: '⚡', label: 'Розрив', desc: 'Тяжке розтрощення та розрив м’яких тканин, м’язів і зв’язок' },
-                                                                { key: 'burn', icon: '🔥', label: 'Опік', desc: 'Термічний або хімічний опік верхньої кінцівки' },
-                                                                { key: 'laceration', icon: '🩹', label: 'Рвана рана', desc: 'Рвана або різана рана м’яких тканин руки' },
-                                                                { key: 'contusion', icon: '🛡️', label: 'Забій', desc: 'Забій, гематома або сильний удар верхньої кінцівки' }
+                                                                { key: 'shrapnel', icon: 'crosshair', label: 'Уламкове', desc: 'Ураження уламками снарядів, мін, гранат, ВОГ або FPV-дронів' },
+                                                                { key: 'bullet', icon: 'target', label: 'Кульове', desc: 'Вогнепальне кульове поранення руки' },
+                                                                { key: 'amputation', icon: 'scissors', label: 'Ампутація руки', desc: 'Повний або неповний травматичний відрив верхньої кінцівки (вище кисті)' },
+                                                                { key: 'amp_hand', icon: 'hand', label: 'Ампутація кисті', desc: 'Травматичний відрив або розтрощення кисті руки' },
+                                                                { key: 'amp_fingers', icon: 'scissors', label: 'Ампутація пальців', desc: 'Травматичний відрив або розтрощення пальців руки' },
+                                                                { key: 'fracture', icon: 'activity', label: 'Перелом', desc: 'Перелом плечової, променевої, ліктьової кістки або пальців' },
+                                                                { key: 'rupture', icon: 'zap', label: 'Розрив', desc: 'Тяжке розтрощення та розрив м’яких тканин, м’язів і зв’язок' },
+                                                                { key: 'burn', icon: 'flame', label: 'Опік', desc: 'Термічний або хімічний опік верхньої кінцівки' },
+                                                                { key: 'laceration', icon: 'alert-triangle', label: 'Рвана рана', desc: 'Рвана або різана рана м’яких тканин руки' },
+                                                                { key: 'contusion', icon: 'shield', label: 'Забій', desc: 'Забій, гематома або сильний удар верхньої кінцівки' }
                                                             ];
                                                         } else if (selectedRegion === 'leg_l' || selectedRegion === 'leg_r') {
                                                             injuryOptions = [
-                                                                { key: 'shrapnel', icon: '💥', label: 'Уламкове', desc: 'Ураження уламками снарядів, мін, гранат, ВОГ або FPV-дронів' },
-                                                                { key: 'bullet', icon: '🩸', label: 'Кульове', desc: 'Вогнепальне кульове поранення ноги' },
-                                                                { key: 'amputation', icon: '✂️', label: 'Ампутація ноги', desc: 'Повний або неповний травматичний відрив нижньої кінцівки (гомілка/стегно)' },
-                                                                { key: 'amp_foot', icon: '🦶', label: 'Ампутація стопи', desc: 'Травматичний відрив або руйнування стопи (підрив на міні ПМН)' },
-                                                                { key: 'amp_fingers', icon: '🤏', label: 'Ампутація пальців', desc: 'Травматичний відрив або розтрощення пальців стопи' },
-                                                                { key: 'fracture', icon: '🦴', label: 'Перелом', desc: 'Перелом стегнової, великогомілкової кістки або стопи' },
-                                                                { key: 'rupture', icon: '⚡', label: 'Розрив', desc: 'Тяжке розтрощення та розрив м’яких тканин, м’язів і сухожилків' },
-                                                                { key: 'burn', icon: '🔥', label: 'Опік', desc: 'Термічний або хімічний опік нижньої кінцівки' },
-                                                                { key: 'crush', icon: '🪨', label: 'Краш-синдром', desc: 'Синдром тривалого стиснення ноги (присипання в бліндажі/окопі, небезпека токсикозу нирок)' },
-                                                                { key: 'contusion', icon: '🛡️', label: 'Забій', desc: 'Забій, синець або масивна гематома ноги' }
+                                                                { key: 'shrapnel', icon: 'crosshair', label: 'Уламкове', desc: 'Ураження уламками снарядів, мін, гранат, ВОГ або FPV-дронів' },
+                                                                { key: 'bullet', icon: 'target', label: 'Кульове', desc: 'Вогнепальне кульове поранення ноги' },
+                                                                { key: 'amputation', icon: 'scissors', label: 'Ампутація ноги', desc: 'Повний або неповний травматичний відрив нижньої кінцівки (гомілка/стегно)' },
+                                                                { key: 'amp_foot', icon: 'footprints', label: 'Ампутація стопи', desc: 'Травматичний відрив або руйнування стопи (підрив на міні ПМН)' },
+                                                                { key: 'amp_fingers', icon: 'scissors', label: 'Ампутація пальців', desc: 'Травматичний відрив або розтрощення пальців стопи' },
+                                                                { key: 'fracture', icon: 'activity', label: 'Перелом', desc: 'Перелом стегнової, великогомілкової кістки або стопи' },
+                                                                { key: 'rupture', icon: 'zap', label: 'Розрив', desc: 'Тяжке розтрощення та розрив м’яких тканин, м’язів і сухожилків' },
+                                                                { key: 'burn', icon: 'flame', label: 'Опік', desc: 'Термічний або хімічний опік нижньої кінцівки' },
+                                                                { key: 'crush', icon: 'layers', label: 'Краш-синдром', desc: 'Синдром тривалого стиснення ноги (присипання в бліндажі/окопі, небезпека токсикозу нирок)' },
+                                                                { key: 'contusion', icon: 'shield', label: 'Забій', desc: 'Забій, синець або масивна гематома ноги' }
                                                             ];
                                                         } else if (selectedRegion === 'head') {
                                                             injuryOptions = [
-                                                                { key: 'shrapnel', icon: '💥', label: 'Уламкове', desc: 'Уламкове поранення м’яких тканин голови або обличчя' },
-                                                                { key: 'bullet', icon: '🩸', label: 'Кульове', desc: 'Вогнепальне кульове поранення голови' },
-                                                                { key: 'tbi', icon: '🧠', label: 'ЧМТ / Контузія / Струс', desc: 'Закрита/відкрита черепно-мозкова травма, струс або забій головного мозку' },
-                                                                { key: 'eye', icon: '👁️', label: 'Травма ока', desc: 'Ураження очного яблука або орбіти уламками, склом, порохом' },
-                                                                { key: 'akbt', icon: '💣', label: 'АКБТ', desc: 'Акубаротравма (контузія слуху, різкий перепад тиску, шум у вухах)' },
-                                                                { key: 'barotrauma', icon: '💨', label: 'Баротравма', desc: 'Ураження органів слуху та носоглотки вибуховою хвилею' },
-                                                                { key: 'fracture', icon: '🦴', label: 'Перелом', desc: 'Перелом кісток черепа, носа або щелепи' },
-                                                                { key: 'burn', icon: '🔥', label: 'Опік', desc: 'Опік обличчя, голови чи очей' },
-                                                                { key: 'laceration', icon: '🩹', label: 'Рвана рана', desc: 'Рвана рана волосистої частини голови або обличчя' },
-                                                                { key: 'contusion', icon: '🛡️', label: 'Забій', desc: 'Забій або гематома м’яких тканин голови' }
+                                                                { key: 'shrapnel', icon: 'crosshair', label: 'Уламкове', desc: 'Уламкове поранення м’яких тканин голови або обличчя' },
+                                                                { key: 'bullet', icon: 'target', label: 'Кульове', desc: 'Вогнепальне кульове поранення голови' },
+                                                                { key: 'tbi', icon: 'brain', label: 'ЧМТ / Контузія / Струс', desc: 'Закрита/відкрита черепно-мозкова травма, струс або забій головного мозку' },
+                                                                { key: 'eye', icon: 'eye', label: 'Травма ока', desc: 'Ураження очного яблука або орбіти уламками, склом, порохом' },
+                                                                { key: 'akbt', icon: 'volume-2', label: 'АКБТ', desc: 'Акубаротравма (контузія слуху, різкий перепад тиску, шум у вухах)' },
+                                                                { key: 'barotrauma', icon: 'wind', label: 'Баротравма', desc: 'Ураження органів слуху та носоглотки вибуховою хвилею' },
+                                                                { key: 'fracture', icon: 'activity', label: 'Перелом', desc: 'Перелом кісток черепа, носа або щелепи' },
+                                                                { key: 'burn', icon: 'flame', label: 'Опік', desc: 'Опік обличчя, голови чи очей' },
+                                                                { key: 'laceration', icon: 'alert-triangle', label: 'Рвана рана', desc: 'Рвана рана волосистої частини голови або обличчя' },
+                                                                { key: 'contusion', icon: 'shield', label: 'Забій', desc: 'Забій або гематома м’яких тканин голови' }
                                                             ];
                                                         } else if (selectedRegion === 'chest') {
                                                             injuryOptions = [
-                                                                { key: 'shrapnel', icon: '💥', label: 'Уламкове', desc: 'Проникаюче або непроникаюче уламкове поранення грудей' },
-                                                                { key: 'bullet', icon: '🩸', label: 'Кульове', desc: 'Кульове поранення грудної клітки' },
-                                                                { key: 'pneumothorax', icon: '🫁', label: 'Пневмоторакс', desc: 'Скупчення повітря в плевральній порожнині, колапс легені (загроза життю)' },
-                                                                { key: 'rupture', icon: '⚡', label: 'Розрив', desc: 'Розрив м’язів грудної стінки або діафрагми' },
-                                                                { key: 'fracture', icon: '🦴', label: 'Перелом ребер', desc: 'Перелом ребер, ключиці або грудини' },
-                                                                { key: 'burn', icon: '🔥', label: 'Опік', desc: 'Термічний або хімічний опік грудної клітки' },
-                                                                { key: 'crush', icon: '🪨', label: 'Краш-синдром', desc: 'Здавлення грудної клітки завалом або ґрунтом (асфіксія, шок)' },
-                                                                { key: 'contusion', icon: '🛡️', label: 'Забій', desc: 'Тупа травма / забій грудної клітки, легень або серця' }
+                                                                { key: 'shrapnel', icon: 'crosshair', label: 'Уламкове', desc: 'Проникаюче або непроникаюче уламкове поранення грудей' },
+                                                                { key: 'bullet', icon: 'target', label: 'Кульове', desc: 'Кульове поранення грудної клітки' },
+                                                                { key: 'pneumothorax', icon: 'heart-pulse', label: 'Пневмоторакс', desc: 'Скупчення повітря в плевральній порожнині, колапс легені (загроза життю)' },
+                                                                { key: 'rupture', icon: 'zap', label: 'Розрив', desc: 'Розрив м’язів грудної стінки або діафрагми' },
+                                                                { key: 'fracture', icon: 'activity', label: 'Перелом ребер', desc: 'Перелом ребер, ключиці або грудини' },
+                                                                { key: 'burn', icon: 'flame', label: 'Опік', desc: 'Термічний або хімічний опік грудної клітки' },
+                                                                { key: 'crush', icon: 'layers', label: 'Краш-синдром', desc: 'Здавлення грудної клітки завалом або ґрунтом (асфіксія, шок)' },
+                                                                { key: 'contusion', icon: 'shield', label: 'Забій', desc: 'Тупа травма / забій грудної клітки, легень або серця' }
                                                             ];
                                                         } else if (selectedRegion === 'abdomen') {
                                                             injuryOptions = [
-                                                                { key: 'shrapnel', icon: '💥', label: 'Уламкове', desc: 'Проникаюче або сліпе уламкове поранення живота/тазу' },
-                                                                { key: 'bullet', icon: '🩸', label: 'Кульове', desc: 'Кульове поранення черевної порожнини' },
-                                                                { key: 'rupture', icon: '⚡', label: 'Розрив', desc: 'Розрив внутрішніх органів (печінка, селезінка, кишківник)' },
-                                                                { key: 'burn', icon: '🔥', label: 'Опік', desc: 'Термічний опік передньої черевної стінки' },
-                                                                { key: 'laceration', icon: '🩹', label: 'Рвана рана', desc: 'Рвана рана м’яких тканин черевної стінки' },
-                                                                { key: 'contusion', icon: '🛡️', label: 'Забій', desc: 'Тупа травма живота, забій внутрішніх органів' }
+                                                                { key: 'shrapnel', icon: 'crosshair', label: 'Уламкове', desc: 'Проникаюче або сліпе уламкове поранення живота/тазу' },
+                                                                { key: 'bullet', icon: 'target', label: 'Кульове', desc: 'Кульове поранення черевної порожнини' },
+                                                                { key: 'rupture', icon: 'zap', label: 'Розрив', desc: 'Розрив внутрішніх органів (печінка, селезінка, кишківник)' },
+                                                                { key: 'burn', icon: 'flame', label: 'Опік', desc: 'Термічний опік передньої черевної стінки' },
+                                                                { key: 'laceration', icon: 'alert-triangle', label: 'Рвана рана', desc: 'Рвана рана м’яких тканин черевної стінки' },
+                                                                { key: 'contusion', icon: 'shield', label: 'Забій', desc: 'Тупа травма живота, забій внутрішніх органів' }
                                                             ];
                                                         } else if (selectedRegion === 'neck') {
                                                             injuryOptions = [
-                                                                { key: 'shrapnel', icon: '💥', label: 'Уламкове', desc: 'Уламкове поранення шиї (ризик пошкодження сонної артерії, трахеї)' },
-                                                                { key: 'bullet', icon: '🩸', label: 'Кульове', desc: 'Кульове поранення шиї' },
-                                                                { key: 'laceration', icon: '🩹', label: 'Рвана рана', desc: 'Рвана рана м’яких тканин шиї' },
-                                                                { key: 'burn', icon: '🔥', label: 'Опік', desc: 'Термічний опік шиї' },
-                                                                { key: 'fracture', icon: '🦴', label: 'Перелом', desc: 'Травма / перелом шийного відділу хребта чи гортані' },
-                                                                { key: 'contusion', icon: '🛡️', label: 'Забій', desc: 'Забій або гематома шиї' }
+                                                                { key: 'shrapnel', icon: 'crosshair', label: 'Уламкове', desc: 'Уламкове поранення шиї (ризик пошкодження сонної артерії, трахеї)' },
+                                                                { key: 'bullet', icon: 'target', label: 'Кульове', desc: 'Кульове поранення шиї' },
+                                                                { key: 'laceration', icon: 'alert-triangle', label: 'Рвана рана', desc: 'Рвана рана м’яких тканин шиї' },
+                                                                { key: 'burn', icon: 'flame', label: 'Опік', desc: 'Термічний опік шиї' },
+                                                                { key: 'fracture', icon: 'activity', label: 'Перелом', desc: 'Травма / перелом шийного відділу хребта чи гортані' },
+                                                                { key: 'contusion', icon: 'shield', label: 'Забій', desc: 'Забій або гематома шиї' }
                                                             ];
                                                         }
 
@@ -7078,25 +7100,27 @@ const MedicalApp = (function() {
                                                                 {injuryOptions.map(i => {
                                                                     const isChecked = injuries[selectedRegion]?.[i.key] || false;
                                                                     return (
-                                                                        <button 
+                                                                        <button
                                                                             type="button"
-                                                                            key={i.key} 
+                                                                            key={i.key}
                                                                             onClick={() => toggleInjuryType(selectedRegion, i.key)}
                                                                             title={`${i.label}: ${i.desc}`}
-                                                                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer select-none text-left group/btn ${
-                                                                                isChecked 
-                                                                                    ? 'bg-red-950/90 border-2 border-red-500 text-white shadow-md shadow-red-950/60 ring-1 ring-red-500/40 font-bold' 
-                                                                                    : 'bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 text-slate-300 hover:text-white'
+                                                                            className={`w-full flex items-center justify-between px-3 py-2 rounded-sm text-xs font-semibold transition-colors cursor-pointer select-none text-left ${
+                                                                                isChecked
+                                                                                    ? 'bg-[#d9534f]/15 border border-[#d9534f] text-[#e6edf3] font-bold'
+                                                                                    : 'bg-[#101113] hover:bg-[#222429] border border-[#2e3138] hover:border-[#3c404a] text-[#b8bec8] hover:text-[#e6edf3]'
                                                                             }`}
                                                                         >
                                                                             <span className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
-                                                                                <span className="shrink-0 text-base leading-none group-hover/btn:scale-110 transition-transform">{i.icon}</span>
+                                                                                <Icon name={i.icon} className={`w-3.5 h-3.5 shrink-0 ${isChecked ? 'text-[#f3a3a0]' : 'text-[#989fa9]'}`} />
                                                                                 <span className="text-xs font-semibold whitespace-normal leading-snug">{i.label}</span>
                                                                             </span>
                                                                             {isChecked ? (
-                                                                                <span className="w-4 h-4 rounded bg-red-500 text-slate-950 flex items-center justify-center font-black text-[10px] shrink-0 shadow-sm">✓</span>
+                                                                                <span className="w-4 h-4 rounded-sm bg-[#d9534f] text-white flex items-center justify-center font-black text-[10px] shrink-0">
+                                                                                    <Icon name="check" className="w-3 h-3" />
+                                                                                </span>
                                                                             ) : (
-                                                                                <span className="w-4 h-4 rounded border border-slate-700 bg-slate-900/90 shrink-0"></span>
+                                                                                <span className="w-4 h-4 rounded-sm border border-[#3c404a] bg-[#17181b] shrink-0"></span>
                                                                             )}
                                                                         </button>
                                                                     );
@@ -7109,19 +7133,19 @@ const MedicalApp = (function() {
                                         </div>
                                     ) : null}
                                 </div>
-                                
+
                                 {/* Footer */}
-                                <div className="px-6 py-4 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between shrink-0">
+                                <div className="px-5 py-3.5 bg-[#101113] border-t border-[#2e3138] flex items-center justify-between shrink-0">
                                     <div>
                                         {isEditOpen && (
                                             confirmDelete ? (
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-xs text-red-400 font-bold">Дійсно видалити запис?</span>
-                                                    <button type="button" onClick={handleDeleteEpisode} className="px-3.5 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-red-950 cursor-pointer">Так, видалити</button>
-                                                    <button type="button" onClick={() => setConfirmDelete(false)} className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition cursor-pointer">Скасувати</button>
+                                                    <span className="text-xs text-[#f3a3a0] font-bold">Дійсно видалити запис?</span>
+                                                    <button type="button" onClick={handleDeleteEpisode} className="px-3.5 py-1.5 bg-[#d9534f] hover:bg-[#e06561] text-white text-xs font-bold rounded-sm border border-[#d9534f] transition-colors cursor-pointer">Так, видалити</button>
+                                                    <button type="button" onClick={() => setConfirmDelete(false)} className="px-3.5 py-1.5 bg-[#222429] hover:bg-[#2e3138] text-[#b8bec8] text-xs font-semibold rounded-sm border border-[#3c404a] transition-colors cursor-pointer">Скасувати</button>
                                                 </div>
                                             ) : (
-                                                <button type="button" onClick={() => setConfirmDelete(true)} className="px-4 py-2 bg-red-950/60 hover:bg-red-900/80 text-red-400 hover:text-red-300 border border-red-900/60 text-xs font-bold rounded-xl transition cursor-pointer shadow-sm flex items-center gap-1.5">
+                                                <button type="button" onClick={() => setConfirmDelete(true)} className="px-4 py-2 bg-[#d9534f]/10 hover:bg-[#d9534f]/20 text-[#f3a3a0] hover:text-white border border-[#d9534f]/45 text-xs font-bold rounded-sm transition-colors cursor-pointer flex items-center gap-1.5">
                                                     <Icon name="trash-2" className="w-3.5 h-3.5" />
                                                     <span>Видалити запис</span>
                                                 </button>
@@ -7129,10 +7153,10 @@ const MedicalApp = (function() {
                                         )}
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <button type="button" onClick={() => { setIsAddWoundedOpen(false); setIsEditOpen(false); }} className="px-5 py-2.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold rounded-xl transition cursor-pointer">
+                                        <button type="button" onClick={() => { setIsAddWoundedOpen(false); setIsEditOpen(false); }} className="px-4 py-2 bg-[#17181b] hover:bg-[#222429] text-[#b8bec8] hover:text-[#e6edf3] border border-[#2e3138] text-xs font-bold rounded-sm transition-colors cursor-pointer">
                                             Скасувати
                                         </button>
-                                        <button type="submit" className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 text-xs font-bold rounded-xl shadow-lg shadow-amber-950/50 transition cursor-pointer flex items-center gap-2">
+                                        <button type="submit" className="px-5 py-2 bg-[#2b67ab] hover:bg-[#3678c4] text-white border border-[#4c8ed9] text-xs font-bold rounded-sm transition-colors cursor-pointer flex items-center gap-2">
                                             <Icon name="check" className="w-4 h-4" />
                                             <span>{isEditOpen ? 'Оновити запис' : 'Зберегти запис'}</span>
                                         </button>
@@ -7143,44 +7167,44 @@ const MedicalApp = (function() {
                     )}
 
                     {isSettingsOpen && (
-                        <div onClick={(e) => { if (e.target === e.currentTarget) setIsSettingsOpen(false); }} className="fixed inset-0 z-[200] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-                            <div className="bg-slate-900 border border-slate-700/80 w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150">
+                        <div onClick={(e) => { if (e.target === e.currentTarget) setIsSettingsOpen(false); }} className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-3 sm:p-4 overscroll-contain">
+                            <div className="bg-[#17181b] border border-[#2e3138] w-full max-w-lg rounded-sm overflow-hidden flex flex-col max-h-[90vh]">
                                 {/* Header */}
-                                <div className="px-6 py-4 bg-slate-950/70 border-b border-slate-800 flex justify-between items-center">
+                                <div className="px-5 py-3.5 bg-[#101113] border-b border-[#2e3138] flex justify-between items-center">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-                                            <Icon name="settings" className="w-5 h-5" />
+                                        <div className="w-9 h-9 rounded-sm bg-[#4c8ed9]/15 border border-[#4c8ed9]/40 flex items-center justify-center text-[#4c8ed9] shrink-0">
+                                            <Icon name="settings" className="w-4 h-4" />
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-white text-base tracking-tight">Класифікатори довідників</h3>
-                                            <p className="text-[11px] text-slate-400">Налаштування списків звань, підрозділів, позицій та причин</p>
+                                            <h3 className="font-bold text-[#e6edf3] text-base tracking-tight">Класифікатори довідників</h3>
+                                            <p className="text-[11px] text-[#989fa9]">Налаштування списків звань, підрозділів, позицій та причин</p>
                                         </div>
                                     </div>
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setIsSettingsOpen(false)} 
-                                        className="w-8 h-8 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsSettingsOpen(false)}
+                                        className="w-8 h-8 rounded-sm bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] text-[#b8bec8] hover:text-[#e6edf3] flex items-center justify-center transition-colors cursor-pointer"
                                     >
                                         <Icon name="x" className="w-4 h-4" />
                                     </button>
                                 </div>
 
                                 {/* Tabs */}
-                                <div className="flex border-b border-slate-800 bg-slate-950/40 p-1 gap-1 shrink-0 text-xs font-semibold">
+                                <div className="flex border-b border-[#2e3138] bg-[#101113] p-1 gap-1 shrink-0 text-xs font-semibold">
                                     {[
                                         { k: 'causes', l: 'Причини' },
                                         { k: 'ranks', l: 'Звання' },
                                         { k: 'units', l: 'Підрозділи' },
                                         { k: 'sectors', l: 'Позиції' }
                                     ].map(t => (
-                                        <button 
-                                            key={t.k} 
+                                        <button
+                                            key={t.k}
                                             type="button"
-                                            onClick={() => setActiveSettingsTab(t.k)} 
-                                            className={`flex-1 py-2 text-center rounded-xl transition cursor-pointer select-none ${
-                                                activeSettingsTab === t.k 
-                                                    ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 shadow-sm' 
-                                                    : 'text-slate-400 hover:text-white'
+                                            onClick={() => setActiveSettingsTab(t.k)}
+                                            className={`flex-1 py-2 text-center rounded-sm border transition-colors cursor-pointer select-none ${
+                                                activeSettingsTab === t.k
+                                                    ? 'bg-[#4c8ed9]/15 text-[#e6edf3] font-bold border-[#4c8ed9]/50'
+                                                    : 'border-transparent text-[#b8bec8] hover:text-[#e6edf3] hover:bg-[#17181b]'
                                             }`}
                                         >
                                             {t.l}
@@ -7191,38 +7215,38 @@ const MedicalApp = (function() {
                                 {/* Content */}
                                 <div className="p-5 flex-1 overflow-hidden flex flex-col gap-4">
                                     <div className="flex gap-2 shrink-0">
-                                        <input 
-                                            type="text" 
-                                            value={newSettingItem} 
-                                            onChange={(e) => setNewSettingItem(e.target.value)} 
-                                            placeholder="Нове значення..." 
-                                            className="flex-1 bg-slate-950 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none" 
+                                        <input
+                                            type="text"
+                                            value={newSettingItem}
+                                            onChange={(e) => setNewSettingItem(e.target.value)}
+                                            placeholder="Нове значення..."
+                                            className="flex-1 bg-[#101113] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-3 py-2 text-xs text-[#e6edf3] placeholder-[#989fa9] outline-none"
                                         />
-                                        <button 
+                                        <button
                                             type="button"
-                                            onClick={addSettingItem} 
-                                            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow transition cursor-pointer"
+                                            onClick={addSettingItem}
+                                            className="px-4 py-2 bg-[#2b67ab] hover:bg-[#3678c4] text-white border border-[#4c8ed9] font-bold text-xs rounded-sm transition-colors cursor-pointer"
                                         >
                                             Додати
                                         </button>
                                     </div>
-                                    <div className="flex-1 border border-slate-800 bg-slate-950/60 rounded-xl p-1 overflow-y-auto space-y-1">
+                                    <div className="flex-1 border border-[#2e3138] bg-[#101113] rounded-sm p-1 overflow-y-auto space-y-1">
                                         {(settings[activeSettingsTab] || []).map((item, idx) => (
-                                            <div key={idx} className="flex justify-between items-center px-3 py-2 rounded-lg bg-slate-900/60 hover:bg-slate-900 border border-slate-800/50 text-xs text-slate-200 group">
+                                            <div key={idx} className="flex justify-between items-center px-3 py-2 rounded-sm bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] text-xs text-[#e6edf3] group">
                                                 <span className="truncate pr-2">{item}</span>
                                                 <div className="flex items-center gap-1 shrink-0">
-                                                    <button 
+                                                    <button
                                                         type="button"
-                                                        onClick={() => { setIsSettingsOpen(false); openBatchReplaceFor(activeSettingsTab, item); }} 
-                                                        className="opacity-60 group-hover:opacity-100 text-amber-400 hover:text-amber-300 p-1 hover:bg-amber-950/60 rounded-md transition cursor-pointer"
+                                                        onClick={() => { setIsSettingsOpen(false); openBatchReplaceFor(activeSettingsTab, item); }}
+                                                        className="opacity-70 group-hover:opacity-100 text-[#e7c574] hover:text-[#f3d88e] p-1 hover:bg-[#d99b26]/15 rounded-sm transition-colors cursor-pointer"
                                                         title="Перейменувати або замінити у всій базі"
                                                     >
                                                         <Icon name="repeat" className="w-3.5 h-3.5" />
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         type="button"
-                                                        onClick={() => removeSettingItem(item)} 
-                                                        className="opacity-60 group-hover:opacity-100 text-red-400 hover:text-red-300 p-1 hover:bg-red-950/60 rounded-md transition cursor-pointer"
+                                                        onClick={() => removeSettingItem(item)}
+                                                        className="opacity-70 group-hover:opacity-100 text-[#f3a3a0] hover:text-white p-1 hover:bg-[#d9534f]/20 rounded-sm transition-colors cursor-pointer"
                                                         title="Видалити з довідника"
                                                     >
                                                         <Icon name="trash-2" className="w-3.5 h-3.5" />
@@ -7231,14 +7255,14 @@ const MedicalApp = (function() {
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                                        <span className="text-[10px] text-slate-500">Потрібно змінити назву в усіх старих записах?</span>
-                                        <button 
-                                            type="button" 
+                                    <div className="pt-2 border-t border-[#2e3138] flex items-center justify-between">
+                                        <span className="text-[10px] text-[#989fa9]">Потрібно змінити назву в усіх старих записах?</span>
+                                        <button
+                                            type="button"
                                             onClick={() => { setIsSettingsOpen(false); openBatchReplaceFor(activeSettingsTab, ""); }}
-                                            className="px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm transition"
+                                            className="px-3 py-1.5 bg-[#d99b26]/15 hover:bg-[#d99b26]/25 border border-[#d99b26]/45 text-[#e7c574] rounded-sm text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
                                         >
-                                            <Icon name="repeat" className="w-3.5 h-3.5 text-amber-400" />
+                                            <Icon name="repeat" className="w-3.5 h-3.5 text-[#d99b26]" />
                                             <span>Масова заміна в базі</span>
                                         </button>
                                     </div>
@@ -7248,105 +7272,106 @@ const MedicalApp = (function() {
                     )}
 
                     {isBatchReplaceOpen && (
-                        <div onClick={(e) => { if (e.target === e.currentTarget) setIsBatchReplaceOpen(false); }} className="fixed inset-0 z-[200] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-                            <div className="bg-slate-900 border border-slate-700/80 w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-150">
+                        <div onClick={(e) => { if (e.target === e.currentTarget) setIsBatchReplaceOpen(false); }} className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-3 sm:p-4 overscroll-contain">
+                            <div className="bg-[#17181b] border border-[#2e3138] w-full max-w-2xl rounded-sm overflow-hidden flex flex-col max-h-[92vh]">
                                 {/* Header */}
-                                <div className="px-6 py-4 bg-slate-950/70 border-b border-slate-800 flex justify-between items-center shrink-0">
+                                <div className="px-5 py-3.5 bg-[#101113] border-b border-[#2e3138] flex justify-between items-center shrink-0">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-                                            <Icon name="repeat" className="w-5 h-5" />
+                                        <div className="w-9 h-9 rounded-sm bg-[#4c8ed9]/15 border border-[#4c8ed9]/40 flex items-center justify-center text-[#4c8ed9] shrink-0">
+                                            <Icon name="repeat" className="w-4 h-4" />
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-white text-base tracking-tight flex items-center gap-2">
+                                            <h3 className="font-bold text-[#e6edf3] text-base tracking-tight flex items-center gap-2">
                                                 <span>Масова заміна та перейменування</span>
-                                                <span className="text-[10px] font-mono bg-amber-950/70 text-amber-300 border border-amber-800/70 px-2 py-0.5 rounded-full font-bold">BATCH_UPDATE</span>
+                                                <span className="text-[10px] font-mono bg-[#4c8ed9]/15 text-[#9bc5f4] border border-[#4c8ed9]/40 px-2 py-0.5 rounded-sm font-bold">BATCH_UPDATE</span>
                                             </h3>
-                                            <p className="text-[11px] text-slate-400">Автоматичне виправлення старих записів, позицій та підрозділів без ручної роботи</p>
+                                            <p className="text-[11px] text-[#989fa9]">Автоматичне виправлення старих записів, позицій та підрозділів без ручної роботи</p>
                                         </div>
                                     </div>
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setIsBatchReplaceOpen(false)} 
-                                        className="w-8 h-8 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsBatchReplaceOpen(false)}
+                                        className="w-8 h-8 rounded-sm bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] text-[#b8bec8] hover:text-[#e6edf3] flex items-center justify-center transition-colors cursor-pointer"
                                     >
                                         <Icon name="x" className="w-4 h-4" />
                                     </button>
                                 </div>
 
                                 {/* Category Tabs */}
-                                <div className="flex border-b border-slate-800 bg-slate-950/40 p-1.5 gap-1 shrink-0 text-xs font-semibold">
+                                <div className="flex border-b border-[#2e3138] bg-[#101113] p-1 gap-1 shrink-0 text-xs font-semibold">
                                     {[
-                                        { k: 'sectors', l: '📍 Позиції (Локації)' },
-                                        { k: 'units', l: '🛡️ Підрозділи' },
-                                        { k: 'causes', l: '🎯 Причини' },
-                                        { k: 'ranks', l: '⭐ Звання' }
+                                        { k: 'sectors', icon: 'map-pin', l: 'Позиції (Локації)' },
+                                        { k: 'units', icon: 'shield', l: 'Підрозділи' },
+                                        { k: 'causes', icon: 'target', l: 'Причини' },
+                                        { k: 'ranks', icon: 'star', l: 'Звання' }
                                     ].map(t => (
-                                        <button 
-                                            key={t.k} 
+                                        <button
+                                            key={t.k}
                                             type="button"
-                                            onClick={() => { setBatchCategory(t.k); setBatchOldVal(""); setBatchNewVal(""); }} 
-                                            className={`flex-1 py-2 text-center rounded-xl transition cursor-pointer select-none ${
-                                                batchCategory === t.k 
-                                                    ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 shadow-sm' 
-                                                    : 'text-slate-400 hover:text-white'
+                                            onClick={() => { setBatchCategory(t.k); setBatchOldVal(""); setBatchNewVal(""); }}
+                                            className={`flex-1 py-2 text-center rounded-sm border transition-colors cursor-pointer select-none flex items-center justify-center gap-1.5 ${
+                                                batchCategory === t.k
+                                                    ? 'bg-[#4c8ed9]/15 text-[#e6edf3] font-bold border-[#4c8ed9]/50'
+                                                    : 'border-transparent text-[#b8bec8] hover:text-[#e6edf3] hover:bg-[#17181b]'
                                             }`}
                                         >
-                                            {t.l}
+                                            <Icon name={t.icon} className={`w-3.5 h-3.5 ${batchCategory === t.k ? 'text-[#4c8ed9]' : 'text-[#989fa9]'}`} />
+                                            <span>{t.l}</span>
                                         </button>
                                     ))}
                                 </div>
 
                                 {/* Mode Switcher (Single vs Multi) */}
                                 <div className="px-6 pt-4 flex items-center justify-between shrink-0 gap-3 flex-wrap">
-                                    <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-medium">
-                                        <button 
+                                    <div className="flex items-center gap-1 bg-[#101113] p-1 rounded-sm border border-[#2e3138] text-xs font-medium">
+                                        <button
                                             type="button"
                                             onClick={() => setBatchMode('single')}
-                                            className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${batchMode === 'single' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                                            className={`px-3 py-1.5 rounded-sm border transition-colors cursor-pointer flex items-center gap-1.5 ${batchMode === 'single' ? 'bg-[#4c8ed9]/15 text-[#e6edf3] font-bold border-[#4c8ed9]/50' : 'border-transparent text-[#b8bec8] hover:text-[#e6edf3]'}`}
                                         >
-                                            <Icon name="zap" className="w-3.5 h-3.5" />
+                                            <Icon name="zap" className="w-3.5 h-3.5 text-[#4c8ed9]" />
                                             <span>Швидка заміна (1 назва)</span>
                                         </button>
-                                        <button 
+                                        <button
                                             type="button"
                                             onClick={() => setBatchMode('multi')}
-                                            className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${batchMode === 'multi' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                                            className={`px-3 py-1.5 rounded-sm border transition-colors cursor-pointer flex items-center gap-1.5 ${batchMode === 'multi' ? 'bg-[#4c8ed9]/15 text-[#e6edf3] font-bold border-[#4c8ed9]/50' : 'border-transparent text-[#b8bec8] hover:text-[#e6edf3]'}`}
                                         >
-                                            <Icon name="list" className="w-3.5 h-3.5" />
+                                            <Icon name="list" className="w-3.5 h-3.5 text-[#4c8ed9]" />
                                             <span>Пакетний список замін</span>
                                         </button>
                                     </div>
 
                                     {/* Options Checkboxes */}
-                                    <div className="flex items-center gap-3 text-xs text-slate-300 flex-wrap">
+                                    <div className="flex items-center gap-3 text-xs text-[#b8bec8] flex-wrap">
                                         {batchCategory === 'sectors' && (
                                             <>
-                                                <label className="flex items-center gap-1.5 cursor-pointer select-none" title="Замінити у полі 'Фактична локація'">
-                                                    <input 
-                                                        type="checkbox" 
-                                                        checked={batchFields.actualLoc} 
+                                                <label className="flex items-center gap-1.5 cursor-pointer select-none hover:text-[#e6edf3]" title="Замінити у полі 'Фактична локація'">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={batchFields.actualLoc}
                                                         onChange={(e) => setBatchFields(p => ({ ...p, actualLoc: e.target.checked }))}
-                                                        className="rounded bg-slate-950 border-slate-700 text-amber-500 focus:ring-0 w-3.5 h-3.5"
+                                                        className="rounded-sm bg-[#101113] border-[#3c404a] text-[#4c8ed9] focus:ring-0 w-3.5 h-3.5"
                                                     />
                                                     <span className="text-[11px]">Фактична</span>
                                                 </label>
-                                                <label className="flex items-center gap-1.5 cursor-pointer select-none" title="Замінити у полі 'Документальна локація'">
-                                                    <input 
-                                                        type="checkbox" 
-                                                        checked={batchFields.docLoc} 
+                                                <label className="flex items-center gap-1.5 cursor-pointer select-none hover:text-[#e6edf3]" title="Замінити у полі 'Документальна локація'">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={batchFields.docLoc}
                                                         onChange={(e) => setBatchFields(p => ({ ...p, docLoc: e.target.checked }))}
-                                                        className="rounded bg-slate-950 border-slate-700 text-amber-500 focus:ring-0 w-3.5 h-3.5"
+                                                        className="rounded-sm bg-[#101113] border-[#3c404a] text-[#4c8ed9] focus:ring-0 w-3.5 h-3.5"
                                                     />
                                                     <span className="text-[11px]">Документальна</span>
                                                 </label>
                                             </>
                                         )}
-                                        <label className="flex items-center gap-1.5 cursor-pointer select-none" title="Також оновити або додати нове значення в довідник">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={batchFields.updateDict} 
+                                        <label className="flex items-center gap-1.5 cursor-pointer select-none hover:text-[#e6edf3]" title="Також оновити або додати нове значення в довідник">
+                                            <input
+                                                type="checkbox"
+                                                checked={batchFields.updateDict}
                                                 onChange={(e) => setBatchFields(p => ({ ...p, updateDict: e.target.checked }))}
-                                                className="rounded bg-slate-950 border-slate-700 text-amber-500 focus:ring-0 w-3.5 h-3.5"
+                                                className="rounded-sm bg-[#101113] border-[#3c404a] text-[#4c8ed9] focus:ring-0 w-3.5 h-3.5"
                                             />
                                             <span className="text-[11px]">Оновити довідник</span>
                                         </label>
@@ -7360,16 +7385,16 @@ const MedicalApp = (function() {
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 {/* Стара назва */}
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                                                    <label className="text-[11px] font-bold text-[#b8bec8] uppercase tracking-wider flex items-center justify-between">
                                                         <span>Стара назва (Що замінити)</span>
-                                                        <span className="text-[10px] text-amber-400 font-mono font-normal">У базі: {batchAvailableOldValues.length}</span>
+                                                        <span className="text-[10px] text-[#e7c574] font-mono font-normal tabular-nums">У базі: {batchAvailableOldValues.length}</span>
                                                     </label>
-                                                    
+
                                                     {/* Select or Type */}
-                                                    <select 
-                                                        value={batchOldVal} 
+                                                    <select
+                                                        value={batchOldVal}
                                                         onChange={(e) => setBatchOldVal(e.target.value)}
-                                                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-500 outline-none cursor-pointer"
+                                                        className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-3 py-2 text-xs text-[#e6edf3] focus:border-[#4c8ed9] outline-none cursor-pointer"
                                                     >
                                                         <option value="">-- Оберіть значення з бази --</option>
                                                         {batchAvailableOldValues.map(({ val, count }) => (
@@ -7378,37 +7403,37 @@ const MedicalApp = (function() {
                                                             </option>
                                                         ))}
                                                     </select>
-                                                    <input 
-                                                        type="text" 
-                                                        placeholder="Або введіть вручну..." 
-                                                        value={batchOldVal} 
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Або введіть вручну..."
+                                                        value={batchOldVal}
                                                         onChange={(e) => setBatchOldVal(e.target.value)}
-                                                        className="w-full bg-slate-950/60 border border-slate-800/80 rounded-xl px-3 py-1.5 text-xs text-slate-300 placeholder-slate-600 focus:border-amber-500 outline-none"
+                                                        className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-3 py-1.5 text-xs text-[#e6edf3] placeholder-[#989fa9] focus:border-[#4c8ed9] outline-none"
                                                     />
                                                 </div>
 
                                                 {/* Нова назва */}
                                                 <div className="space-y-1.5">
-                                                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                                                    <label className="text-[11px] font-bold text-[#b8bec8] uppercase tracking-wider flex items-center justify-between">
                                                         <span>Нова назва (На що замінити)</span>
-                                                        <span className="text-[10px] text-emerald-400 font-mono font-normal">Нове значення</span>
+                                                        <span className="text-[10px] text-[#8ad8ae] font-mono font-normal">Нове значення</span>
                                                     </label>
-                                                    <input 
-                                                        type="text" 
-                                                        placeholder="Введіть нову назву..." 
-                                                        value={batchNewVal} 
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Введіть нову назву..."
+                                                        value={batchNewVal}
                                                         onChange={(e) => setBatchNewVal(e.target.value)}
-                                                        className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none font-medium"
+                                                        className="w-full bg-[#101113] border border-[#2e3138] focus:border-[#3da372] rounded-sm px-3 py-2 text-xs text-[#e6edf3] placeholder-[#989fa9] outline-none font-medium"
                                                     />
                                                     {dictionarySuggestions.length > 0 && (
                                                         <div className="flex items-center gap-1 flex-wrap pt-0.5">
-                                                            <span className="text-[10px] text-slate-500">З довідника:</span>
+                                                            <span className="text-[10px] text-[#989fa9]">З довідника:</span>
                                                             {dictionarySuggestions.slice(0, 4).map((item, i) => (
-                                                                <button 
-                                                                    key={i} 
-                                                                    type="button" 
+                                                                <button
+                                                                    key={i}
+                                                                    type="button"
                                                                     onClick={() => setBatchNewVal(item)}
-                                                                    className="text-[10px] bg-slate-950 hover:bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded border border-slate-800 transition cursor-pointer truncate max-w-[120px]"
+                                                                    className="text-[10px] bg-[#101113] hover:bg-[#222429] text-[#b8bec8] hover:text-[#e6edf3] px-1.5 py-0.5 rounded-sm border border-[#2e3138] transition-colors cursor-pointer truncate max-w-[120px]"
                                                                     title={item}
                                                                 >
                                                                     {item}
@@ -7420,31 +7445,31 @@ const MedicalApp = (function() {
                                             </div>
 
                                             {/* Preview & Stats Card */}
-                                            <div className="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-inner">
+                                            <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${singleReplacePreviewCount > 0 ? 'bg-amber-500/15 border-amber-500/30 text-amber-400' : 'bg-slate-800/50 border-slate-700 text-slate-500'}`}>
-                                                        <Icon name="target" className="w-5 h-5" />
+                                                    <div className={`w-9 h-9 rounded-sm flex items-center justify-center shrink-0 border ${singleReplacePreviewCount > 0 ? 'bg-[#d99b26]/15 border-[#d99b26]/45 text-[#e7c574]' : 'bg-[#17181b] border-[#2e3138] text-[#989fa9]'}`}>
+                                                        <Icon name="target" className="w-4 h-4" />
                                                     </div>
                                                     <div>
-                                                        <div className="text-xs font-bold text-white flex items-center gap-2">
+                                                        <div className="text-xs font-bold text-[#e6edf3] flex items-center gap-2">
                                                             <span>Знайдено записів для оновлення:</span>
-                                                            <span className="font-mono text-sm px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-lg">
+                                                            <span className="font-mono text-sm px-2 py-0.5 bg-[#d99b26]/15 text-[#e7c574] border border-[#d99b26]/45 rounded-sm tabular-nums">
                                                                 {singleReplacePreviewCount}
                                                             </span>
                                                         </div>
-                                                        <p className="text-[10px] text-slate-400 mt-0.5">
+                                                        <p className="text-[10px] text-[#989fa9] mt-0.5">
                                                             {batchOldVal && batchNewVal ? (
-                                                                <span>Усі записи з «<strong className="text-amber-300">{batchOldVal}</strong>» отримають назву «<strong className="text-emerald-300">{batchNewVal}</strong>»</span>
+                                                                <span>Усі записи з «<strong className="text-[#e7c574]">{batchOldVal}</strong>» отримають назву «<strong className="text-[#8ad8ae]">{batchNewVal}</strong>»</span>
                                                             ) : (
                                                                 <span>Оберіть стару назву та введіть нову для підрахунку</span>
                                                             )}
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <button 
-                                                    type="submit" 
+                                                <button
+                                                    type="submit"
                                                     disabled={!batchOldVal.trim() || !batchNewVal.trim() || batchOldVal.trim() === batchNewVal.trim()}
-                                                    className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 disabled:opacity-40 disabled:pointer-events-none text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-amber-950/50 transition cursor-pointer flex items-center justify-center gap-2 shrink-0 select-none"
+                                                    className="w-full sm:w-auto px-5 py-2 bg-[#2b67ab] hover:bg-[#3678c4] disabled:opacity-40 disabled:pointer-events-none text-white border border-[#4c8ed9] font-bold text-xs rounded-sm transition-colors cursor-pointer flex items-center justify-center gap-2 shrink-0 select-none"
                                                 >
                                                     <Icon name="repeat" className="w-4 h-4" />
                                                     <span>Замінити у всіх записах</span>
@@ -7453,28 +7478,30 @@ const MedicalApp = (function() {
                                         </form>
                                     ) : (
                                         <div className="space-y-4">
-                                            <div className="flex items-center justify-between border-b border-slate-800 pb-2 flex-wrap gap-2">
+                                            <div className="flex items-center justify-between border-b border-[#2e3138] pb-2 flex-wrap gap-2">
                                                 <div className="flex items-center gap-2">
-                                                    <button 
-                                                        type="button" 
+                                                    <button
+                                                        type="button"
                                                         onClick={() => setBatchMultiInputType('rows')}
-                                                        className={`text-xs px-2.5 py-1 rounded-lg transition font-medium cursor-pointer ${batchMultiInputType === 'rows' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                                                        className={`text-xs px-2.5 py-1 rounded-sm border transition-colors font-medium cursor-pointer flex items-center gap-1.5 ${batchMultiInputType === 'rows' ? 'bg-[#222429] border-[#3c404a] text-[#e6edf3] font-bold' : 'border-transparent text-[#b8bec8] hover:text-[#e6edf3]'}`}
                                                     >
-                                                        📑 Таблиця пар (Рядки)
+                                                        <Icon name="list" className="w-3.5 h-3.5" />
+                                                        <span>Таблиця пар (Рядки)</span>
                                                     </button>
-                                                    <button 
-                                                        type="button" 
+                                                    <button
+                                                        type="button"
                                                         onClick={() => setBatchMultiInputType('text')}
-                                                        className={`text-xs px-2.5 py-1 rounded-lg transition font-medium cursor-pointer ${batchMultiInputType === 'text' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                                                        className={`text-xs px-2.5 py-1 rounded-sm border transition-colors font-medium cursor-pointer flex items-center gap-1.5 ${batchMultiInputType === 'text' ? 'bg-[#222429] border-[#3c404a] text-[#e6edf3] font-bold' : 'border-transparent text-[#b8bec8] hover:text-[#e6edf3]'}`}
                                                     >
-                                                        📝 Вставити список текстом
+                                                        <Icon name="file-text" className="w-3.5 h-3.5" />
+                                                        <span>Вставити список текстом</span>
                                                     </button>
                                                 </div>
                                                 {batchMultiInputType === 'rows' && (
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={addBatchMultiRow} 
-                                                        className="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 cursor-pointer bg-amber-950/40 border border-amber-800/60 px-2.5 py-1 rounded-lg transition"
+                                                    <button
+                                                        type="button"
+                                                        onClick={addBatchMultiRow}
+                                                        className="text-xs text-[#e7c574] hover:text-[#f3d88e] font-semibold flex items-center gap-1 cursor-pointer bg-[#d99b26]/15 border border-[#d99b26]/45 px-2.5 py-1 rounded-sm transition-colors"
                                                     >
                                                         <Icon name="plus" className="w-3.5 h-3.5" />
                                                         <span>Додати рядок</span>
@@ -7485,16 +7512,16 @@ const MedicalApp = (function() {
                                             {batchMultiInputType === 'rows' ? (
                                                 <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                                                     {batchMultiRows.map((row, idx) => (
-                                                        <div key={row.id} className="flex items-center gap-2 bg-slate-950/70 p-2 rounded-xl border border-slate-800/80">
-                                                            <span className="text-[10px] font-mono text-slate-500 w-5 text-center">{idx + 1}.</span>
+                                                        <div key={row.id} className="flex items-center gap-2 bg-[#101113] p-2 rounded-sm border border-[#2e3138]">
+                                                            <span className="text-[10px] font-mono text-[#989fa9] w-5 text-center tabular-nums">{idx + 1}.</span>
                                                             <div className="flex-1">
-                                                                <input 
-                                                                    type="text" 
-                                                                    placeholder="Стара назва..." 
-                                                                    value={row.oldVal} 
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Стара назва..."
+                                                                    value={row.oldVal}
                                                                     onChange={(e) => updateBatchMultiRow(row.id, 'oldVal', e.target.value)}
                                                                     list={`old_list_${row.id}`}
-                                                                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-amber-500 outline-none"
+                                                                    className="w-full bg-[#17181b] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#e6edf3] placeholder-[#989fa9] focus:border-[#4c8ed9] outline-none"
                                                                 />
                                                                 <datalist id={`old_list_${row.id}`}>
                                                                     {batchAvailableOldValues.map(({ val }) => (
@@ -7502,20 +7529,20 @@ const MedicalApp = (function() {
                                                                     ))}
                                                                 </datalist>
                                                             </div>
-                                                            <Icon name="arrow-right" className="w-4 h-4 text-slate-500 shrink-0" />
+                                                            <Icon name="arrow-right" className="w-4 h-4 text-[#989fa9] shrink-0" />
                                                             <div className="flex-1">
-                                                                <input 
-                                                                    type="text" 
-                                                                    placeholder="Нова назва..." 
-                                                                    value={row.newVal} 
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Нова назва..."
+                                                                    value={row.newVal}
                                                                     onChange={(e) => updateBatchMultiRow(row.id, 'newVal', e.target.value)}
-                                                                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-emerald-500 outline-none"
+                                                                    className="w-full bg-[#17181b] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#e6edf3] placeholder-[#989fa9] focus:border-[#3da372] outline-none"
                                                                 />
                                                             </div>
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={() => removeBatchMultiRow(row.id)} 
-                                                                className="text-slate-500 hover:text-red-400 p-1.5 hover:bg-slate-900 rounded-lg transition cursor-pointer shrink-0"
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeBatchMultiRow(row.id)}
+                                                                className="text-[#989fa9] hover:text-[#f3a3a0] p-1.5 hover:bg-[#222429] rounded-sm transition-colors cursor-pointer shrink-0"
                                                                 title="Видалити правило"
                                                             >
                                                                 <Icon name="trash-2" className="w-3.5 h-3.5" />
@@ -7525,24 +7552,24 @@ const MedicalApp = (function() {
                                                 </div>
                                             ) : (
                                                 <div className="space-y-2">
-                                                    <textarea 
+                                                    <textarea
                                                         rows={6}
                                                         placeholder={`Вставте пари замін по одній на рядок у форматі:\nПозиція 'Альфа' -> ВОП 101\nПозиція 'Браво' -> ВОП 102\nСП 'Хмара' -> СП 'Грім'`}
                                                         value={batchMultiText}
                                                         onChange={(e) => setBatchMultiText(e.target.value)}
-                                                        className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/80 rounded-xl p-3 text-xs text-white placeholder-slate-600 outline-none font-mono"
+                                                        className="w-full bg-[#101113] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm p-3 text-xs text-[#e6edf3] placeholder-[#989fa9] outline-none font-mono"
                                                     />
-                                                    <p className="text-[10px] text-slate-500 leading-tight">
-                                                        Підтримуються роздільники: <code className="text-amber-400">{'->'}</code>, <code className="text-amber-400">{'➔'}</code>, <code className="text-amber-400">{'=>'}</code>, <code className="text-amber-400">{':'}</code>, <code className="text-amber-400">{'='}</code> або табуляція (копіпаст з Excel).
+                                                    <p className="text-[10px] text-[#989fa9] leading-tight">
+                                                        Підтримуються роздільники: <code className="text-[#e7c574]">{'->'}</code>, <code className="text-[#e7c574]">{'➔'}</code>, <code className="text-[#e7c574]">{'=>'}</code>, <code className="text-[#e7c574]">{':'}</code>, <code className="text-[#e7c574]">{'='}</code> або табуляція (копіпаст з Excel).
                                                     </p>
                                                 </div>
                                             )}
 
                                             <div className="pt-2 flex justify-end">
-                                                <button 
-                                                    type="button" 
+                                                <button
+                                                    type="button"
                                                     onClick={handleExecuteMultiReplace}
-                                                    className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-amber-950/50 transition cursor-pointer flex items-center justify-center gap-2"
+                                                    className="w-full sm:w-auto px-5 py-2 bg-[#2b67ab] hover:bg-[#3678c4] text-white border border-[#4c8ed9] font-bold text-xs rounded-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
                                                 >
                                                     <Icon name="zap" className="w-4 h-4" />
                                                     <span>Застосувати всі правила пакетної заміни</span>
@@ -7553,15 +7580,15 @@ const MedicalApp = (function() {
                                 </div>
 
                                 {/* Footer */}
-                                <div className="px-6 py-3.5 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between shrink-0">
-                                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono">
-                                        <Icon name="history" className="w-3.5 h-3.5 text-amber-400" />
-                                        <span>Підказка: якщо помилились — натисніть <strong className="text-amber-300 font-bold">Ctrl+Z</strong> для повернення</span>
+                                <div className="px-5 py-3.5 bg-[#101113] border-t border-[#2e3138] flex items-center justify-between shrink-0">
+                                    <div className="flex items-center gap-1.5 text-[11px] text-[#989fa9] font-mono">
+                                        <Icon name="history" className="w-3.5 h-3.5 text-[#e7c574]" />
+                                        <span>Підказка: якщо помилились — натисніть <strong className="text-[#e7c574] font-bold">Ctrl+Z</strong> для повернення</span>
                                     </div>
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setIsBatchReplaceOpen(false)} 
-                                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold rounded-xl transition cursor-pointer"
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsBatchReplaceOpen(false)}
+                                        className="px-4 py-2 bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] text-[#b8bec8] hover:text-[#e6edf3] text-xs font-semibold rounded-sm transition-colors cursor-pointer"
                                     >
                                         Закрити
                                     </button>
@@ -7572,47 +7599,47 @@ const MedicalApp = (function() {
 
                     {/* Модальне вікно авто-відновлення з диска при порожній локальній базі */}
                     {showAutoRestoreModal && diskBackupInfo?.exists && (
-                        <div className="fixed inset-0 z-[210] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-                            <div className="bg-slate-900 border border-emerald-500/50 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl flex flex-col p-6 space-y-5 animate-in zoom-in-95 duration-150">
+                        <div className="fixed inset-0 z-[210] bg-black/80 flex items-center justify-center p-3 sm:p-4 overscroll-contain">
+                            <div className="bg-[#17181b] border border-[#3da372]/50 w-full max-w-md rounded-sm overflow-hidden flex flex-col p-6 space-y-5">
                                 <div className="flex items-center gap-3.5">
-                                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-                                        <Icon name="shield-check" className="w-6 h-6" />
+                                    <div className="w-11 h-11 rounded-sm bg-[#3da372]/15 border border-[#3da372]/40 flex items-center justify-center text-[#3da372] shrink-0">
+                                        <Icon name="shield-check" className="w-5 h-5" />
                                     </div>
                                     <div>
-                                        <h3 className="text-base font-bold text-white tracking-tight">Відновлення бази з диска</h3>
-                                        <p className="text-xs text-slate-400">Пам'ять браузера порожня, але на ПК знайдено збережену базу.</p>
+                                        <h3 className="text-base font-bold text-[#e6edf3] tracking-tight">Відновлення бази з диска</h3>
+                                        <p className="text-xs text-[#989fa9]">Пам&apos;ять браузера порожня, але на ПК знайдено збережену базу.</p>
                                     </div>
                                 </div>
 
-                                <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 text-xs space-y-2">
+                                <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-3.5 text-xs space-y-2 tabular-nums">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-400">Файл на диску:</span>
-                                        <span className="font-mono text-emerald-400 font-bold">{diskBackupInfo.filename}</span>
+                                        <span className="text-[#989fa9]">Файл на диску:</span>
+                                        <span className="font-mono text-[#8ad8ae] font-bold">{diskBackupInfo.filename}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-400">Дата створення:</span>
-                                        <span className="font-mono text-amber-300 font-semibold">{diskBackupInfo.formatted_time || '08.09.2026'}</span>
+                                        <span className="text-[#989fa9]">Дата створення:</span>
+                                        <span className="font-mono text-[#e7c574] font-semibold">{diskBackupInfo.formatted_time || '08.09.2026'}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-400">Розташування:</span>
-                                        <span className="font-mono text-slate-400 text-[11px]">d:\ОЧ\Програми\_backups</span>
+                                        <span className="text-[#989fa9]">Розташування:</span>
+                                        <span className="font-mono text-[#b8bec8] text-[11px]">d:\ОЧ\Програми\_backups</span>
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-xs font-semibold text-slate-200">Пароль для розшифрування бази:</label>
+                                    <label className="text-xs font-semibold text-[#e6edf3]">Пароль для розшифрування бази:</label>
                                     <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#989fa9]">
                                             <Icon name="key-round" className="w-4 h-4" />
                                         </div>
-                                        <input 
+                                        <input
                                             type="password"
                                             autoFocus
                                             value={diskRestorePassword}
                                             onChange={(e) => setDiskRestorePassword(e.target.value)}
                                             onKeyDown={(e) => { if (e.key === 'Enter') handleRestoreFromDisk(); }}
                                             placeholder="Введіть ваш пароль бекапу..."
-                                            className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 outline-none transition font-sans"
+                                            className="w-full bg-[#101113] border border-[#2e3138] focus:border-[#3da372] rounded-sm pl-10 pr-4 py-2.5 text-xs text-[#e6edf3] placeholder-[#989fa9] outline-none transition-colors font-sans"
                                         />
                                     </div>
                                 </div>
@@ -7621,7 +7648,7 @@ const MedicalApp = (function() {
                                     <button
                                         type="button"
                                         onClick={() => setShowAutoRestoreModal(false)}
-                                        className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium rounded-xl text-xs transition cursor-pointer"
+                                        className="flex-1 py-2.5 bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] text-[#b8bec8] hover:text-[#e6edf3] font-medium rounded-sm text-xs transition-colors cursor-pointer"
                                     >
                                         Пропустити
                                     </button>
@@ -7629,7 +7656,7 @@ const MedicalApp = (function() {
                                         type="button"
                                         onClick={() => handleRestoreFromDisk()}
                                         disabled={isRestoringFromDisk}
-                                        className="flex-1 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-emerald-950/40 cursor-pointer flex items-center justify-center gap-1.5"
+                                        className="flex-1 py-2.5 bg-[#3da372] hover:bg-[#4ab883] border border-[#3da372] text-[#0b1410] font-bold rounded-sm text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                                     >
                                         <Icon name="refresh-cw" className={`w-3.5 h-3.5 ${isRestoringFromDisk ? 'animate-spin' : ''}`} />
                                         <span>Відновити дані</span>
@@ -7640,67 +7667,67 @@ const MedicalApp = (function() {
                     )}
 
                     {isBackupOpen && (
-                        <div onClick={(e) => { if (e.target === e.currentTarget) setIsBackupOpen(false); }} className="fixed inset-0 z-[200] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-                            <div className="bg-slate-900 border border-slate-700/80 w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-150">
+                        <div onClick={(e) => { if (e.target === e.currentTarget) setIsBackupOpen(false); }} className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-3 sm:p-4 overscroll-contain">
+                            <div className="bg-[#17181b] border border-[#2e3138] w-full max-w-xl rounded-sm overflow-hidden flex flex-col">
                                 {/* Header */}
-                                <div className="px-6 py-4 bg-slate-950/70 border-b border-slate-800 flex justify-between items-center">
+                                <div className="px-5 py-3.5 bg-[#101113] border-b border-[#2e3138] flex justify-between items-center">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-                                            <Icon name="shield-check" className="w-5 h-5" />
+                                        <div className="w-9 h-9 rounded-sm bg-[#4c8ed9]/15 border border-[#4c8ed9]/40 flex items-center justify-center text-[#4c8ed9] shrink-0">
+                                            <Icon name="shield-check" className="w-4 h-4" />
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-white text-base tracking-tight">Резервні копії та база</h3>
-                                            <p className="text-[11px] text-slate-400">Шифрований експорт AES-256, локальний диск та автозахист</p>
+                                            <h3 className="font-bold text-[#e6edf3] text-base tracking-tight">Резервні копії та база</h3>
+                                            <p className="text-[11px] text-[#989fa9]">Шифрований експорт AES-256, локальний диск та автозахист</p>
                                         </div>
                                     </div>
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setIsBackupOpen(false)} 
-                                        className="w-8 h-8 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsBackupOpen(false)}
+                                        className="w-8 h-8 rounded-sm bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] text-[#b8bec8] hover:text-[#e6edf3] flex items-center justify-center transition-colors cursor-pointer"
                                     >
                                         <Icon name="x" className="w-4 h-4" />
                                     </button>
                                 </div>
 
-                                <div className="p-6 space-y-5 overflow-y-auto max-h-[80vh]">
+                                <div className="p-5 space-y-4 overflow-y-auto max-h-[80vh]">
                                     {/* 0. Локальний диск (_backups) */}
-                                    <div className="bg-slate-950/80 border border-emerald-500/40 rounded-2xl p-4 space-y-3 transition-colors shadow-inner">
+                                    <div className="bg-[#101113] border border-[#3da372]/40 rounded-sm p-4 space-y-3 transition-colors">
                                         <div className="flex justify-between items-center">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-7 h-7 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                                                <div className="w-7 h-7 rounded-sm bg-[#3da372]/15 border border-[#3da372]/40 flex items-center justify-center text-[#3da372]">
                                                     <Icon name="hard-drive" className="w-4 h-4" />
                                                 </div>
-                                                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Локальний диск (Автозахист)</span>
+                                                <span className="text-xs font-bold text-[#8ad8ae] uppercase tracking-wider">Локальний диск (Автозахист)</span>
                                             </div>
-                                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md font-bold border flex items-center gap-1.5 ${
-                                                diskServiceOnline 
-                                                    ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800/80' 
-                                                    : 'bg-slate-900 text-slate-400 border-slate-800'
+                                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-sm font-bold border flex items-center gap-1.5 ${
+                                                diskServiceOnline
+                                                    ? 'bg-[#3da372]/15 text-[#8ad8ae] border-[#3da372]/45'
+                                                    : 'bg-[#17181b] text-[#989fa9] border-[#2e3138]'
                                             }`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full ${diskServiceOnline ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`}></span>
+                                                <span className={`w-1.5 h-1.5 rounded-full ${diskServiceOnline ? 'bg-[#3da372]' : 'bg-[#989fa9]'}`}></span>
                                                 {diskServiceOnline ? 'Служба активна' : 'Офлайн'}
                                             </span>
                                         </div>
 
-                                        <div className="text-xs text-slate-300 bg-slate-900/80 rounded-xl p-3 border border-slate-800 space-y-1.5">
+                                        <div className="text-xs text-[#b8bec8] bg-[#17181b] rounded-sm p-3 border border-[#2e3138] space-y-1.5 tabular-nums">
                                             <div className="flex justify-between items-center">
-                                                <span className="text-slate-400">Папка збереження:</span>
-                                                <span className="font-mono text-emerald-400 font-semibold text-[11px]">_backups/</span>
+                                                <span className="text-[#989fa9]">Папка збереження:</span>
+                                                <span className="font-mono text-[#8ad8ae] font-semibold text-[11px]">_backups/</span>
                                             </div>
                                             <div className="flex justify-between items-center">
-                                                <span className="text-slate-400">Файл на диску:</span>
-                                                <span className="font-mono text-slate-200">{diskBackupInfo?.filename || (diskBackupInfo?.exists ? 'med_tactical_latest.enc' : 'Не знайдено')}</span>
+                                                <span className="text-[#989fa9]">Файл на диску:</span>
+                                                <span className="font-mono text-[#e6edf3]">{diskBackupInfo?.filename || (diskBackupInfo?.exists ? 'med_tactical_latest.enc' : 'Не знайдено')}</span>
                                             </div>
                                             {diskBackupInfo?.formatted_time && (
                                                 <div className="flex justify-between items-center">
-                                                    <span className="text-slate-400">Дата створення:</span>
-                                                    <span className="font-mono text-amber-300">{diskBackupInfo.formatted_time}</span>
+                                                    <span className="text-[#989fa9]">Дата створення:</span>
+                                                    <span className="font-mono text-[#e7c574]">{diskBackupInfo.formatted_time}</span>
                                                 </div>
                                             )}
                                             {lastDiskSaveTime && (
                                                 <div className="flex justify-between items-center">
-                                                    <span className="text-slate-400">Останнє авто-збереження:</span>
-                                                    <span className="font-mono text-emerald-400">{lastDiskSaveTime}</span>
+                                                    <span className="text-[#989fa9]">Останнє авто-збереження:</span>
+                                                    <span className="font-mono text-[#8ad8ae]">{lastDiskSaveTime}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -7708,34 +7735,34 @@ const MedicalApp = (function() {
                                         {diskServiceOnline && diskBackupInfo?.exists && (
                                             <div className="space-y-2 pt-1">
                                                 <div className="relative">
-                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#989fa9]">
                                                         <Icon name="key-round" className="w-3.5 h-3.5" />
                                                     </div>
-                                                    <input 
-                                                        type="password" 
-                                                        value={diskRestorePassword || sessionPassword} 
-                                                        onChange={(e) => setDiskRestorePassword(e.target.value)} 
-                                                        placeholder="Пароль для розшифрування з диска..." 
-                                                        className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition font-sans" 
+                                                    <input
+                                                        type="password"
+                                                        value={diskRestorePassword || sessionPassword}
+                                                        onChange={(e) => setDiskRestorePassword(e.target.value)}
+                                                        placeholder="Пароль для розшифрування з диска..."
+                                                        className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#3da372] rounded-sm pl-9 pr-3 py-2 text-xs text-[#e6edf3] placeholder-[#989fa9] outline-none transition-colors font-sans"
                                                     />
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-2">
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={() => handleRestoreFromDisk()} 
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRestoreFromDisk()}
                                                         disabled={isRestoringFromDisk}
-                                                        className="py-2 px-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-slate-950 font-bold rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                                                        className="py-2 px-3 bg-[#3da372] hover:bg-[#4ab883] disabled:opacity-50 text-[#0b1410] border border-[#3da372] font-bold rounded-sm text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                                                     >
                                                         <Icon name="refresh-cw" className={`w-3.5 h-3.5 ${isRestoringFromDisk ? 'animate-spin' : ''}`} />
                                                         <span>Відновити з диска</span>
                                                     </button>
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={() => handleSaveToDisk()} 
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleSaveToDisk()}
                                                         disabled={isSavingToDisk}
-                                                        className="py-2 px-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 hover:text-white font-semibold rounded-xl text-xs border border-slate-700 transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                                                        className="py-2 px-3 bg-[#17181b] hover:bg-[#222429] disabled:opacity-50 text-[#e6edf3] font-semibold rounded-sm text-xs border border-[#2e3138] hover:border-[#3c404a] transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                                                     >
-                                                        <Icon name="save" className="w-3.5 h-3.5 text-emerald-400" />
+                                                        <Icon name="save" className="w-3.5 h-3.5 text-[#3da372]" />
                                                         <span>Зберегти на диск</span>
                                                     </button>
                                                 </div>
@@ -7744,34 +7771,34 @@ const MedicalApp = (function() {
                                     </div>
 
                                     {/* 1. Експорт */}
-                                    <div className="bg-slate-950/60 border border-emerald-500/20 hover:border-emerald-500/40 rounded-2xl p-4 space-y-3 transition-colors">
+                                    <div className="bg-[#101113] border border-[#2e3138] hover:border-[#3da372]/50 rounded-sm p-4 space-y-3 transition-colors">
                                         <div className="flex justify-between items-center">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-7 h-7 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                                                <div className="w-7 h-7 rounded-sm bg-[#3da372]/15 border border-[#3da372]/40 flex items-center justify-center text-[#3da372]">
                                                     <Icon name="download" className="w-4 h-4" />
                                                 </div>
-                                                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Створити резервну копію (Експорт)</span>
+                                                <span className="text-xs font-bold text-[#8ad8ae] uppercase tracking-wider">Створити резервну копію (Експорт)</span>
                                             </div>
-                                            <span className="text-[10px] font-mono text-emerald-400/80 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded-md font-bold">AES-256</span>
+                                            <span className="text-[10px] font-mono text-[#8ad8ae] bg-[#3da372]/15 border border-[#3da372]/40 px-2 py-0.5 rounded-sm font-bold">AES-256</span>
                                         </div>
-                                        
+
                                         <div className="space-y-2">
                                             <div className="relative">
-                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#989fa9]">
                                                     <Icon name="lock" className="w-3.5 h-3.5" />
                                                 </div>
-                                                <input 
-                                                    type="password" 
-                                                    value={backupPassword} 
-                                                    onChange={(e) => setBackupPassword(e.target.value)} 
-                                                    placeholder="Придумайте пароль для захисту файлу..." 
-                                                    className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500/80 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition font-sans" 
+                                                <input
+                                                    type="password"
+                                                    value={backupPassword}
+                                                    onChange={(e) => setBackupPassword(e.target.value)}
+                                                    placeholder="Придумайте пароль для захисту файлу..."
+                                                    className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#3da372] rounded-sm pl-9 pr-3 py-2 text-xs text-[#e6edf3] placeholder-[#989fa9] outline-none transition-colors font-sans"
                                                 />
                                             </div>
-                                            <button 
-                                                type="button" 
-                                                onClick={handleExport} 
-                                                className="w-full py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-emerald-950/50 cursor-pointer flex items-center justify-center gap-2"
+                                            <button
+                                                type="button"
+                                                onClick={handleExport}
+                                                className="w-full py-2.5 bg-[#3da372] hover:bg-[#4ab883] text-[#0b1410] border border-[#3da372] font-bold rounded-sm text-xs transition-colors cursor-pointer flex items-center justify-center gap-2"
                                             >
                                                 <Icon name="download" className="w-4 h-4" />
                                                 <span>Завантажити зашифрований .enc файл</span>
@@ -7780,42 +7807,42 @@ const MedicalApp = (function() {
                                     </div>
 
                                     {/* 2. Імпорт */}
-                                    <div className="bg-slate-950/60 border border-blue-500/20 hover:border-blue-500/40 rounded-2xl p-4 space-y-3 transition-colors">
+                                    <div className="bg-[#101113] border border-[#2e3138] hover:border-[#4c8ed9]/50 rounded-sm p-4 space-y-3 transition-colors">
                                         <div className="flex justify-between items-center">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-7 h-7 rounded-lg bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                                                <div className="w-7 h-7 rounded-sm bg-[#4c8ed9]/15 border border-[#4c8ed9]/40 flex items-center justify-center text-[#4c8ed9]">
                                                     <Icon name="upload" className="w-4 h-4" />
                                                 </div>
-                                                <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">Відновити з файлу (Імпорт)</span>
+                                                <span className="text-xs font-bold text-[#9bc5f4] uppercase tracking-wider">Відновити з файлу (Імпорт)</span>
                                             </div>
-                                            <span className="text-[10px] font-mono text-blue-400/80 bg-blue-950/60 border border-blue-800/60 px-2 py-0.5 rounded-md font-bold">.ENC</span>
+                                            <span className="text-[10px] font-mono text-[#9bc5f4] bg-[#4c8ed9]/15 border border-[#4c8ed9]/40 px-2 py-0.5 rounded-sm font-bold">.ENC</span>
                                         </div>
 
                                         <div className="space-y-2">
-                                            <div className="flex items-center w-full bg-slate-900 border border-slate-800 rounded-xl p-1.5">
-                                                <input 
-                                                    type="file" 
-                                                    accept=".enc" 
-                                                    onChange={handleFileChange} 
-                                                    className="w-full text-xs text-slate-300 outline-none file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-200 hover:file:bg-slate-700 cursor-pointer" 
+                                            <div className="flex items-center w-full bg-[#17181b] border border-[#2e3138] rounded-sm p-1.5">
+                                                <input
+                                                    type="file"
+                                                    accept=".enc"
+                                                    onChange={handleFileChange}
+                                                    className="w-full text-xs text-[#b8bec8] outline-none file:mr-3 file:py-1.5 file:px-3 file:rounded-sm file:border file:border-[#3c404a] file:text-xs file:font-semibold file:bg-[#222429] file:text-[#e6edf3] hover:file:bg-[#2e3138] cursor-pointer"
                                                 />
                                             </div>
                                             <div className="relative">
-                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#989fa9]">
                                                     <Icon name="key-round" className="w-3.5 h-3.5" />
                                                 </div>
-                                                <input 
-                                                    type="password" 
-                                                    value={importPassword} 
-                                                    onChange={(e) => setImportPassword(e.target.value)} 
-                                                    placeholder="Пароль для розшифрування файлу..." 
-                                                    className="w-full bg-slate-900 border border-slate-800 focus:border-blue-500/80 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition font-sans" 
+                                                <input
+                                                    type="password"
+                                                    value={importPassword}
+                                                    onChange={(e) => setImportPassword(e.target.value)}
+                                                    placeholder="Пароль для розшифрування файлу..."
+                                                    className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm pl-9 pr-3 py-2 text-xs text-[#e6edf3] placeholder-[#989fa9] outline-none transition-colors font-sans"
                                                 />
                                             </div>
-                                            <button 
-                                                type="button" 
-                                                onClick={handleImport} 
-                                                className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold rounded-xl text-xs transition shadow-lg shadow-blue-950/50 cursor-pointer flex items-center justify-center gap-2"
+                                            <button
+                                                type="button"
+                                                onClick={handleImport}
+                                                className="w-full py-2.5 bg-[#2b67ab] hover:bg-[#3678c4] text-white border border-[#4c8ed9] font-bold rounded-sm text-xs transition-colors cursor-pointer flex items-center justify-center gap-2"
                                             >
                                                 <Icon name="refresh-cw" className="w-4 h-4" />
                                                 <span>Розшифрувати та відновити базу</span>
@@ -7824,66 +7851,69 @@ const MedicalApp = (function() {
                                     </div>
 
                                     {/* 3. Data Integrity Guard (Діагностика та лікування бази) */}
-                                    <div className="bg-slate-950/60 border border-amber-500/30 hover:border-amber-500/50 rounded-2xl p-4 space-y-3 transition-colors">
+                                    <div className="bg-[#101113] border border-[#2e3138] hover:border-[#d99b26]/50 rounded-sm p-4 space-y-3 transition-colors">
                                         <div className="flex justify-between items-center flex-wrap gap-2">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                                                <div className="w-7 h-7 rounded-sm bg-[#d99b26]/15 border border-[#d99b26]/40 flex items-center justify-center text-[#e7c574]">
                                                     <Icon name="shield-alert" className="w-4 h-4" />
                                                 </div>
-                                                <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">Data Integrity Guard (Цілісність бази)</span>
+                                                <span className="text-xs font-bold text-[#e7c574] uppercase tracking-wider">Data Integrity Guard (Цілісність бази)</span>
                                             </div>
-                                            <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                                            <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-sm border flex items-center gap-1.5 tabular-nums ${
                                                 !integrityStatus.checked 
-                                                    ? 'bg-slate-900 text-slate-400 border-slate-800'
+                                                    ? 'bg-[#17181b] text-[#989fa9] border-[#2e3138]'
                                                     : integrityStatus.isHealthy
-                                                        ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
-                                                        : 'bg-amber-950/80 text-amber-300 border-amber-800'
+                                                        ? 'bg-[#3da372]/15 text-[#8ad8ae] border-[#3da372]/45'
+                                                        : 'bg-[#d99b26]/15 text-[#e7c574] border-[#d99b26]/45'
                                             }`}>
-                                                {!integrityStatus.checked ? 'Статус: Не перевірено' : (integrityStatus.isHealthy ? '🟢 100% Цілісність' : `⚠️ Зауважень: ${integrityStatus.issueCount}`)}
+                                                {integrityStatus.checked && (
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${integrityStatus.isHealthy ? 'bg-[#3da372]' : 'bg-[#d99b26]'}`}></span>
+                                                )}
+                                                <span>{!integrityStatus.checked ? 'Статус: Не перевірено' : (integrityStatus.isHealthy ? '100% Цілісність' : `Зауважень: ${integrityStatus.issueCount}`)}</span>
                                             </span>
                                         </div>
 
-                                        <p className="text-[11px] text-slate-400 leading-relaxed">
+                                        <p className="text-[11px] text-[#989fa9] leading-relaxed">
                                             Автоматичний захист від сирітських записів, пошкоджених дат та аварійних помилок синхронізації.
                                         </p>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-                                            <button 
-                                                type="button" 
-                                                onClick={() => handleRunIntegrityDiagnosis(false)} 
-                                                className="py-2 px-3 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 font-semibold rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1.5"
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRunIntegrityDiagnosis(false)}
+                                                className="py-2 px-3 bg-[#17181b] hover:bg-[#222429] text-[#b8bec8] hover:text-[#e6edf3] border border-[#2e3138] hover:border-[#3c404a] font-semibold rounded-sm text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                                             >
-                                                <Icon name="search" className="w-3.5 h-3.5 text-amber-400" />
+                                                <Icon name="search" className="w-3.5 h-3.5 text-[#e7c574]" />
                                                 <span>Діагностика</span>
                                             </button>
 
-                                            <button 
-                                                type="button" 
-                                                onClick={() => handleRunIntegrityDiagnosis(true)} 
-                                                className="py-2 px-3 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:text-amber-200 border border-amber-500/50 font-bold rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRunIntegrityDiagnosis(true)}
+                                                className="py-2 px-3 bg-[#d99b26]/15 hover:bg-[#d99b26]/25 text-[#e7c574] hover:text-[#f3d88e] border border-[#d99b26]/45 font-bold rounded-sm text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                                             >
-                                                <Icon name="check-circle" className="w-3.5 h-3.5 text-amber-400" />
+                                                <Icon name="check-circle" className="w-3.5 h-3.5 text-[#d99b26]" />
                                                 <span>Полікувати базу</span>
                                             </button>
 
-                                            <button 
-                                                type="button" 
-                                                onClick={handleStandardizeAllCallsigns} 
-                                                className="py-2 px-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-white border border-amber-500/40 font-bold rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                                            <button
+                                                type="button"
+                                                onClick={handleStandardizeAllCallsigns}
+                                                className="py-2 px-3 bg-[#17181b] hover:bg-[#222429] text-[#e7c574] hover:text-[#f3d88e] border border-[#d99b26]/40 font-bold rounded-sm text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                                                 title="Привести всі позивні в базі до єдиного стандарту Title Case («Сокіл», «Тайфун»)"
                                             >
-                                                <Icon name="sparkles" className="w-3.5 h-3.5 text-amber-400" />
+                                                <Icon name="sparkles" className="w-3.5 h-3.5 text-[#d99b26]" />
                                                 <span>Стандартизувати позивні</span>
                                             </button>
                                         </div>
 
                                         {/* Детальний список знайдених зауважень */}
                                         {integrityStatus.checked && integrityStatus.details && integrityStatus.details.length > 0 && (
-                                            <div className="pt-2.5 border-t border-slate-800/80 space-y-2">
-                                                <div className="flex items-center justify-between text-[11px] font-bold text-amber-300">
+                                            <div className="pt-2.5 border-t border-[#2e3138] space-y-2">
+                                                <div className="flex items-center justify-between text-[11px] font-bold text-[#e7c574]">
                                                     <span className="flex items-center gap-1.5">
-                                                        <Icon name="alert-circle" className="w-3.5 h-3.5 text-amber-400" />
-                                                        <span>Виявлені невідповідності ({integrityStatus.details.length}):</span>
+                                                        <Icon name="alert-circle" className="w-3.5 h-3.5 text-[#d99b26]" />
+                                                        <span className="tabular-nums">Виявлені невідповідності ({integrityStatus.details.length}):</span>
                                                     </span>
                                                 </div>
                                                 <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
@@ -7891,9 +7921,9 @@ const MedicalApp = (function() {
                                                         const text = typeof item === 'string' ? item : item.text;
                                                         const ep = item && typeof item === 'object' ? item.episode : null;
                                                         return (
-                                                            <div key={idx} className="p-2 bg-slate-900/90 rounded-xl border border-amber-500/30 text-[11px] font-mono text-slate-200 flex items-center justify-between gap-2 shadow-inner">
+                                                            <div key={idx} className="p-2 bg-[#17181b] rounded-sm border border-[#d99b26]/40 text-[11px] font-mono text-[#e6edf3] flex items-center justify-between gap-2 tabular-nums">
                                                                 <div className="flex items-start gap-2 overflow-hidden">
-                                                                    <span className="text-amber-400 font-bold shrink-0">#{idx + 1}</span>
+                                                                    <span className="text-[#e7c574] font-bold shrink-0">#{idx + 1}</span>
                                                                     <span className="leading-tight select-text break-words">{text}</span>
                                                                 </div>
                                                                 {ep && (
@@ -7904,7 +7934,7 @@ const MedicalApp = (function() {
                                                                             setIsSettingsOpen(false);
                                                                             handleStartEdit(ep);
                                                                         }}
-                                                                        className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/50 hover:border-amber-400 font-bold rounded-lg text-[11px] transition cursor-pointer flex items-center gap-1 shrink-0 shadow-sm"
+                                                                        className="px-2.5 py-1 bg-[#d99b26]/15 hover:bg-[#d99b26] text-[#e7c574] hover:text-[#101113] border border-[#d99b26]/45 font-bold rounded-sm text-[11px] transition-colors cursor-pointer flex items-center gap-1 shrink-0"
                                                                         title="Відкрити картку редагування цього епізоду"
                                                                     >
                                                                         <Icon name="edit" className="w-3 h-3" />
@@ -7919,41 +7949,42 @@ const MedicalApp = (function() {
                                         )}
 
                                         {hasSnapshot && (
-                                            <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                                                <span className="text-[10px] font-mono text-slate-500 flex items-center gap-1">
-                                                    <Icon name="history" className="w-3 h-3 text-slate-400" />
+                                            <div className="pt-2 border-t border-[#2e3138] flex items-center justify-between">
+                                                <span className="text-[10px] font-mono text-[#989fa9] flex items-center gap-1">
+                                                    <Icon name="history" className="w-3 h-3 text-[#989fa9]" />
                                                     <span>Є аварійний знімок</span>
                                                 </span>
-                                                <button 
-                                                    type="button" 
-                                                    onClick={handleRestoreSnapshot} 
-                                                    className="text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold cursor-pointer hover:underline"
+                                                <button
+                                                    type="button"
+                                                    onClick={handleRestoreSnapshot}
+                                                    className="text-[11px] text-[#4c8ed9] hover:text-[#9bc5f4] font-semibold cursor-pointer hover:underline flex items-center gap-1"
                                                 >
-                                                    ↩ Відновити з останнього знімка
+                                                    <Icon name="rotate-ccw" className="w-3 h-3" />
+                                                    <span>Відновити з останнього знімка</span>
                                                 </button>
                                             </div>
                                         )}
                                     </div>
 
                                     {/* 3. Небезпечна зона */}
-                                    <div className="bg-red-950/20 border border-red-900/40 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div className="bg-[#d9534f]/10 border border-[#d9534f]/40 rounded-sm p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                         <div className="space-y-0.5">
-                                            <div className="text-xs font-bold text-red-400 uppercase flex items-center gap-1.5">
-                                                <Icon name="alert-triangle" className="w-4 h-4 text-red-400" />
+                                            <div className="text-xs font-bold text-[#f3a3a0] uppercase flex items-center gap-1.5">
+                                                <Icon name="alert-triangle" className="w-4 h-4 text-[#f3a3a0]" />
                                                 <span>Небезпечна зона</span>
                                             </div>
-                                            <p className="text-[11px] text-slate-400">Повне або вибіркове скидання бази даних (можна залишити СЗЧ та обрані записи)</p>
+                                            <p className="text-[11px] text-[#b8bec8]">Повне або вибіркове скидання бази даних (можна залишити СЗЧ та обрані записи)</p>
                                         </div>
-                                        <button 
-                                            type="button" 
+                                        <button
+                                            type="button"
                                             onClick={() => {
                                                 setClearKeepAwol(false);
                                                 setClearKeepUnevac200(false);
                                                 setClearKeepEpisodeIds([]);
                                                 setClearSearchTerm("");
                                                 setIsClearDbConfirmOpen(true);
-                                            }} 
-                                            className="px-4 py-2 bg-red-950/80 hover:bg-red-900 border border-red-800 text-red-300 hover:text-white font-bold rounded-xl text-xs transition cursor-pointer shrink-0 shadow-sm"
+                                            }}
+                                            className="px-4 py-2 bg-[#d9534f]/20 hover:bg-[#d9534f] border border-[#d9534f] text-[#f3a3a0] hover:text-white font-bold rounded-sm text-xs transition-colors cursor-pointer shrink-0"
                                         >
                                             Очистити базу
                                         </button>
@@ -7984,17 +8015,17 @@ const MedicalApp = (function() {
                         const removedCount = Math.max(0, episodes.length - keptCount);
 
                         return (
-                            <div onClick={(e) => { if (e.target === e.currentTarget) setIsClearDbConfirmOpen(false); }} className="fixed inset-0 z-[210] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
-                                <div className="bg-slate-900 border border-red-800/80 w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-                                    <div className="px-5 py-4 bg-red-950/60 border-b border-red-900/60 flex items-center justify-between gap-3">
+                            <div onClick={(e) => { if (e.target === e.currentTarget) setIsClearDbConfirmOpen(false); }} className="fixed inset-0 z-[210] bg-black/80 flex items-center justify-center p-4 overscroll-contain">
+                                <div className="bg-[#17181b] border border-[#d9534f]/60 w-full max-w-lg rounded-sm overflow-hidden flex flex-col max-h-[90vh]">
+                                    <div className="px-5 py-3.5 bg-[#101113] border-b border-[#d9534f]/40 flex items-center justify-between gap-3">
                                         <div className="flex items-center gap-2.5">
-                                            <Icon name="alert-octagon" className="w-6 h-6 text-red-400 shrink-0" />
+                                            <Icon name="alert-octagon" className="w-5 h-5 text-[#f3a3a0] shrink-0" />
                                             <div className="text-left">
-                                                <h3 className="font-bold text-white text-sm sm:text-base">Очищення бази даних</h3>
-                                                <p className="text-[11px] text-red-200/80">Оберіть записи, які потрібно зберегти, або очистіть усе</p>
+                                                <h3 className="font-bold text-[#e6edf3] text-sm sm:text-base">Очищення бази даних</h3>
+                                                <p className="text-[11px] text-[#f3a3a0]">Оберіть записи, які потрібно зберегти, або очистіть усе</p>
                                             </div>
                                         </div>
-                                        <button type="button" onClick={() => setIsClearDbConfirmOpen(false)} className="w-7 h-7 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center cursor-pointer">
+                                        <button type="button" onClick={() => setIsClearDbConfirmOpen(false)} className="w-7 h-7 rounded-sm bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] text-[#b8bec8] hover:text-[#e6edf3] flex items-center justify-center cursor-pointer transition-colors">
                                             <Icon name="x" className="w-4 h-4" />
                                         </button>
                                     </div>
@@ -8009,9 +8040,9 @@ const MedicalApp = (function() {
                                                     setClearKeepUnevac200(true);
                                                     setClearKeepEpisodeIds(latest300 ? [latest300.id] : []);
                                                 }}
-                                                className="px-3 py-1.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-700/70 text-emerald-200 text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                                                className="px-3 py-1.5 rounded-sm bg-[#3da372]/15 hover:bg-[#3da372]/25 border border-[#3da372]/45 text-[#8ad8ae] text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
                                             >
-                                                <Icon name="check-circle" className="w-3.5 h-3.5 text-emerald-400" />
+                                                <Icon name="check-circle" className="w-3.5 h-3.5 text-[#3da372]" />
                                                 <span>Залишити СЗЧ + неевак. 200 + 1 поранення</span>
                                             </button>
                                             {(clearKeepAwol || clearKeepUnevac200 || clearKeepEpisodeIds.length > 0) && (
@@ -8022,7 +8053,7 @@ const MedicalApp = (function() {
                                                         setClearKeepUnevac200(false);
                                                         setClearKeepEpisodeIds([]);
                                                     }}
-                                                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-semibold transition cursor-pointer"
+                                                    className="px-3 py-1.5 rounded-sm bg-[#101113] hover:bg-[#222429] border border-[#2e3138] text-[#b8bec8] hover:text-[#e6edf3] text-xs font-semibold transition-colors cursor-pointer"
                                                 >
                                                     Скинути вибір (видалити все)
                                                 </button>
@@ -8030,47 +8061,47 @@ const MedicalApp = (function() {
                                         </div>
 
                                         {/* Опція 1: Залишити СЗЧ */}
-                                        <label className={`flex items-center justify-between gap-3 p-3 rounded-xl border cursor-pointer transition select-none ${clearKeepAwol ? 'bg-purple-950/40 border-purple-500/60 text-purple-100' : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700'}`}>
+                                        <label className={`flex items-center justify-between gap-3 p-3 rounded-sm border cursor-pointer transition-colors select-none ${clearKeepAwol ? 'bg-[#8f5fb8]/15 border-[#8f5fb8]/55 text-[#e6edf3]' : 'bg-[#101113] border-[#2e3138] text-[#b8bec8] hover:border-[#3c404a]'}`}>
                                             <div className="flex items-center gap-2.5">
                                                 <input
                                                     type="checkbox"
                                                     checked={clearKeepAwol}
                                                     onChange={(e) => setClearKeepAwol(e.target.checked)}
-                                                    className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-purple-500 focus:ring-0 cursor-pointer"
+                                                    className="w-4 h-4 rounded-sm bg-[#17181b] border-[#3c404a] text-[#8f5fb8] focus:ring-0 cursor-pointer"
                                                 />
                                                 <div>
                                                     <div className="text-xs font-bold">Залишити всі записи обліку СЗЧ</div>
-                                                    <div className="text-[10px] text-slate-400">СЗЧ, Повернення з СЗЧ та Дезертирство</div>
+                                                    <div className="text-[10px] text-[#989fa9]">СЗЧ, Повернення з СЗЧ та Дезертирство</div>
                                                 </div>
                                             </div>
-                                            <span className="px-2 py-0.5 rounded-md bg-purple-900/60 border border-purple-700/60 text-purple-200 font-mono text-xs font-bold shrink-0">
+                                            <span className="px-2 py-0.5 rounded-sm bg-[#8f5fb8]/20 border border-[#8f5fb8]/45 text-[#d8b4fe] font-mono text-xs font-bold shrink-0 tabular-nums">
                                                 {awolEps.length} зап.
                                             </span>
                                         </label>
 
                                         {/* Опція 2: Залишити неевакуйованих 200 */}
-                                        <label className={`flex items-center justify-between gap-3 p-3 rounded-xl border cursor-pointer transition select-none ${clearKeepUnevac200 ? 'bg-zinc-800/80 border-zinc-500/70 text-zinc-100' : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700'}`}>
+                                        <label className={`flex items-center justify-between gap-3 p-3 rounded-sm border cursor-pointer transition-colors select-none ${clearKeepUnevac200 ? 'bg-[#222429] border-[#566173] text-[#e6edf3]' : 'bg-[#101113] border-[#2e3138] text-[#b8bec8] hover:border-[#3c404a]'}`}>
                                             <div className="flex items-center gap-2.5">
                                                 <input
                                                     type="checkbox"
                                                     checked={clearKeepUnevac200}
                                                     onChange={(e) => setClearKeepUnevac200(e.target.checked)}
-                                                    className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0 cursor-pointer"
+                                                    className="w-4 h-4 rounded-sm bg-[#17181b] border-[#3c404a] text-[#4c8ed9] focus:ring-0 cursor-pointer"
                                                 />
                                                 <div>
                                                     <div className="text-xs font-bold">Залишити всіх неевакуйованих 200</div>
-                                                    <div className="text-[10px] text-slate-400">Загибель (200), 200 (від ран), Небойова смерть (200) зі статусом «Не евакуйований»</div>
+                                                    <div className="text-[10px] text-[#989fa9]">Загибель (200), 200 (від ран), Небойова смерть (200) зі статусом «Не евакуйований»</div>
                                                 </div>
                                             </div>
-                                            <span className="px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-700 text-zinc-200 font-mono text-xs font-bold shrink-0">
+                                            <span className="px-2 py-0.5 rounded-sm bg-[#17181b] border border-[#3c404a] text-[#e6edf3] font-mono text-xs font-bold shrink-0 tabular-nums">
                                                 {unevac200Eps.length} зап.
                                             </span>
                                         </label>
 
                                         {/* Опція 3: Вибір записів з Втрат о/с */}
-                                        <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 space-y-2.5">
+                                        <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-3 space-y-2.5">
                                             <div className="flex items-center justify-between gap-2 flex-wrap">
-                                                <span className="text-xs font-bold text-slate-200">
+                                                <span className="text-xs font-bold text-[#e6edf3] tabular-nums">
                                                     Додатково залишити з «Втрат о/с» ({clearKeepEpisodeIds.length} обрано)
                                                 </span>
                                                 <div className="flex items-center gap-1.5">
@@ -8078,7 +8109,7 @@ const MedicalApp = (function() {
                                                         <button
                                                             type="button"
                                                             onClick={() => setClearKeepEpisodeIds([latest300.id])}
-                                                            className="px-2 py-0.5 rounded bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-[10px] font-mono font-bold cursor-pointer transition"
+                                                            className="px-2 py-0.5 rounded-sm bg-[#d99b26]/15 hover:bg-[#d99b26]/25 border border-[#d99b26]/45 text-[#e7c574] text-[10px] font-mono font-bold cursor-pointer transition-colors"
                                                         >
                                                             1 останній 300
                                                         </button>
@@ -8087,7 +8118,7 @@ const MedicalApp = (function() {
                                                         <button
                                                             type="button"
                                                             onClick={() => setClearKeepEpisodeIds([])}
-                                                            className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-mono cursor-pointer transition"
+                                                            className="px-2 py-0.5 rounded-sm bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] text-[#b8bec8] text-[10px] font-mono cursor-pointer transition-colors"
                                                         >
                                                             Зняти
                                                         </button>
@@ -8102,7 +8133,7 @@ const MedicalApp = (function() {
                                                         value={clearSearchTerm}
                                                         onChange={(e) => setClearSearchTerm(e.target.value)}
                                                         placeholder="Пошук запису за ПІБ, позивним або типом..."
-                                                        className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/70 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 outline-none"
+                                                        className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-2.5 py-1.5 text-xs text-[#e6edf3] placeholder-[#989fa9] outline-none"
                                                     />
                                                     <div className="max-h-40 overflow-y-auto space-y-1 pr-1">
                                                         {filteredNonAwol.map(ep => {
@@ -8110,7 +8141,7 @@ const MedicalApp = (function() {
                                                             const isAuto200 = clearKeepUnevac200 && isAny200(ep.lossType) && ep.evacStatus === "Не евакуйований";
                                                             const checked = isAuto200 || clearKeepEpisodeIds.includes(ep.id);
                                                             return (
-                                                                <label key={ep.id} className={`flex items-center justify-between gap-2 p-2 rounded-lg border text-xs cursor-pointer transition select-none ${checked ? 'bg-emerald-950/40 border-emerald-600/60 text-emerald-100' : 'bg-slate-900/70 border-slate-800/80 text-slate-300 hover:bg-slate-900'}`}>
+                                                                <label key={ep.id} className={`flex items-center justify-between gap-2 p-2 rounded-sm border text-xs cursor-pointer transition-colors select-none ${checked ? 'bg-[#3da372]/15 border-[#3da372]/50 text-[#e6edf3]' : 'bg-[#17181b] border-[#2e3138] text-[#b8bec8] hover:bg-[#222429]'}`}>
                                                                     <div className="flex items-center gap-2 min-w-0">
                                                                         <input
                                                                             type="checkbox"
@@ -8119,17 +8150,17 @@ const MedicalApp = (function() {
                                                                             onChange={() => {
                                                                                 setClearKeepEpisodeIds(prev => prev.includes(ep.id) ? prev.filter(id => id !== ep.id) : [...prev, ep.id]);
                                                                             }}
-                                                                            className="w-3.5 h-3.5 rounded bg-slate-950 border-slate-700 text-emerald-500 focus:ring-0 cursor-pointer shrink-0 disabled:opacity-60"
+                                                                            className="w-3.5 h-3.5 rounded-sm bg-[#101113] border-[#3c404a] text-[#3da372] focus:ring-0 cursor-pointer shrink-0 disabled:opacity-60"
                                                                         />
                                                                         <div className="truncate">
-                                                                            <span className="font-bold text-white">{s?.name || 'Невідомий'}</span>
-                                                                            {s?.callsign && <span className="text-amber-400 font-mono ml-1">«{formatCallsignUI(s.callsign)}»</span>}
-                                                                            <span className="text-[10px] text-slate-400 font-mono ml-1.5">({s?.unit || ep.unit || '—'})</span>
+                                                                            <span className="font-bold text-[#e6edf3]">{s?.name || 'Невідомий'}</span>
+                                                                            {s?.callsign && <span className="text-[#e7c574] font-mono ml-1">«{formatCallsignUI(s.callsign)}»</span>}
+                                                                            <span className="text-[10px] text-[#989fa9] font-mono ml-1.5">({s?.unit || ep.unit || '—'})</span>
                                                                         </div>
                                                                     </div>
-                                                                    <div className="text-right shrink-0 font-mono text-[10px]">
-                                                                        <div className={isAny300(ep.lossType) ? 'text-amber-300 font-bold' : 'text-slate-300'}>{ep.lossType}{ep.severity ? ` · ${ep.severity}` : ''}</div>
-                                                                        <div className="text-slate-500">{formatEpisodeDateUI(ep.date)} · <span className={ep.evacStatus === 'Не евакуйований' ? 'text-red-400' : 'text-emerald-400'}>{ep.evacStatus}</span></div>
+                                                                    <div className="text-right shrink-0 font-mono text-[10px] tabular-nums">
+                                                                        <div className={isAny300(ep.lossType) ? 'text-[#e7c574] font-bold' : 'text-[#b8bec8]'}>{ep.lossType}{ep.severity ? ` · ${ep.severity}` : ''}</div>
+                                                                        <div className="text-[#989fa9]">{formatEpisodeDateUI(ep.date)} · <span className={ep.evacStatus === 'Не евакуйований' ? 'text-[#f3a3a0]' : 'text-[#8ad8ae]'}>{ep.evacStatus}</span></div>
                                                                     </div>
                                                                 </label>
                                                             );
@@ -8137,17 +8168,17 @@ const MedicalApp = (function() {
                                                     </div>
                                                 </>
                                             ) : (
-                                                <p className="text-[11px] text-slate-500 italic">Записів у «Втратах о/с» немає.</p>
+                                                <p className="text-[11px] text-[#989fa9] italic">Записів у «Втратах о/с» немає.</p>
                                             )}
                                         </div>
 
                                         {/* Підсумок перед дією */}
-                                        <div className={`p-3 rounded-xl border text-xs ${keptCount > 0 ? 'bg-amber-950/30 border-amber-700/50 text-amber-200' : 'bg-red-950/50 border-red-800/70 text-red-200'}`}>
+                                        <div className={`p-3 rounded-sm border text-xs tabular-nums ${keptCount > 0 ? 'bg-[#d99b26]/10 border-[#d99b26]/45 text-[#e7c574]' : 'bg-[#d9534f]/10 border-[#d9534f]/45 text-[#f3a3a0]'}`}>
                                             {keptCount > 0 ? (
                                                 <div className="space-y-1">
                                                     <div><strong>Залишиться в базі:</strong> {keptCount} епізод(ів) (СЗЧ: {clearKeepAwol ? awolEps.length : 0}, Неевак. 200: {clearKeepUnevac200 ? unevac200Eps.length : 0}, Інші обрані: {clearKeepEpisodeIds.filter(id => !(clearKeepUnevac200 && unevac200Eps.some(e => e.id === id))).length}).</div>
                                                     <div><strong>Буде видалено:</strong> {removedCount} епізод(ів) та анкети бійців без збережених подій.</div>
-                                                    <div className="text-[10px] text-slate-400 pt-0.5">Перед очищенням автоматично створюється аварійний знімок (можна скасувати через Ctrl+Z або «Відновити з останнього знімка»).</div>
+                                                    <div className="text-[10px] text-[#989fa9] pt-0.5">Перед очищенням автоматично створюється аварійний знімок (можна скасувати через Ctrl+Z або «Відновити з останнього знімка»).</div>
                                                 </div>
                                             ) : (
                                                 <div>
@@ -8157,9 +8188,9 @@ const MedicalApp = (function() {
                                         </div>
                                     </div>
 
-                                    <div className="px-5 py-3.5 bg-slate-950/80 border-t border-slate-800 flex gap-3 justify-end">
-                                        <button type="button" onClick={() => setIsClearDbConfirmOpen(false)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">Скасувати</button>
-                                        <button type="button" onClick={handleClearDatabase} className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-red-900/60 cursor-pointer">
+                                    <div className="px-5 py-3.5 bg-[#101113] border-t border-[#2e3138] flex gap-3 justify-end">
+                                        <button type="button" onClick={() => setIsClearDbConfirmOpen(false)} className="px-4 py-2 bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] text-[#e6edf3] text-xs font-bold rounded-sm transition-colors cursor-pointer">Скасувати</button>
+                                        <button type="button" onClick={handleClearDatabase} className="px-4 py-2 bg-[#d9534f] hover:bg-[#e06561] text-white border border-[#d9534f] text-xs font-bold rounded-sm transition-colors cursor-pointer tabular-nums">
                                             {keptCount > 0 ? `Очистити інше (залишити ${keptCount})` : 'Так, очистити все'}
                                         </button>
                                     </div>
@@ -8167,254 +8198,6 @@ const MedicalApp = (function() {
                             </div>
                         );
                     })()}
-
-                    {isChangelogOpen && (
-                        <div onClick={(e) => { if (e.target === e.currentTarget) setIsChangelogOpen(false); }} className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                            <div className="bg-slate-900 border border-slate-700/80 w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
-                                <div className="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-800/40">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                                            <Icon name="history" className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-lg font-bold text-white tracking-tight">Історія оновлень</h2>
-                                            <p className="text-xs text-slate-400">MedTactical — Система обліку втрат</p>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => setIsChangelogOpen(false)} className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer">
-                                        <Icon name="x" className="w-4 h-4" />
-                                    </button>
-                                </div>
-                                <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs sm:text-sm">
-                                    {/* 26.10.2026 */}
-                                    <div className="relative pl-5 border-l-2 border-amber-500 space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-amber-400 font-mono text-sm">⚡ v3.6.5 (Прямий перехід до HUB, стабілізація табів аналітики & ергономіка)</span>
-                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">26.10.2026</span>
-                                        </div>
-                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                                            <li><strong className="text-white">Прямий перехід до HUB («🏠 HUB»):</strong> У командну шапку додано тактичну кнопку швидкого повернення до Єдиного Центру Управління комплексу в один клік.</li>
-                                            <li><strong className="text-white">Стабілізація таб-бару аналітики:</strong> Дії експорту («Доповідь A4/PDF», «Звіт Текст», «Експорт Excel») перенесено у внутрішню панель фільтрів аналітики, що повністю ліквідувало зсув, стискання та появу скролбару на табах шапки.</li>
-                                            <li><strong className="text-white">Швидке повернення нагору («▲ Нагору»):</strong> Додано плаваючу кнопку, яка плавно з'являється при скролі довгих реєстрів (понад 300px) та моментально повертає на початок сторінки.</li>
-                                            <li><strong className="text-white">Спокійні індикатори статусу:</strong> Прибрано пульсацію <code>animate-pulse</code> з індикатора зв'язку з диском та точки черги евакуації для зниження навантаження на зір під час нічних чергувань.</li>
-                                        </ul>
-                                    </div>
-
-                                    {/* 15.10.2026 */}
-                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-slate-300 font-mono text-sm">⚡ v3.6.4 (Відновлення ручного введення дати/часу та оптимізація фокусу полів)</span>
-                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">15.10.2026</span>
-                                        </div>
-                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                                            <li><strong className="text-white">Відновлення ручного введення дати та часу з клавіатури:</strong> Усунуто блокуючий виклик <code>showPicker()</code> з обробника <code>onClick</code> на полях <code>type="datetime-local"</code> та <code>type="date"</code> (модальне вікно створення/редагування події, дата евакуації, дата повернення, дата рапорту, фільтри періоду в шапці та аналітиці). Тепер можна вільно клікати по числах та редагувати значення з клавіатури або стрілками.</li>
-                                            <li><strong className="text-white">Оптимізація стилів фокусу (:focus-visible):</strong> Прибрано подвійні рамки навколо заокруглених текстових полів введення, зберігши гармонійне підсвічування рамок кольором теми.</li>
-                                            <li><strong className="text-white">Повна підтримка Dark Mode для datetime-local:</strong> Поля вибору дати й часу гармонійно інтегровані в темну тему зі стилізованою іконкою виклику календаря.</li>
-                                        </ul>
-                                    </div>
-
-                                    {/* 29.09.2026 */}
-                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-slate-300 font-mono text-sm">⚡ v3.6.3 (Пріоритет 200, захист від аномалій хронології та розумна дедуплікація бійців)</span>
-                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">29.09.2026</span>
-                                        </div>
-                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                                            <li><strong className="text-white">Термінальний пріоритет статусу «Загибель (200)»:</strong> Усунуто перезапис статусу загибелі пізнішими або повторними епізодами 300/ЗБВ. Функція <code>pickLatestEpisode</code> та розрахунки статусів бійця тепер гарантовано закріплюють статус 200, виключаючи загиблих з активної черги тріажу.</li>
-                                            <li><strong className="text-white">Сквозні ланцюжки статусів та детекція аномалій (StatusHistoryChainBadge):</strong> Інтегровано бейдж історії статусів у картки, таблиці та тріаж з автоматичним виявленням неможливих часових інверсій (пульсуючий бейдж <code>⚠️ Загибель ➔ Поранення ПОМИЛКА ДАТ</code> з детальною підказкою).</li>
-                                            <li><strong className="text-white">Валідація хронології при збереженні епізодів:</strong> Блокування помилкового додавання поранень після зафіксованої дати загибелі та захист від внесення дати 200, яка передує існуючим пораненням, із наочним попереджувальним банером у модалці.</li>
-                                            <li><strong className="text-white">Розумний захист від дублювання бійців:</strong> Автоматичне зіставлення при додаванні нових поранених — нормалізація військових гомогліфів, прив'язка за прізвищем та позивним або за прізвищем та ім'ям без по батькові для запобігання створенню клонів.</li>
-                                        </ul>
-                                    </div>
-
-                                    {/* 26.09.2026 */}
-                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-slate-300 font-mono text-sm">⚡ v3.6.2 (3-рядкові картки тріажу, повні поранення без обрізань, травми ока & чистий UI)</span>
-                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">26.09.2026</span>
-                                        </div>
-                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                                            <li><strong className="text-white">Новий просторий 3-рядковий формат карток тріажу (~92px):</strong> Повний огляд даних бійця без обрізань. Рядок 1: позивний, скорочене військове звання (Ст. солдат, Мол. сержант), підрозділ, скорочене ПІБ («ПРІЗВИЩЕ І. Б.» з гарантованою мінімальною шириною від витіснення) та живий таймер. Рядок 2: повноширинний детальний опис поранень та ланцюжок статусів (Поранення ➔ Загибель) праворуч. Рядок 3: локація, УПД та кнопки дій.</li>
-                                            <li><strong className="text-white">Повне відображення специфічних уражень:</strong> Виправлено розпізнавання та показ травм ока («Травма ока»), синдрому роздавлювання (краш-синдром), ЧМТ, ампутацій, баротравм, гемо/пневмотораксу в деталях картки, фільтрах та статистиці.</li>
-                                            <li><strong className="text-white">Оптимізація інтерфейсу тріажу:</strong> Прибрано надлишкові діаграми для забезпечення максимальної чистоти інтерфейсу та миттєвого рендерингу на планшетах.</li>
-                                        </ul>
-                                    </div>
-
-                                    {/* 18.09.2026 */}
-                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-slate-300 font-mono text-sm">⚡ v3.6.1 (Патч стабільності експорту, таймерів тріажу та дат Excel)</span>
-                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">18.09.2026</span>
-                                        </div>
-                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                                            <li><strong className="text-white">Захист експорту Excel:</strong> Безпечна обробка дат у звітах для запобігання падіння застосунку на методі .replace('T', ' ').</li>
-                                            <li><strong className="text-white">Підтримка числових дат Excel:</strong> Виправлено конвертацію серійних числових дат Excel (45xxx) у parseSafeDate без зсуву на 1970 рік.</li>
-                                            <li><strong className="text-white">Точний лічильник «золотої години» тріажу:</strong> Відображення часу очікування евакуації з хвилинною точністю (45 хв, 1г 30хв) та щохвилинним автооновленням живих таймерів.</li>
-                                            <li><strong className="text-white">Оптимізація рендерингу карток:</strong> Мемоізація обробників (useCallback) для активації React.memo та оптимізація оновлення графіків ChartComponent.</li>
-                                            <li><strong className="text-white">Безпека пам'яті:</strong> Додано безпечне відкладене звільнення тимчасових URL-об'єктів (setTimeout 1000мс) при вивантаженні Excel та бекапів.</li>
-                                        </ul>
-                                    </div>
-
-                                    {/* 09.09.2026 */}
-                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-slate-300 font-mono text-sm">⚡ v3.6.0 (Штабний Диспетчер, автозапуск та автономний фоновий захист бази)</span>
-                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">09.09.2026</span>
-                                        </div>
-                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                                            <li><strong className="text-white">Автономний бекап на локальний диск (_backups):</strong> Повна інтеграція зі службою диспетчера (порт 8765) — будь-яка зміна бійця чи епізоду автоматично та безшумно шифрується AES-256 і зберігається в захищений каталог на ПК.</li>
-                                            <li><strong className="text-white">Розумне 1-клік відновлення (Auto-Restore Modal):</strong> При порожній базі браузера (після очищення кешу) додаток миттєво знаходить останній бекап на диску та відкриває зручне вікно відновлення.</li>
-                                            <li><strong className="text-white">Індикатор статусу в шапці:</strong> Анімований статус «🟢 Диск: OK» (або час збереження) поруч з бейджем версії з можливістю швидкого переходу до панелі бекапів.</li>
-                                            <li><strong className="text-white">Пряме керування в модалці бекапів:</strong> Новий блок «Локальний диск (Автозахист)» для збереження та відновлення бази в 1 клік без діалогових вікон провідника.</li>
-                                        </ul>
-                                    </div>
-
-                                    {/* 29.08.2026 */}
-                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-slate-300 font-mono text-sm">⚡ v3.5.2 (Стандартизація позивних Title Case, синхронізація причин та цілісність бази)</span>
-                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">29.08.2026</span>
-                                        </div>
-                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                                            <li><strong className="text-white">Єдиний канонічний стандарт позивних (Title Case):</strong> Автоматичне форматування всіх позивних до чистого вигляду «Сокіл», «Байрактар», «Тайфун» (з очищенням зайвих лапок/дужок та підтримкою складних імен на кшталт «Альфа-1») у картках Журналу, Тріажі, Excel, друку та текстових звітах.</li>
-                                            <li><strong className="text-white">Швидка стандартизація бази в 1 клік:</strong> Додано кнопку «✨ Стандартизувати позивні» та автоматичну діагностику регістрів у Data Integrity Guard зі створенням точки відновлення.</li>
-                                            <li><strong className="text-white">Синхронізація фільтрів при старті:</strong> Повне узгодження чекбоксів причин при завантаженні (loadData) з збереженим довідником та наявними епізодами; «Удар КАБом» включено до системного словника за замовчуванням.</li>
-                                            <li><strong className="text-white">Безпечний фільтр причин та важкості:</strong> Усунуто раптове приховування записів з новими або незаповненими полями при перезавантаженні сторінки.</li>
-                                        </ul>
-                                    </div>
-
-                                    {/* 29.08.2026 */}
-                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-slate-300 font-mono text-sm">⚡ v3.5.1 (Адаптивна симетрична сітка модалки для 200 / ЗБВ / СЗЧ)</span>
-                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">29.08.2026</span>
-                                        </div>
-                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                                            <li><strong className="text-white">Чиста 2-колонкова сітка для 200 / ЗБВ / СЗЧ:</strong> Усунуто некоректну заглушку, яка обрізала силует та залишала порожні 8 колонок. Форма для небойових/безтравматичних епізодів тепер ідеально симетрична та збалансована (6 + 6).</li>
-                                            <li><strong className="text-white">Збереження повної 3-колонкової структури 300:</strong> Для поранень та травм продовжує працювати інтерактивна тактична карта тіла (3/4/5).</li>
-                                        </ul>
-                                    </div>
-
-                                    {/* 29.08.2026 */}
-                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-slate-300 font-mono text-sm">⚡ v3.5.0 (Розширений Body Map HUD, анатомічні ураження & медичні підказки)</span>
-                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">29.08.2026</span>
-                                        </div>
-                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                                            <li><strong className="text-white">Розширений анатомічний блок уражень (Body Map HUD):</strong> Інтерактивна тактична карта тіла з компонуванням «пліч-о-пліч» (силует + повноширинні кнопки уражень) у просторій модалці max-w-7xl без скорочень і трикрапок.</li>
-                                            <li><strong className="text-white">Повний військово-медичний класифікатор травм:</strong> Додано ампутації сегментів (рука, нога, стопа, кисть, пальці), краш-синдром, пневмоторакс, травму ока, баротравму, розрив тканин та рвані рани з адаптивним набором для кожної зони тіла.</li>
-                                            <li><strong className="text-white">Військово-медичні підказки при наведенні (Tooltips):</strong> Кожна кнопка містить детальне клінічне роз'яснення специфіки ураження та його небезпеки.</li>
-                                            <li><strong className="text-white">Збалансована сітка модального вікна 3/4/5:</strong> Охайна фіксація кнопки прив'язки [Прив'язано ✕] у своїй картці та усунення вертикальних пустот.</li>
-                                        </ul>
-                                    </div>
-
-                                    {/* 28.08.2026 */}
-                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-slate-300 font-mono text-sm">⚡ v3.4.0 (Сортування за евакуацією, лаконічні фільтри & рок-солід тулбар)</span>
-                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">28.08.2026</span>
-                                        </div>
-                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                                            <li><strong className="text-white">Сортування за датою евакуації:</strong> Додано режими сортування за часом/датою евакуації бійців (новіші/старіші зверху), збереження дати евакуації при перегляді та швидкі чіпси [⏳ Очікують] / [✅ Евакуйовані].</li>
-                                            <li><strong className="text-white">Лаконічний фільтр дат:</strong> Мінімалістичний інтерфейс із чистим вибором [Всі дати] та календарем точного періоду Від/До.</li>
-                                            <li><strong className="text-white">Рок-солід 2-рівневий тулбар:</strong> Повний захист від зсувів при масштабуванні — рядок 1 для фільтрів, повноширинний рядок 2 для статистики та дій.</li>
-                                            <li><strong className="text-white">Оптимізація випадаючих меню:</strong> Поповери «Інше» та «Сортування» вирівнюються за правим краєм і не обрізаються екраном.</li>
-                                        </ul>
-                                    </div>
-
-                                    {/* 26.08.2026 */}
-                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-slate-300 font-mono text-sm">⚡ v3.3.0 (Авто-відновлення дат, ланцюжки статусів та захист цілісності)</span>
-                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">26.08.2026</span>
-                                        </div>
-                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                                            <li><strong className="text-white">Розумне авто-виправлення одруківок дат:</strong> Автоматичне очищення випадкових цифр перед роком (наприклад, 62026-08-25 ➔ 2026-08-25), що гарантує безпомилковий підрахунок періодів.</li>
-                                            <li><strong className="text-white">Синхронізація фактичної евакуації:</strong> Точний підрахунок вивезених бійців за період з надійним фолбеком на дату події.</li>
-                                            <li><strong className="text-white">Захист від колізій статусів:</strong> Інтерактивне попередження при створенні нового запису на бійця з відкритою чергою та кнопка швидкого переходу до редагування.</li>
-                                            <li><strong className="text-white">Бейдж ланцюжка статусів бійця:</strong> Відображення компактного бейджа історії (наприклад, [🔄 ЗБВ ➔ 200]) на картках у Журналі та Евакуації.</li>
-                                            <li><strong className="text-white">Оновлення Data Integrity Guard:</strong> Виключення хибних сповіщень по валідних історичних епізодах та автоматичне лікування одруківок дат.</li>
-                                        </ul>
-                                    </div>
-
-                                    {/* 22.08.2026 */}
-                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-slate-300 font-mono text-sm">v3.2.0 (Офіційне бойове донесення A4/PDF, точна евакуація & фільтри)</span>
-                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">22.08.2026</span>
-                                        </div>
-                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                                            <li><strong className="text-white">Офіційне бойове донесення (A4 / PDF):</strong> Окреме вікно друку та експорту в PDF для штабу: 4 зведені картки (200, 300 з розбивкою за важкістю, ЗБВ, вивезені), акцентний блок черги на евакуацію, причини ураження, підрозділи та поіменний реєстр з українською анатомічною мапою та підписами.</li>
-                                            <li><strong className="text-white">Точна синхронізація евакуації 200, 300 та ЗБВ:</strong> 100% математичне узгодження між шапкою, аналітикою, текстовим звітом та друкованою формою. ЗБВ більше не спотворюють кількість тіл на позиціях.</li>
-                                            <li><strong className="text-white">Повна підтримка перемикача «Об'єднати групи»:</strong> Гнучке відображення ЗБВ окремо або у складі загальних безповоротних втрат.</li>
-                                            <li><strong className="text-white">Глибокий фільтр по секторах:</strong> Можливість повної деталізованої аналітики по конкретній позиції чи рубежу.</li>
-                                        </ul>
-                                    </div>
-
-                                    {/* 20.08.2026 */}
-                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-slate-300 font-mono text-sm">v3.1.1 (Оптимізація пошуку, швидкий доступ & Data Guard)</span>
-                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">20.08.2026</span>
-                                        </div>
-                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                                            <li><strong className="text-white">Інтерактивний перегляд зауважень Data Guard:</strong> Вивід списку знайдених помилок (дати, незв'язані записи) з кнопкою [✏️ Відкрити] для швидкого переходу до картки в 1 клік.</li>
-                                            <li><strong className="text-white">Миттєвий пошук бійців O(1):</strong> Використання кешованого індексу soldiersMap усуває 400 000+ зайвих ітерацій при фільтрації списку.</li>
-                                            <li><strong className="text-white">Військова нормалізація:</strong> Стійкість пошуку та модального вікна вибору бійця до нерозривних пробілів та змішаної розкладки клавіатури.</li>
-                                            <li><strong className="text-white">Синхронізація ключів сховища:</strong> 100% надійність аварійних знімків та відновлення бази.</li>
-                                        </ul>
-                                    </div>
-
-                                    {/* 19.08.2026 */}
-                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-slate-300 font-mono text-sm">v3.1.0 (Формат доповіді, Body Map & Data Integrity)</span>
-                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">19.08.2026</span>
-                                        </div>
-                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                                            <li><strong className="text-white">Структурований формат бойової доповіді:</strong> Чистий 2-рядковий вивід для месенджерів та рацій (ПІБ, позивний, рота в заголовку; характер поранення, УПД, статус евакуації; дата, час, причина та рубежі). Повна відсутність сміттєвих символів та скупчень дужок.</li>
-                                            <li><strong className="text-white">Швидкий експорт черги евакуації в Triage:</strong> Панель швидких звітів [Скопіювати всіх 300-х] та [Скопіювати 200/ЗБВ] та копіювання за окремими зонами сортування.</li>
-                                            <li><strong className="text-white">Інтерактивна тактична карта тіла (Body Map):</strong> Органічний плавний анатомічний силует бійця з неоновою підсвіткою уражень, мітками сторін [П (Права)] / [Л (Ліва)] та швидкими плитками типів травм.</li>
-                                            <li><strong className="text-white">Data Integrity Guard (Захист та лікування бази):</strong> Автоматичні аварійні тіньові знімки (Safety Snapshots) перед імпортом чи масовими операціями, модуль діагностики та авто-відновлення цілісності бази даних.</li>
-                                        </ul>
-                                    </div>
-
-                                    {/* 18.08.2026 */}
-                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-80">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-slate-300 font-mono text-sm">v3.0 (Tactical Dark UI & Оптимізація)</span>
-                                            <span className="text-[11px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">18.08.2026</span>
-                                        </div>
-                                        <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                                            <li><strong className="text-white">Горизонтальний Top Filter Toolbar (1 рядок):</strong> Замість громіздких панелей — компактний тактичний тулбар: швидкий пошук `[✕]`, пресети дат (`За добу`, `3 дні`, `7 днів`), календар-поповер `[ 📅 Період ▾ ]` та поповер `[ ⚙️ Інше ▾ ]` з активними фільтрами.</li>
-                                            <li><strong className="text-white">Перемикач карток & швидке редагування:</strong> Тумблер `[ 🗂️ 2 колонки ]` / `[ 📑 1 колонка ]`, клікабельні плашки для відкриття в 1 клік та фіксована кнопка `[ ✏️ ]` на кожному рядку.</li>
-                                            <li><strong className="text-white">Повний Tactical Dark редизайн усіх модалок:</strong> Модернізовано форму додавання/редагування запису (3 зоновані колонки, неонова підсвітка анатомічної мапи, тактичний силует для 200/ЗБВ), вікно «База / Бекап» (AES-256) та «Довідники».</li>
-                                            <li><strong className="text-white">Аналітика та виправлення евакуації:</strong> Оновлено тулбар аналітики та усунуто помилку розрахунку середнього часу евакуації.</li>
-                                            <li><strong className="text-white">Закриття по Escape та кліку на фон:</strong> Реалізовано закриття всіх модальних вікон і випадаючих поповерів по `Esc` та Backdrop click.</li>
-                                        </ul>
-                                    </div>
-
-                                    {/* 17.08.2026 */}
-                                    <div className="relative pl-5 border-l-2 border-slate-700 space-y-2 opacity-75">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-slate-300 font-mono text-sm">v3.0-rc1 (Базовий редизайн)</span>
-                                            <span className="text-[11px] font-mono text-slate-500">17.08.2026</span>
-                                        </div>
-                                        <ul className="space-y-1.5 text-slate-400 list-disc list-inside">
-                                            <li><strong className="text-slate-200">Палітра Slate-950:</strong> Уніфікація інтерфейсу з програмами комплексу (Inter, JetBrains Mono).</li>
-                                            <li><strong className="text-slate-200">Оновлена дошка Triage:</strong> 4 зони сортування (Червона, Жовта, Зелена, Чорна) з неоновими кольоровими градієнтами.</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <div className="px-6 py-3 bg-slate-950/60 border-t border-slate-800 text-right">
-                                    <button onClick={() => setIsChangelogOpen(false)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition-colors cursor-pointer">
-                                        Закрити
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
 
                     {/* Плаваюча кнопка швидкого повернення нагору */}
                     <button 

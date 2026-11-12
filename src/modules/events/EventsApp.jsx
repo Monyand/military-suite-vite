@@ -6,6 +6,7 @@ import { AssaultReportModal } from './AssaultReportModal.jsx';
 import { isCompletedAssault } from './assault-report.js';
 import { PersonnelView } from './PersonnelView.jsx';
 import { escapeHtml } from '../../core/html.js';
+import { bindDialogFocusTrap } from '../../app/dialog-focus.js';
 
 const EventsApp = (function() {
             
@@ -91,16 +92,34 @@ const EventsApp = (function() {
             return `${d}.${m}.${y}`;
         };
         const getEventDateStr = (ev) => ev?.actionDetails?.startDate || (ev?.createdAt ? window.SuiteDates.localISO(new Date(ev.createdAt)) : '');
+        const EVENT_HOMOGLYPHS = { a: 'а', c: 'с', e: 'е', i: 'і', o: 'о', p: 'р', x: 'х', y: 'у' };
+        const normEventSearch = (val) => String(val ?? '')
+            .normalize('NFKC')
+            .trim()
+            .toLocaleLowerCase('uk-UA')
+            .replace(/[’ʼ`′]/g, "'")
+            .replace(/[aceiopxy]/g, ch => EVENT_HOMOGLYPHS[ch] || ch)
+            .replace(/\s+/g, ' ');
         const eventMatchesQuery = (ev, q) => {
-            if (!q) return true;
-            const s = q.toLowerCase().trim();
+            const s = normEventSearch(q);
+            if (!s) return true;
+            const ad = ev.actionDetails || {};
             const chunks = [
                 ev.description, ev.types?.join(' '),
-                ev.actionDetails?.conductedBy, ev.actionDetails?.docLoc, ev.actionDetails?.factLoc,
-                ev.actionDetails?.direction, ev.friendlyLosses?.details,
-                ...(ev.enemyLosses || []).flatMap(l => [l.weapon, l.inflicter, l.callsign])
+                ad.startDate, ad.conductedBy, ad.docLoc, ad.factLoc,
+                ad.direction, ad.position, ad.vehicleDetails,
+                ev.friendlyLosses?.details,
+                ...(ev.enemyLosses || []).flatMap(l => [
+                    l?.weapon, l?.inflicter, l?.callsign,
+                    ...(Array.isArray(l?.callsigns200) ? l.callsigns200 : []),
+                    ...(Array.isArray(l?.callsigns200Unconfirmed) ? l.callsigns200Unconfirmed : []),
+                    ...(Array.isArray(l?.callsigns200Discovered) ? l.callsigns200Discovered : []),
+                    ...(Array.isArray(l?.callsigns300) ? l.callsigns300 : []),
+                    ...(Array.isArray(l?.callsignsPOW) ? l.callsignsPOW : []),
+                    ...(Array.isArray(l?.callsigns200POW) ? l.callsigns200POW : [])
+                ])
             ];
-            return chunks.some(x => String(x || '').toLowerCase().includes(s));
+            return chunks.some(x => normEventSearch(x).includes(s));
         };
 
         const formatDateTimeUI = (isoStr) => {
@@ -132,8 +151,8 @@ const EventsApp = (function() {
                 if (chartInstance.current) chartInstance.current.destroy();
                 if (window.ChartDataLabels) Chart.register(window.ChartDataLabels);
 
-                Chart.defaults.color = '#94a3b8';
-                Chart.defaults.font.family = 'Inter, sans-serif';
+                Chart.defaults.color = '#b8bec8';
+                Chart.defaults.font.family = "'Segoe UI Variable Text', Inter, system-ui, sans-serif";
                 
                 const ctx = chartRef.current.getContext('2d');
                 const merged = { responsive: true, maintainAspectRatio: false, ...options };
@@ -160,7 +179,7 @@ const EventsApp = (function() {
                 window.addEventListener('document-notice', receive);
                 return () => { clearTimeout(timer); window.removeEventListener('document-notice', receive); };
             }, []);
-            return message ? <div role="status" aria-live="polite" className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[110] bg-slate-800 border border-amber-500/40 text-slate-100 text-sm px-4 py-3 rounded-xl shadow-xl max-w-[90vw] flex gap-4 items-center"><span>{message}</span><button type="button" aria-label="Закрити повідомлення" onClick={() => setMessage('')}>✕</button></div> : null;
+            return message ? <div role="status" aria-live="polite" className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[110] bg-[#17181b] border border-[#4c8ed9]/50 text-[#f3f4f6] text-sm px-4 py-2.5 rounded-sm max-w-[90vw] flex gap-4 items-center"><span>{message}</span><button type="button" aria-label="Закрити повідомлення" onClick={() => setMessage('')} className="text-[#b8bec8] hover:text-[#f3f4f6]">✕</button></div> : null;
         }
 
         const documentIssues = (record) => {
@@ -270,31 +289,31 @@ const EventsApp = (function() {
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
             };
 
-            return <section className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+            return <section className="bg-[#17181b] border border-[#2e3138] rounded-sm p-5 space-y-4">
                 <div className="flex justify-between items-start flex-wrap gap-3">
                     <div>
-                        <h2 className="font-bold text-lg text-white flex items-center gap-2">
-                            <Icon name="check-circle" className="w-5 h-5 text-amber-500" />
+                        <h2 className="font-semibold text-base text-[#f3f4f6] flex items-center gap-2">
+                            <Icon name="check-circle" className="w-4 h-4 text-[#4c8ed9]" />
                             Перевірка документації
                         </h2>
-                        <p className="text-xs text-slate-400 mt-1">Контроль повноти записів, закриття ШД та історія редагування. Дані перевіряються в реальному часі.</p>
+                        <p className="text-xs text-[#b8bec8] mt-1">Контроль повноти записів, закриття ШД та історія редагування. Дані перевіряються в реальному часі.</p>
                     </div>
-                    <button type="button" onClick={downloadReport} className="border border-slate-600 hover:border-amber-500/60 rounded-lg px-3 py-2 text-sm text-slate-200 hover:text-white flex items-center gap-1.5 transition">
-                        <Icon name="download" className="w-4 h-4 text-amber-400" /> Звіт про якість (JSON)
+                    <button type="button" onClick={downloadReport} className="bg-[#222429] border border-[#2e3138] hover:border-[#4c8ed9] rounded-sm px-3 py-1.5 text-xs font-medium text-[#f3f4f6] flex items-center gap-1.5 transition-colors">
+                        <Icon name="download" className="w-4 h-4 text-[#4c8ed9]" /> Звіт про якість (JSON)
                     </button>
                 </div>
 
-                <details className="rounded-xl border border-slate-700 bg-slate-950/40 p-3.5">
-                    <summary className="cursor-pointer font-semibold text-sm text-amber-400 flex items-center gap-2 select-none">
+                <details className="rounded-sm border border-[#2e3138] bg-[#101113] p-3.5">
+                    <summary className="cursor-pointer font-medium text-xs text-[#4c8ed9] flex items-center gap-2 select-none">
                         <Icon name="sliders" className="w-4 h-4" /> Налаштувати перевірки та що відображати у картках
                     </summary>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-3 border-t border-slate-800">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-3 border-t border-[#2e3138]">
                         <fieldset>
-                            <legend className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Які зауваження шукати</legend>
+                            <legend className="text-[11px] font-semibold text-[#b8bec8] mb-2 uppercase tracking-wider">Які зауваження шукати</legend>
                             <div className="flex flex-col gap-2">
                                 {DOCUMENT_CHECKS.map(check => (
-                                    <label key={check} className="text-xs flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
-                                        <input type="checkbox" checked={view.checks.includes(check)} onChange={e => setView(previous => ({...previous, checks: e.target.checked ? [...previous.checks, check] : previous.checks.filter(c => c !== check)}))} className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-amber-500" />
+                                    <label key={check} className="text-xs flex items-center gap-2 cursor-pointer text-[#f3f4f6] hover:text-white">
+                                        <input type="checkbox" checked={view.checks.includes(check)} onChange={e => setView(previous => ({...previous, checks: e.target.checked ? [...previous.checks, check] : previous.checks.filter(c => c !== check)}))} className="w-4 h-4 rounded-sm bg-[#17181b] border-[#2e3138] text-[#4c8ed9]" />
                                         <span>{check}</span>
                                     </label>
                                 ))}
@@ -302,11 +321,11 @@ const EventsApp = (function() {
                         </fieldset>
 
                         <fieldset>
-                            <legend className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Які блоки показувати</legend>
+                            <legend className="text-[11px] font-semibold text-[#b8bec8] mb-2 uppercase tracking-wider">Які блоки показувати</legend>
                             <div className="flex flex-col gap-2">
                                 {[['showSummary','Підсумки перевірки'],['showRecords','Список документів'],['showHistory','Історія змін']].map(([key, label]) => (
-                                    <label key={key} className="text-xs flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
-                                        <input type="checkbox" checked={!!view[key]} onChange={e => setView(previous => ({...previous, [key]: e.target.checked}))} className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-amber-500" />
+                                    <label key={key} className="text-xs flex items-center gap-2 cursor-pointer text-[#f3f4f6] hover:text-white">
+                                        <input type="checkbox" checked={!!view[key]} onChange={e => setView(previous => ({...previous, [key]: e.target.checked}))} className="w-4 h-4 rounded-sm bg-[#17181b] border-[#2e3138] text-[#4c8ed9]" />
                                         <span>{label}</span>
                                     </label>
                                 ))}
@@ -314,15 +333,15 @@ const EventsApp = (function() {
                         </fieldset>
 
                         <fieldset>
-                            <legend className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Що показувати у списку</legend>
+                            <legend className="text-[11px] font-semibold text-[#b8bec8] mb-2 uppercase tracking-wider">Що показувати у списку</legend>
                             <div className="flex flex-col gap-2">
                                 {[
                                     ['showDescription', 'Короткий опис'],
                                     ['showDetails', 'Локація та виконавці'],
                                     ['showLosses', 'Підсумок втрат']
                                 ].map(([key, label]) => (
-                                    <label key={key} className="text-xs flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
-                                        <input type="checkbox" checked={view[key] !== false} onChange={e => setView(previous => ({...previous, [key]: e.target.checked}))} className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-amber-500" />
+                                    <label key={key} className="text-xs flex items-center gap-2 cursor-pointer text-[#f3f4f6] hover:text-white">
+                                        <input type="checkbox" checked={view[key] !== false} onChange={e => setView(previous => ({...previous, [key]: e.target.checked}))} className="w-4 h-4 rounded-sm bg-[#17181b] border-[#2e3138] text-[#4c8ed9]" />
                                         <span>{label}</span>
                                     </label>
                                 ))}
@@ -330,46 +349,46 @@ const EventsApp = (function() {
                         </fieldset>
                     </div>
 
-                    <div className="flex flex-wrap gap-3 mt-4 pt-3 border-t border-slate-800">
-                        <button type="button" className="rounded-lg bg-amber-600 hover:bg-amber-500 px-3 py-1.5 text-xs font-bold text-white transition" onClick={async () => {
+                    <div className="flex flex-wrap gap-2.5 mt-4 pt-3 border-t border-[#2e3138]">
+                        <button type="button" className="rounded-sm bg-[#2b67ab] hover:bg-[#3577c2] border border-[#4c8ed9]/60 px-3 py-1.5 text-xs font-medium text-white transition-colors" onClick={async () => {
                             try { await onSavePreferences(view); notifyDocument('Налаштування перевірки збережено'); }
                             catch { notifyDocument('Не вдалося зберегти налаштування'); }
                         }}>Зберегти налаштування перевірки</button>
-                        <button type="button" className="rounded-lg border border-slate-600 hover:border-slate-500 px-3 py-1.5 text-xs text-slate-300 transition" onClick={() => {setView(documentViewDefaults()); setSearch(''); setTypeFilter('all'); setIssueFilter('all');}}>Скинути за замовчуванням</button>
+                        <button type="button" className="rounded-sm bg-[#222429] border border-[#2e3138] hover:border-[#3c404a] px-3 py-1.5 text-xs text-[#b8bec8] hover:text-[#f3f4f6] transition-colors" onClick={() => {setView(documentViewDefaults()); setSearch(''); setTypeFilter('all'); setIssueFilter('all');}}>Скинути за замовчуванням</button>
                     </div>
                 </details>
 
-                {!view.checks.length && <p role="status" className="text-sm text-amber-300 bg-amber-950/30 p-2.5 rounded-xl border border-amber-800/50">Усі перевірки вимкнено. Документи відображаються без аналізу зауважень.</p>}
+                {!view.checks.length && <p role="status" className="text-xs text-[#d99b26] bg-[#d99b26]/10 p-2.5 rounded-sm border border-[#d99b26]/30">Усі перевірки вимкнено. Документи відображаються без аналізу зауважень.</p>}
 
-                {view.showSummary && <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="rounded-xl bg-slate-950 p-3 border border-slate-800">
-                        <div className="text-2xl font-mono font-bold text-slate-100">{records.length}</div>
-                        <div className="text-xs text-slate-400 mt-0.5">Всього записів</div>
+                {view.showSummary && <div className="grid grid-cols-2 sm:grid-cols-4 border border-[#2e3138] rounded-sm bg-[#101113] divide-y sm:divide-y-0 sm:divide-x divide-[#2e3138]">
+                    <div className="p-3">
+                        <div className="text-xl font-mono font-semibold text-[#f3f4f6] tabular-nums">{records.length}</div>
+                        <div className="text-xs text-[#b8bec8] mt-0.5">Всього записів</div>
                     </div>
-                    <div className="rounded-xl bg-slate-950 p-3 border border-slate-800">
-                        <div className="text-2xl font-mono font-bold text-emerald-400">{rows.length - incomplete.length}</div>
-                        <div className="text-xs text-slate-400 mt-0.5">Без зауважень</div>
+                    <div className="p-3">
+                        <div className="text-xl font-mono font-semibold text-[#3da372] tabular-nums">{rows.length - incomplete.length}</div>
+                        <div className="text-xs text-[#b8bec8] mt-0.5">Без зауважень</div>
                     </div>
-                    <div className="rounded-xl bg-slate-950 p-3 border border-slate-800">
-                        <div className="text-2xl font-mono font-bold text-amber-400">{incomplete.length}</div>
-                        <div className="text-xs text-slate-400 mt-0.5">Потребують уваги</div>
+                    <div className="p-3">
+                        <div className="text-xl font-mono font-semibold text-[#d99b26] tabular-nums">{incomplete.length}</div>
+                        <div className="text-xs text-[#b8bec8] mt-0.5">Потребують уваги</div>
                     </div>
-                    <div className={`rounded-xl p-3 border ${unclosedAssaultsCount > 0 ? 'bg-red-950/30 border-red-700/60' : 'bg-slate-950 border-slate-800'}`}>
-                        <div className={`text-2xl font-mono font-bold ${unclosedAssaultsCount > 0 ? 'text-red-400 animate-pulse' : 'text-slate-400'}`}>{unclosedAssaultsCount}</div>
-                        <div className="text-xs text-slate-400 mt-0.5">Незакритих ШД</div>
+                    <div className={`p-3 ${unclosedAssaultsCount > 0 ? 'bg-[#d9534f]/10' : ''}`}>
+                        <div className={`text-xl font-mono font-semibold tabular-nums ${unclosedAssaultsCount > 0 ? 'text-[#f3a3a0]' : 'text-[#b8bec8]'}`}>{unclosedAssaultsCount}</div>
+                        <div className="text-xs text-[#b8bec8] mt-0.5">Незакритих ШД</div>
                     </div>
                 </div>}
 
                 {/* Фільтри */}
-                <div className="flex flex-wrap items-center gap-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                <div className="flex flex-wrap items-center gap-2.5 bg-[#101113] p-2.5 rounded-sm border border-[#2e3138]">
                     <div className="relative flex-1 min-w-[180px]">
-                        <Icon name="search" className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5 pointer-events-none" />
-                        <input aria-label="Пошук документа" value={search} onChange={e => setSearch(e.target.value)} placeholder="ID, опис, позивний, місце..." className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-2.5 py-1.5 text-xs text-slate-200 focus:border-amber-500" />
+                        <Icon name="search" className="w-3.5 h-3.5 text-[#989fa9] absolute left-2.5 top-2 pointer-events-none" />
+                        <input aria-label="Пошук документа" value={search} onChange={e => setSearch(e.target.value)} placeholder="ID, опис, позивний, місце..." className="w-full bg-[#17181b] border border-[#2e3138] rounded-sm pl-8 pr-2.5 py-1.5 text-xs text-[#f3f4f6] focus:border-[#4c8ed9] outline-none" />
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-slate-400 uppercase font-semibold">Тип:</span>
-                        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:border-amber-500">
+                        <span className="text-[11px] text-[#b8bec8] uppercase font-semibold">Тип:</span>
+                        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="bg-[#17181b] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] focus:border-[#4c8ed9] outline-none">
                             <option value="all">Усі типи</option>
                             <option value={EVENT_TYPES.ASSAULT}>{EVENT_TYPES.ASSAULT}</option>
                             <option value={EVENT_TYPES.UDP}>{EVENT_TYPES.UDP}</option>
@@ -378,93 +397,93 @@ const EventsApp = (function() {
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-slate-400 uppercase font-semibold">Зауваження:</span>
-                        <select value={issueFilter} onChange={e => setIssueFilter(e.target.value)} className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:border-amber-500">
+                        <span className="text-[11px] text-[#b8bec8] uppercase font-semibold">Зауваження:</span>
+                        <select value={issueFilter} onChange={e => setIssueFilter(e.target.value)} className="bg-[#17181b] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] focus:border-[#4c8ed9] outline-none">
                             <option value="all">Усі зауваження</option>
                             {DOCUMENT_CHECKS.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                     </div>
 
-                    <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 cursor-pointer ml-auto select-none">
-                        <input type="checkbox" checked={onlyIssues} onChange={e => setOnlyIssues(e.target.checked)} className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-amber-500" />
+                    <label className="text-xs font-medium text-[#f3f4f6] flex items-center gap-1.5 cursor-pointer ml-auto select-none">
+                        <input type="checkbox" checked={onlyIssues} onChange={e => setOnlyIssues(e.target.checked)} className="w-4 h-4 rounded-sm bg-[#17181b] border-[#2e3138] text-[#4c8ed9]" />
                         Лише із зауваженнями
                     </label>
                 </div>
 
-                <div className="text-xs text-slate-500 flex justify-between items-center px-1">
-                    <span>Показано: <strong className="text-slate-300">{visible.length}</strong> з {records.length}</span>
+                <div className="text-xs text-[#989fa9] flex justify-between items-center px-1 tabular-nums">
+                    <span>Показано: <strong className="text-[#f3f4f6]">{visible.length}</strong> з {records.length}</span>
                     {unclosedAssaultsCount > 0 && (
-                        <button type="button" onClick={() => { setTypeFilter(EVENT_TYPES.ASSAULT); setIssueFilter('ШД без часу закінчення'); setOnlyIssues(true); }} className="text-red-400 hover:text-red-300 underline font-semibold flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span> Показати {unclosedAssaultsCount} незакритих ШД
+                        <button type="button" onClick={() => { setTypeFilter(EVENT_TYPES.ASSAULT); setIssueFilter('ШД без часу закінчення'); setOnlyIssues(true); }} className="text-[#f3a3a0] hover:text-white underline font-medium flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#d9534f]"></span> Показати {unclosedAssaultsCount} незакритих ШД
                         </button>
                     )}
                 </div>
 
-                {view.showRecords && <div className="max-h-96 overflow-y-auto divide-y divide-slate-800/80 rounded-xl border border-slate-800 bg-slate-950/40">
+                {view.showRecords && <div className="max-h-96 overflow-y-auto divide-y divide-[#2e3138] rounded-sm border border-[#2e3138] bg-[#101113]">
                     {visible.slice(0, 150).map(({record, issues}, index) => {
                         const isUnclosedAssault = issues.includes('ШД без часу закінчення');
                         const totalE200 = (record.enemyLosses || []).reduce((s, l) => s + (l.count200 || 0) + (l.count200POW || 0), 0);
                         const totalE300 = (record.enemyLosses || []).reduce((s, l) => s + (l.count300 || 0), 0);
                         const totalPOW = (record.enemyLosses || []).reduce((s, l) => s + (l.countPOW || 0), 0);
                         return (
-                            <button type="button" key={String(record.id) + index} onClick={() => onOpen(record)} className={`block w-full text-left p-3 hover:bg-slate-800/60 transition ${isUnclosedAssault ? 'bg-red-950/20' : ''}`}>
+                            <button type="button" key={String(record.id) + index} onClick={() => onOpen(record)} className={`block w-full text-left p-3 hover:bg-[#222429] transition-colors ${isUnclosedAssault ? 'bg-[#d9534f]/10 border-l-2 border-[#d9534f]' : ''}`}>
                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-[11px] font-mono text-slate-400">{record.id || 'Без ID'}</span>
-                                        <span className="text-xs text-slate-500">· {getEventDateStr(record) || '—'}</span>
+                                        <span className="text-[11px] font-mono text-[#b8bec8] tabular-nums">{record.id || 'Без ID'}</span>
+                                        <span className="text-xs font-mono text-[#989fa9] tabular-nums">· {getEventDateStr(record) || '—'}</span>
                                         {(record.types || []).map(t => (
-                                            <span key={t} className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-amber-400 border border-slate-700">{t}</span>
+                                            <span key={t} className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-sm bg-[#222429] text-[#4c8ed9] border border-[#2e3138]">{t}</span>
                                         ))}
                                     </div>
                                     {view.showLosses !== false && (totalE200 > 0 || totalE300 > 0 || totalPOW > 0) && (
-                                        <span className="text-[11px] font-mono text-slate-400 flex gap-2">
-                                            {totalE200 > 0 && <span className="text-red-400">200:{totalE200}</span>}
-                                            {totalE300 > 0 && <span className="text-amber-400">300:{totalE300}</span>}
-                                            {totalPOW > 0 && <span className="text-emerald-400">Полон:{totalPOW}</span>}
+                                        <span className="text-[11px] font-mono text-[#b8bec8] flex gap-2 tabular-nums">
+                                            {totalE200 > 0 && <span className="text-[#f3a3a0]">200:{totalE200}</span>}
+                                            {totalE300 > 0 && <span className="text-[#d99b26]">300:{totalE300}</span>}
+                                            {totalPOW > 0 && <span className="text-[#3da372]">Полон:{totalPOW}</span>}
                                         </span>
                                     )}
                                 </div>
 
                                 {view.showDetails !== false && (record.actionDetails?.docLoc || record.actionDetails?.factLoc || record.actionDetails?.conductedBy) && (
-                                    <div className="text-xs text-slate-400 mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+                                    <div className="text-xs text-[#b8bec8] mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
                                         {(record.actionDetails?.factLoc || record.actionDetails?.docLoc) && (
-                                            <span>Локація: <strong className="text-slate-300">{record.actionDetails.factLoc || record.actionDetails.docLoc}</strong></span>
+                                            <span>Локація: <strong className="text-[#f3f4f6] font-medium">{record.actionDetails.factLoc || record.actionDetails.docLoc}</strong></span>
                                         )}
                                         {record.actionDetails?.conductedBy && (
-                                            <span>Проводили: <strong className="text-slate-300">{record.actionDetails.conductedBy}</strong></span>
+                                            <span>Проводили: <strong className="text-[#f3f4f6] font-medium">{record.actionDetails.conductedBy}</strong></span>
                                         )}
                                     </div>
                                 )}
 
                                 {view.showDescription !== false && (
-                                    <div className="text-xs text-slate-300 mt-1 truncate">{record.description || <span className="text-slate-500 italic">Без опису</span>}</div>
+                                    <div className="text-xs text-[#f3f4f6] mt-1 truncate">{record.description || <span className="text-[#989fa9]">Без опису</span>}</div>
                                 )}
 
                                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                                     {issues.map(iss => (
-                                        <span key={iss} className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                                            iss === 'ШД без часу закінчення' ? 'bg-red-900/60 text-red-200 border border-red-500/80 animate-pulse' :
-                                            'bg-amber-950/50 text-amber-300 border border-amber-700/50'
+                                        <span key={iss} className={`text-[10px] font-medium px-2 py-0.5 rounded-sm ${
+                                            iss === 'ШД без часу закінчення' ? 'bg-[#d9534f]/20 text-[#f3a3a0] border border-[#d9534f]/60' :
+                                            'bg-[#d99b26]/15 text-[#d99b26] border border-[#d99b26]/40'
                                         }`}>
-                                            {iss === 'ШД без часу закінчення' ? '⚠ ' + iss : iss}
+                                            {iss}
                                         </span>
                                     ))}
                                     {issues.length === 0 && view.checks.length > 0 && (
-                                        <span className="text-[10px] text-emerald-400 flex items-center gap-1">✓ Зауважень немає</span>
+                                        <span className="text-[10px] text-[#3da372] flex items-center gap-1">✓ Зауважень немає</span>
                                     )}
                                 </div>
                             </button>
                         );
                     })}
-                    {!visible.length && <p className="py-8 text-sm text-slate-400 text-center">Немає записів за цим фільтром.</p>}
+                    {!visible.length && <p className="py-8 text-sm text-[#989fa9] text-center">Немає записів за цим фільтром.</p>}
                 </div>}
 
-                {view.showHistory && <details className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                    <summary className="cursor-pointer text-xs font-semibold text-slate-300">Останні зміни документів (аудит редагувань)</summary>
-                    <p className="text-[11px] text-slate-500 my-2">До 50 останніх змін на запис. Відображає час та дію над документом.</p>
+                {view.showHistory && <details className="rounded-sm border border-[#2e3138] bg-[#101113] p-3">
+                    <summary className="cursor-pointer text-xs font-medium text-[#f3f4f6]">Останні зміни документів (аудит редагувань)</summary>
+                    <p className="text-[11px] text-[#989fa9] my-2">До 50 останніх змін на запис. Відображає час та дію над документом.</p>
                     <div className="space-y-1 mt-2">
-                        {revisions.map((entry, index) => <div key={index} className="text-xs py-1.5 border-t border-slate-800/60 text-slate-400">{formatDateTimeUI(entry.at)} · <span className="text-amber-400">{entry.action}</span> · <span className="font-mono text-slate-300 break-all">{entry.record.id}</span></div>)}
-                        {!revisions.length && <p className="text-xs text-slate-500">Нових змін ще немає.</p>}
+                        {revisions.map((entry, index) => <div key={index} className="text-xs py-1.5 border-t border-[#2e3138] text-[#b8bec8] tabular-nums">{formatDateTimeUI(entry.at)} · <span className="text-[#4c8ed9]">{entry.action}</span> · <span className="font-mono text-[#f3f4f6] break-all">{entry.record.id}</span></div>)}
+                        {!revisions.length && <p className="text-xs text-[#989fa9]">Нових змін ще немає.</p>}
                     </div>
                 </details>}
             </section>;
@@ -502,21 +521,21 @@ const EventsApp = (function() {
                             onChange={e => { setSearch(e.target.value); setIsOpen(true); }}
                             onFocus={() => { setIsOpen(true); setSearch(''); }}
                             placeholder="- Ні -"
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs font-mono font-bold text-rose-500 focus:border-rose-500 cursor-text disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2 py-1.5 text-xs font-mono font-semibold text-[#f3a3a0] focus:outline-none focus:border-[#4c8ed9] cursor-text disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                         {isOpen && (
-                            <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                                <div className="px-2 py-1.5 hover:bg-slate-700 cursor-pointer text-xs text-slate-300 font-bold border-b border-slate-700" onMouseDown={() => { onChange(''); setIsOpen(false); }}>- Ні -</div>
+                            <div className="absolute z-50 w-full mt-1 bg-[#17181b] border border-[#3c404a] rounded-sm max-h-48 overflow-y-auto overscroll-contain">
+                                <div className="px-2 py-1.5 hover:bg-[#222429] cursor-pointer text-xs text-[#cbd5e1] font-semibold border-b border-[#2e3138]" onMouseDown={() => { onChange(''); setIsOpen(false); }}>- Ні -</div>
                                 {(value === 'legacy' || currentLegacy) && (
-                                    <div className="px-2 py-1.5 hover:bg-slate-700 cursor-pointer text-xs text-rose-400" onMouseDown={() => { onChange('legacy'); setIsOpen(false); }}>Невідомий (старі дані)</div>
+                                    <div className="px-2 py-1.5 hover:bg-[#222429] cursor-pointer text-xs text-[#f3a3a0]" onMouseDown={() => { onChange('legacy'); setIsOpen(false); }}>Невідомий (старі дані)</div>
                                 )}
                                 {filtered.map(o => (
-                                    <div key={o.id} className="px-2 py-1.5 hover:bg-slate-700 cursor-pointer text-xs text-slate-300 flex justify-between" onMouseDown={() => { onChange(o.id); setIsOpen(false); }}>
+                                    <div key={o.id} className="px-2 py-1.5 hover:bg-[#222429] cursor-pointer text-xs text-[#f3f4f6] flex justify-between tabular-nums" onMouseDown={() => { onChange(o.id); setIsOpen(false); }}>
                                         <span>{o.callsign}</span>
-                                        <span className="text-slate-500 text-[10px]">{o.date}</span>
+                                        <span className="text-[#b8bec8] text-[10px]">{o.date}</span>
                                     </div>
                                 ))}
-                                {filtered.length === 0 && <div className="px-2 py-1.5 text-xs text-slate-500 italic">Нічого не знайдено</div>}
+                                {filtered.length === 0 && <div className="px-2 py-1.5 text-xs text-[#989fa9] italic">Нічого не знайдено</div>}
                             </div>
                         )}
                     </div>
@@ -534,8 +553,8 @@ const EventsApp = (function() {
             };
 
             return (
-                <div className="mt-2 space-y-2 border-l-2 pl-3 ml-1" style={{ borderColor: 'var(--border-color, #475569)' }}>
-                    <div className={`text-[10px] font-bold uppercase ${colorClass} opacity-80`}>Деталізація: {label}</div>
+                <div className="mt-2 space-y-2 border-l border-[#2e3138] pl-3 ml-1">
+                    <div className={`text-[10px] font-semibold uppercase ${colorClass}`}>{`Деталізація: ${label}`}</div>
                     {Array.from({ length: count }).map((_, i) => (
                         <div key={i} className="relative">
                             <input 
@@ -545,7 +564,7 @@ const EventsApp = (function() {
                                 value={values[i] || ''} 
                                 onChange={e => handleCallsignChange(i, e.target.value)}
                                 list={listId}
-                                className={`w-full bg-slate-900 border ${isRequired && !values[i] ? 'border-amber-500/50' : 'border-slate-700'} rounded-md px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-slate-500`}
+                                className={`w-full bg-[#17181b] border ${isRequired && !values[i] ? 'border-[#d99b26]' : 'border-[#2e3138]'} rounded-sm px-2 py-1 text-xs text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9]`}
                             />
                         </div>
                     ))}
@@ -555,7 +574,9 @@ const EventsApp = (function() {
 
         const EventForm = ({ eventToEdit, onClose, onSave }) => {
                 const dictionaryOptions = useSharedDictionaries();
-                const { allPOWs, events, settings, personnel } = React.useContext(EnemyAppContext);
+                const { allPOWs, events, settings, personnel, showToast } = React.useContext(EnemyAppContext);
+                const dialogRef = useRef(null);
+                useEffect(() => bindDialogFocusTrap(dialogRef, onClose), [onClose]);
                 const [formData, setFormData] = useState(eventToEdit || {
                     id: generateId(),
                     createdAt: new Date().toISOString(),
@@ -645,7 +666,7 @@ const EventsApp = (function() {
                 const handleSubmit = (e) => {
                     e.preventDefault();
                     if (formData.types.length === 0) {
-                        alert("Оберіть хоча б один тип події (УПД, ШД, Інше)");
+                        showToast("Оберіть хоча б один тип події (УПД, ШД, Інше)");
                         return;
                     }
                     const dataToSave = { ...formData };
@@ -659,38 +680,44 @@ const EventsApp = (function() {
                 };
 
                 return (
-                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh]">
-                            <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-900/50 rounded-t-2xl sticky top-0 z-10">
-                                <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-                                    <Icon name={eventToEdit ? "edit" : "plus-circle"} className="w-5 h-5 text-amber-500" />
+                    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 overflow-y-auto overscroll-contain">
+                        <div
+                            ref={dialogRef}
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label={eventToEdit ? "Редагувати подію" : "Додати нову подію"}
+                            className="bg-[#17181b] border border-[#2e3138] rounded-sm w-full max-w-4xl flex flex-col max-h-[90vh] text-[#f3f4f6] overscroll-contain"
+                        >
+                            <div className="flex items-center justify-between px-4 py-3 border-b border-[#2e3138] bg-[#17181b] sticky top-0 z-10">
+                                <h2 className="text-base font-bold text-[#f3f4f6] flex items-center gap-2">
+                                    <Icon name={eventToEdit ? "edit" : "plus-circle"} className="w-4 h-4 text-[#4c8ed9]" />
                                     {eventToEdit ? "Редагувати подію" : "Додати нову подію"}
                                 </h2>
-                                <button onClick={onClose} className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition">
-                                    <Icon name="x" className="w-5 h-5" />
+                                <button type="button" aria-label="Закрити форму події" onClick={onClose} className="p-1.5 hover:bg-[#222429] border border-transparent hover:border-[#2e3138] rounded-sm text-[#b8bec8] hover:text-[#f3f4f6] transition-colors">
+                                    <Icon name="x" className="w-4 h-4" />
                                 </button>
                             </div>
                             
-                            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-6">
+                            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-5 bg-[#101113]">
                                 {/* ТИП ПОДІЇ */}
-                                <div className="space-y-3">
-                                    <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider border-b border-slate-800 pb-1">Тип події</h3>
-                                    <div className="flex flex-wrap gap-3">
+                                <div className="space-y-2.5">
+                                    <h3 className="text-xs font-semibold text-[#b8bec8] uppercase tracking-wider border-b border-[#2e3138] pb-1">Тип події</h3>
+                                    <div className="flex flex-wrap gap-2">
                                         {Object.values(EVENT_TYPES).map(type => (
-                                            <label key={type} className={`flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition-all select-none ${formData.types.includes(type) ? 'bg-amber-900/40 border-amber-500/50 text-amber-200' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600 hover:text-slate-200'}`}>
+                                            <label key={type} className={`flex items-center gap-2 px-3 py-1.5 rounded-sm border cursor-pointer transition-colors select-none text-xs ${formData.types.includes(type) ? 'bg-[#2b67ab]/25 border-[#4c8ed9] text-[#f3f4f6]' : 'bg-[#17181b] border-[#2e3138] text-[#b8bec8] hover:border-[#3c404a] hover:text-[#f3f4f6]'}`}>
                                                 <input type="checkbox" className="hidden" checked={formData.types.includes(type)} onChange={() => toggleType(type)} />
-                                                <Icon name={formData.types.includes(type) ? "check-square" : "square"} className="w-4 h-4 shrink-0" />
+                                                <Icon name={formData.types.includes(type) ? "check-square" : "square"} className="w-3.5 h-3.5 shrink-0 text-[#4c8ed9]" />
                                                 <span className="font-semibold">{type}</span>
                                             </label>
                                         ))}
                                     </div>
                                     <div className="flex flex-wrap gap-4 mt-2">
-                                        <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-slate-300 hover:text-white transition">
-                                            <input type="checkbox" checked={formData.isFireContact} onChange={e => setFormData(p => ({...p, isFireContact: e.target.checked}))} className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500" />
+                                        <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-[#cbd5e1] hover:text-white transition-colors">
+                                            <input type="checkbox" checked={formData.isFireContact} onChange={e => setFormData(p => ({...p, isFireContact: e.target.checked}))} className="w-4 h-4 rounded-sm bg-[#17181b] border-[#2e3138] accent-[#4c8ed9]" />
                                             Вогневий контакт
                                         </label>
-                                        <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-slate-300 hover:text-white transition">
-                                            <input type="checkbox" checked={formData.isRealEvent} onChange={e => setFormData(p => ({...p, isRealEvent: e.target.checked}))} className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500" />
+                                        <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-[#cbd5e1] hover:text-white transition-colors">
+                                            <input type="checkbox" checked={formData.isRealEvent} onChange={e => setFormData(p => ({...p, isRealEvent: e.target.checked}))} className="w-4 h-4 rounded-sm bg-[#17181b] border-[#2e3138] accent-[#4c8ed9]" />
                                             Подія реальна
                                         </label>
                                     </div>
@@ -698,48 +725,48 @@ const EventsApp = (function() {
 
                                 {/* ДЕТАЛІ ДІЙ (ШД / УПД) */}
                                 {(isAssault || isUdp) && (
-                                    <div className="space-y-4 bg-slate-950/50 p-4 rounded-xl border border-slate-800/80">
-                                        <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                                    <div className="space-y-3 bg-[#17181b] p-3.5 rounded-sm border border-[#2e3138]">
+                                        <h3 className="text-xs font-semibold text-[#d99b26] uppercase tracking-wider flex items-center gap-2 border-b border-[#2e3138] pb-1.5">
                                             <Icon name={isAssault ? "shield-alert" : "map"} className="w-4 h-4" /> 
                                             Деталі {isAssault ? "Штурмових Дій (ШД)" : "Ударно-пошукових дій (УПД)"}
                                         </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                                             <div>
-                                                <label className="block text-xs font-semibold text-slate-400 mb-1">Дата початку</label>
-                                                <input type="date" value={formData.actionDetails.startDate} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, startDate: e.target.value}}))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500" required={(isAssault || isUdp)} />
+                                                <label className="block text-xs font-semibold text-[#b8bec8] mb-1">Дата початку</label>
+                                                <input type="date" value={formData.actionDetails.startDate} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, startDate: e.target.value}}))} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] tabular-nums focus:outline-none focus:border-[#4c8ed9]" required={(isAssault || isUdp)} />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-semibold text-slate-400 mb-1">Час початку</label>
-                                                <input type="time" value={formData.actionDetails.startTime} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, startTime: e.target.value}}))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500" />
+                                                <label className="block text-xs font-semibold text-[#b8bec8] mb-1">Час початку</label>
+                                                <input type="time" value={formData.actionDetails.startTime} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, startTime: e.target.value}}))} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] tabular-nums focus:outline-none focus:border-[#4c8ed9]" />
                                             </div>
                                             {!isAssault && (
                                                 <div>
-                                                    <label className="block text-xs font-semibold text-slate-400 mb-1">Дата закінчення</label>
-                                                    <input type="date" value={formData.actionDetails.endDate} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, endDate: e.target.value}}))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500" />
+                                                    <label className="block text-xs font-semibold text-[#b8bec8] mb-1">Дата закінчення</label>
+                                                    <input type="date" value={formData.actionDetails.endDate} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, endDate: e.target.value}}))} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] tabular-nums focus:outline-none focus:border-[#4c8ed9]" />
                                                 </div>
                                             )}
                                             <div className={isAssault ? "md:col-span-2 lg:col-span-2" : ""}>
-                                                <label className="text-xs font-semibold text-slate-400 mb-1 flex items-center justify-between">
+                                                <label className="text-xs font-semibold text-[#b8bec8] mb-1 flex items-center justify-between gap-2">
                                                     <span>Час закінчення</span>
-                                                    {isAssault && !formData.actionDetails.endTime && <span className="text-[10px] text-red-400 font-bold animate-pulse">Обов'язково для закриття ШД</span>}
+                                                    {isAssault && !formData.actionDetails.endTime && <span className="text-[10px] text-[#f3a3a0] font-semibold">Обов'язково для закриття ШД</span>}
                                                 </label>
-                                                <input type="time" value={formData.actionDetails.endTime} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, endTime: e.target.value}}))} className={`w-full bg-slate-900 border rounded-lg px-3 py-1.5 text-sm focus:ring-1 ${isAssault && !formData.actionDetails.endTime ? 'border-amber-500/80 text-amber-200' : 'border-slate-700 text-slate-200 focus:border-amber-500 focus:ring-amber-500'}`} />
+                                                <input type="time" value={formData.actionDetails.endTime} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, endTime: e.target.value}}))} className={`w-full bg-[#101113] border rounded-sm px-2.5 py-1.5 text-xs tabular-nums focus:outline-none ${isAssault && !formData.actionDetails.endTime ? 'border-[#d99b26] text-[#d99b26]' : 'border-[#2e3138] text-[#f3f4f6] focus:border-[#4c8ed9]'}`} />
                                             </div>
                                             
                                             <div className="lg:col-span-2">
-                                                <label className="block text-xs font-semibold text-slate-400 mb-1">Хто проводить (Позивні)</label>
-                                                <input type="text" value={formData.actionDetails.conductedBy} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, conductedBy: e.target.value}}))} placeholder="Напр. Вовк, Сокіл..." className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:border-amber-500" />
+                                                <label className="block text-xs font-semibold text-[#b8bec8] mb-1">Хто проводить (Позивні)</label>
+                                                <input type="text" value={formData.actionDetails.conductedBy} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, conductedBy: e.target.value}}))} placeholder="Напр. Вовк, Сокіл..." className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9]" />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-semibold text-slate-400 mb-1">Документальне місце</label>
-                                                <input type="text" list="docLoc-suggestions" value={formData.actionDetails.docLoc} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, docLoc: e.target.value}}))} placeholder="Офіційна назва..." className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:border-amber-500" />
+                                                <label className="block text-xs font-semibold text-[#b8bec8] mb-1">Документальне місце</label>
+                                                <input type="text" list="docLoc-suggestions" value={formData.actionDetails.docLoc} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, docLoc: e.target.value}}))} placeholder="Офіційна назва..." className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9]" />
                                                 <datalist id="docLoc-suggestions">
                                                     {dictionaryOptions('docPlaces', uniqueDocLocs, formData.actionDetails.docLoc).map(loc => <option key={loc} value={loc} />)}
                                                 </datalist>
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-semibold text-slate-400 mb-1">Фактичне місце</label>
-                                                <input type="text" list="factLoc-suggestions" value={formData.actionDetails.factLoc} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, factLoc: e.target.value}}))} placeholder="Реальна позиція..." className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:border-amber-500" />
+                                                <label className="block text-xs font-semibold text-[#b8bec8] mb-1">Фактичне місце</label>
+                                                <input type="text" list="factLoc-suggestions" value={formData.actionDetails.factLoc} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, factLoc: e.target.value}}))} placeholder="Реальна позиція..." className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9]" />
                                                 <datalist id="factLoc-suggestions">
                                                     {dictionaryOptions('actualPlaces', uniqueFactLocs, formData.actionDetails.factLoc).map(loc => <option key={loc} value={loc} />)}
                                                 </datalist>
@@ -748,25 +775,25 @@ const EventsApp = (function() {
                                             {isAssault && (
                                                 <>
                                                     <div className="lg:col-span-2">
-                                                        <label className="block text-xs font-semibold text-slate-400 mb-1">Напрямок штурму</label>
-                                                        <input type="text" value={formData.actionDetails.direction} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, direction: e.target.value}}))} placeholder="Напр. З лісу, південний напрямок..." className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:border-amber-500" />
+                                                        <label className="block text-xs font-semibold text-[#b8bec8] mb-1">Напрямок штурму</label>
+                                                        <input type="text" value={formData.actionDetails.direction} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, direction: e.target.value}}))} placeholder="Напр. З лісу, південний напрямок..." className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9]" />
                                                     </div>
                                                     <div>
-                                                        <label className="block text-xs font-semibold text-slate-400 mb-1">Наш о/с на позиції</label>
-                                                        <input type="number" min="0" value={formData.actionDetails.friendlyCount} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, friendlyCount: parseInt(e.target.value)||0}}))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:border-amber-500" />
+                                                        <label className="block text-xs font-semibold text-[#b8bec8] mb-1">Наш о/с на позиції</label>
+                                                        <input type="number" min="0" value={formData.actionDetails.friendlyCount} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, friendlyCount: parseInt(e.target.value)||0}}))} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] tabular-nums focus:outline-none focus:border-[#4c8ed9]" />
                                                     </div>
                                                     <div>
-                                                        <label className="block text-xs font-semibold text-slate-400 mb-1">Кількість ворогів (група)</label>
-                                                        <input type="number" min="0" value={formData.actionDetails.enemySize} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, enemySize: parseInt(e.target.value)||0}}))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:border-amber-500" />
+                                                        <label className="block text-xs font-semibold text-[#b8bec8] mb-1">Кількість ворогів (група)</label>
+                                                        <input type="number" min="0" value={formData.actionDetails.enemySize} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, enemySize: parseInt(e.target.value)||0}}))} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] tabular-nums focus:outline-none focus:border-[#4c8ed9]" />
                                                     </div>
                                                     <div className="flex items-center gap-2 mt-2">
-                                                        <input type="checkbox" id="hasVehicles" checked={formData.actionDetails.hasVehicles} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, hasVehicles: e.target.checked}}))} className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0 cursor-pointer" />
-                                                        <label htmlFor="hasVehicles" className="text-sm font-semibold text-slate-300 cursor-pointer">Наявна техніка ворога</label>
+                                                        <input type="checkbox" id="hasVehicles" checked={formData.actionDetails.hasVehicles} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, hasVehicles: e.target.checked}}))} className="w-4 h-4 rounded-sm bg-[#101113] border-[#2e3138] accent-[#4c8ed9] cursor-pointer" />
+                                                        <label htmlFor="hasVehicles" className="text-xs font-semibold text-[#cbd5e1] cursor-pointer">Наявна техніка ворога</label>
                                                     </div>
                                                     {formData.actionDetails.hasVehicles && (
                                                         <div className="lg:col-span-3">
-                                                            <label className="block text-xs font-semibold text-slate-400 mb-1">Опис техніки</label>
-                                                            <input type="text" value={formData.actionDetails.vehicleDetails} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, vehicleDetails: e.target.value}}))} placeholder="Напр. 2 БМП, 1 Танк..." className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:border-amber-500" />
+                                                            <label className="block text-xs font-semibold text-[#b8bec8] mb-1">Опис техніки</label>
+                                                            <input type="text" value={formData.actionDetails.vehicleDetails} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, vehicleDetails: e.target.value}}))} placeholder="Напр. 2 БМП, 1 Танк..." className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9]" />
                                                         </div>
                                                     )}
                                                 </>
@@ -776,35 +803,35 @@ const EventsApp = (function() {
                                 )}
 
                                 {/* ВТРАТИ ПРОТИВНИКА */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between border-b border-slate-800 pb-1">
-                                        <h3 className="text-sm font-bold text-red-400 uppercase tracking-wider flex items-center gap-2">
+                                <div className="space-y-2.5">
+                                    <div className="flex items-center justify-between border-b border-[#2e3138] pb-1.5">
+                                        <h3 className="text-xs font-semibold text-[#f3a3a0] uppercase tracking-wider flex items-center gap-2">
                                             <Icon name="crosshair" className="w-4 h-4" /> Втрати Противника
                                         </h3>
-                                        <button type="button" onClick={addEnemyLoss} className="text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+                                        <button type="button" onClick={addEnemyLoss} className="text-xs font-semibold bg-[#222429] hover:bg-[#282b31] border border-[#2e3138] hover:border-[#3c404a] text-[#f3f4f6] px-3 py-1 rounded-sm flex items-center gap-1.5 transition-colors">
                                             <Icon name="plus" className="w-3.5 h-3.5" /> Додати ураження
                                         </button>
                                     </div>
                                     
                                     {formData.enemyLosses.length === 0 ? (
-                                        <div className="text-center py-6 text-sm text-slate-500 border border-dashed border-slate-800 rounded-xl bg-slate-950/50">
+                                        <div className="text-center py-5 text-xs text-[#989fa9] border border-dashed border-[#2e3138] rounded-sm bg-[#17181b]">
                                             Немає записів про втрати ворога. Натисніть "Додати ураження".
                                         </div>
                                     ) : (
                                         <div className="space-y-2.5">
                                             {formData.enemyLosses.map((loss, idx) => (
-                                                <div key={loss.id} className="flex flex-col bg-slate-950/80 p-3 rounded-xl border border-slate-800/80 gap-2.5">
+                                                <div key={loss.id} className="flex flex-col bg-[#17181b] p-3 rounded-sm border border-[#2e3138] gap-2.5">
                                                     
                                                     {/* Шапка ураження з кнопкою видалення */}
-                                                    <div className="flex items-center justify-between pb-1.5 border-b border-slate-800/60">
-                                                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                                            <Icon name="crosshair" className="w-3.5 h-3.5 text-red-400" />
+                                                    <div className="flex items-center justify-between pb-1.5 border-b border-[#2e3138]">
+                                                        <span className="text-[11px] font-semibold text-[#b8bec8] uppercase tracking-wider flex items-center gap-1.5 tabular-nums">
+                                                            <Icon name="crosshair" className="w-3.5 h-3.5 text-[#f3a3a0]" />
                                                             Ураження #{idx + 1}
                                                         </span>
                                                         <button 
                                                             type="button" 
                                                             onClick={() => removeEnemyLoss(loss.id)} 
-                                                            className="text-slate-400 hover:text-red-400 p-1 hover:bg-red-950/40 rounded-lg transition" 
+                                                            className="text-[#b8bec8] hover:text-[#f3a3a0] p-1 hover:bg-[#d9534f]/10 rounded-sm transition-colors" 
                                                             title="Видалити ураження"
                                                         >
                                                             <Icon name="trash-2" className="w-3.5 h-3.5" />
@@ -814,59 +841,59 @@ const EventsApp = (function() {
                                                     {/* Ряд параметрів: Зброя, Хто наносив, Час ураження */}
                                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                                                         <div>
-                                                            <label className="block text-[10px] font-semibold text-slate-400 mb-1 uppercase">Засіб ураження</label>
-                                                            <select value={loss.weapon} onChange={e => updateEnemyLoss(loss.id, 'weapon', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:border-red-500">
+                                                            <label className="block text-[10px] font-semibold text-[#b8bec8] mb-1 uppercase">Засіб ураження</label>
+                                                            <select value={loss.weapon} onChange={e => updateEnemyLoss(loss.id, 'weapon', e.target.value)} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9]">
                                                                 {dictionaryOptions('weapons', settings.weapons, loss.weapon).map(w => <option key={w} value={w}>{w}</option>)}
                                                             </select>
                                                         </div>
                                                         <div>
-                                                            <label className="block text-[10px] font-semibold text-slate-400 mb-1 uppercase">Хто наносив ураження (наші)</label>
-                                                            <input type="text" placeholder="Позивний / Підрозділ" value={loss.inflicter} onChange={e => updateEnemyLoss(loss.id, 'inflicter', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:border-red-500" />
+                                                            <label className="block text-[10px] font-semibold text-[#b8bec8] mb-1 uppercase">Хто наносив ураження (наші)</label>
+                                                            <input type="text" placeholder="Позивний / Підрозділ" value={loss.inflicter} onChange={e => updateEnemyLoss(loss.id, 'inflicter', e.target.value)} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9]" />
                                                         </div>
                                                         <div>
-                                                            <label className="text-[10px] font-semibold text-amber-400 mb-1 uppercase flex items-center gap-1">
-                                                                <Icon name="clock" className="w-3 h-3 text-amber-400" /> Час ураження
+                                                            <label className="text-[10px] font-semibold text-[#d99b26] mb-1 uppercase flex items-center gap-1">
+                                                                <Icon name="clock" className="w-3 h-3 text-[#d99b26]" /> Час ураження
                                                             </label>
-                                                            <input type="time" value={loss.time || ''} onChange={e => updateEnemyLoss(loss.id, 'time', e.target.value)} className="w-full bg-slate-900 border border-amber-500/50 rounded-lg px-2.5 py-1.5 text-xs text-amber-200 focus:border-amber-400" />
+                                                            <input type="time" value={loss.time || ''} onChange={e => updateEnemyLoss(loss.id, 'time', e.target.value)} className="w-full bg-[#101113] border border-[#d99b26]/50 rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] tabular-nums focus:outline-none focus:border-[#d99b26]" />
                                                         </div>
                                                     </div>
 
                                                     {/* Компактна сітка лічильників втрат (6 колонок) */}
-                                                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 pt-0.5">
-                                                        <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-1.5 text-center">
-                                                            <label className="block text-[9.5px] font-semibold text-slate-400 uppercase tracking-wider mb-1 truncate" title="200 (Вбито)">200 (Вбито)</label>
-                                                            <input type="number" min="0" value={loss.count200} onChange={e => updateEnemyLoss(loss.id, 'count200', parseInt(e.target.value)||0)} className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono font-bold text-red-500 focus:border-red-500 text-center" />
+                                                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 pt-0.5 tabular-nums">
+                                                        <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-1.5 text-center">
+                                                            <label className="block text-[9.5px] font-semibold text-[#b8bec8] uppercase tracking-wider mb-1 truncate" title="200 (Вбито)">200 (Вбито)</label>
+                                                            <input type="number" min="0" value={loss.count200} onChange={e => updateEnemyLoss(loss.id, 'count200', parseInt(e.target.value)||0)} className="w-full bg-[#17181b] border border-[#2e3138] rounded-sm px-2 py-1 text-xs font-mono font-bold text-[#f3a3a0] focus:border-[#d9534f] text-center focus:outline-none" />
                                                         </div>
-                                                        <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-1.5 text-center">
-                                                            <label className="block text-[9.5px] font-semibold text-slate-400 uppercase tracking-wider mb-1 truncate" title="Не підтверджено">200* (Ймов.)</label>
-                                                            <input type="number" min="0" value={loss.count200Unconfirmed} onChange={e => updateEnemyLoss(loss.id, 'count200Unconfirmed', parseInt(e.target.value)||0)} className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono font-bold text-rose-300 focus:border-rose-400 text-center" />
+                                                        <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-1.5 text-center">
+                                                            <label className="block text-[9.5px] font-semibold text-[#b8bec8] uppercase tracking-wider mb-1 truncate" title="Не підтверджено">200* (Ймов.)</label>
+                                                            <input type="number" min="0" value={loss.count200Unconfirmed} onChange={e => updateEnemyLoss(loss.id, 'count200Unconfirmed', parseInt(e.target.value)||0)} className="w-full bg-[#17181b] border border-[#2e3138] rounded-sm px-2 py-1 text-xs font-mono font-bold text-[#e5989b] focus:border-[#d9534f] text-center focus:outline-none" />
                                                         </div>
-                                                        <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-1.5 text-center">
-                                                            <label className="block text-[9.5px] font-semibold text-slate-400 uppercase tracking-wider mb-1 truncate" title="Виявлені тіла, невідомо хто знищив">Вияв. 200</label>
-                                                            <input type="number" min="0" value={loss.count200Discovered} onChange={e => updateEnemyLoss(loss.id, 'count200Discovered', parseInt(e.target.value)||0)} className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono font-bold text-purple-400 focus:border-purple-500 text-center" />
+                                                        <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-1.5 text-center">
+                                                            <label className="block text-[9.5px] font-semibold text-[#b8bec8] uppercase tracking-wider mb-1 truncate" title="Виявлені тіла, невідомо хто знищив">Вияв. 200</label>
+                                                            <input type="number" min="0" value={loss.count200Discovered} onChange={e => updateEnemyLoss(loss.id, 'count200Discovered', parseInt(e.target.value)||0)} className="w-full bg-[#17181b] border border-[#2e3138] rounded-sm px-2 py-1 text-xs font-mono font-bold text-[#93a2b8] focus:border-[#4c8ed9] text-center focus:outline-none" />
                                                         </div>
-                                                        <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-1.5 text-center">
-                                                            <label className="block text-[9.5px] font-semibold text-slate-400 uppercase tracking-wider mb-1 truncate" title="300 (Поранені)">300 (Поран.)</label>
-                                                            <input type="number" min="0" value={loss.count300} onChange={e => updateEnemyLoss(loss.id, 'count300', parseInt(e.target.value)||0)} className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono font-bold text-amber-400 focus:border-amber-500 text-center" />
+                                                        <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-1.5 text-center">
+                                                            <label className="block text-[9.5px] font-semibold text-[#b8bec8] uppercase tracking-wider mb-1 truncate" title="300 (Поранені)">300 (Поран.)</label>
+                                                            <input type="number" min="0" value={loss.count300} onChange={e => updateEnemyLoss(loss.id, 'count300', parseInt(e.target.value)||0)} className="w-full bg-[#17181b] border border-[#2e3138] rounded-sm px-2 py-1 text-xs font-mono font-bold text-[#d99b26] focus:border-[#d99b26] text-center focus:outline-none" />
                                                         </div>
-                                                        <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-1.5 text-center">
-                                                            <label className="block text-[9.5px] font-semibold text-slate-400 uppercase tracking-wider mb-1 truncate" title="Вкажіть кількість вбитих полонених">Заг. полонені</label>
-                                                            <input type="number" min="0" value={loss.count200POW} onChange={e => updateEnemyLoss(loss.id, 'count200POW', parseInt(e.target.value)||0)} className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono font-bold text-rose-500 focus:border-rose-400 text-center" />
+                                                        <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-1.5 text-center">
+                                                            <label className="block text-[9.5px] font-semibold text-[#b8bec8] uppercase tracking-wider mb-1 truncate" title="Вкажіть кількість вбитих полонених">Заг. полонені</label>
+                                                            <input type="number" min="0" value={loss.count200POW} onChange={e => updateEnemyLoss(loss.id, 'count200POW', parseInt(e.target.value)||0)} className="w-full bg-[#17181b] border border-[#2e3138] rounded-sm px-2 py-1 text-xs font-mono font-bold text-[#f3a3a0] focus:border-[#d9534f] text-center focus:outline-none" />
                                                         </div>
-                                                        <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-1.5 text-center">
-                                                            <label className="block text-[9.5px] font-semibold text-slate-400 uppercase tracking-wider mb-1 truncate" title="Полон">Полон</label>
-                                                            <input type="number" min="0" value={loss.countPOW} onChange={e => updateEnemyLoss(loss.id, 'countPOW', parseInt(e.target.value)||0)} className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono font-bold text-emerald-400 focus:border-emerald-500 text-center" />
+                                                        <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-1.5 text-center">
+                                                            <label className="block text-[9.5px] font-semibold text-[#b8bec8] uppercase tracking-wider mb-1 truncate" title="Полон">Полон</label>
+                                                            <input type="number" min="0" value={loss.countPOW} onChange={e => updateEnemyLoss(loss.id, 'countPOW', parseInt(e.target.value)||0)} className="w-full bg-[#17181b] border border-[#2e3138] rounded-sm px-2 py-1 text-xs font-mono font-bold text-[#3da372] focus:border-[#3da372] text-center focus:outline-none" />
                                                         </div>
                                                     </div>
 
                                                     {/* Динамічні інпути для позивних */}
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pl-1">
-                                                        <CallsignArrayInput count={loss.count200} values={loss.callsigns200} onChange={v => updateEnemyLoss(loss.id, 'callsigns200', v)} label="200 (Вбиті)" colorClass="text-red-500" />
-                                                        <CallsignArrayInput count={loss.count200Unconfirmed} values={loss.callsigns200Unconfirmed} onChange={v => updateEnemyLoss(loss.id, 'callsigns200Unconfirmed', v)} label="200* (Ймовірно)" colorClass="text-rose-300" />
-                                                        <CallsignArrayInput count={loss.count200Discovered} values={loss.callsigns200Discovered} onChange={v => updateEnemyLoss(loss.id, 'callsigns200Discovered', v)} label="Виявлені 200" colorClass="text-purple-400" />
-                                                        <CallsignArrayInput count={loss.count300} values={loss.callsigns300} onChange={v => updateEnemyLoss(loss.id, 'callsigns300', v)} label="300 (Поранені)" colorClass="text-amber-400" />
-                                                        <CallsignArrayInput count={loss.countPOW} values={loss.callsignsPOW} onChange={v => updateEnemyLoss(loss.id, 'callsignsPOW', v)} label="Полонені" colorClass="text-emerald-400" isRequired={true} />
-                                                        <CallsignArrayInput count={loss.count200POW} values={loss.callsigns200POW} onChange={v => updateEnemyLoss(loss.id, 'callsigns200POW', v)} label="Загиблі полонені" colorClass="text-rose-500" isRequired={true} listId="personnel-pow-callsigns-list" />
+                                                        <CallsignArrayInput count={loss.count200} values={loss.callsigns200} onChange={v => updateEnemyLoss(loss.id, 'callsigns200', v)} label="200 (Вбиті)" colorClass="text-[#f3a3a0]" />
+                                                        <CallsignArrayInput count={loss.count200Unconfirmed} values={loss.callsigns200Unconfirmed} onChange={v => updateEnemyLoss(loss.id, 'callsigns200Unconfirmed', v)} label="200* (Ймовірно)" colorClass="text-[#e5989b]" />
+                                                        <CallsignArrayInput count={loss.count200Discovered} values={loss.callsigns200Discovered} onChange={v => updateEnemyLoss(loss.id, 'callsigns200Discovered', v)} label="Виявлені 200" colorClass="text-[#b8bec8]" />
+                                                        <CallsignArrayInput count={loss.count300} values={loss.callsigns300} onChange={v => updateEnemyLoss(loss.id, 'callsigns300', v)} label="300 (Поранені)" colorClass="text-[#d99b26]" />
+                                                        <CallsignArrayInput count={loss.countPOW} values={loss.callsignsPOW} onChange={v => updateEnemyLoss(loss.id, 'callsignsPOW', v)} label="Полонені" colorClass="text-[#3da372]" isRequired={true} />
+                                                        <CallsignArrayInput count={loss.count200POW} values={loss.callsigns200POW} onChange={v => updateEnemyLoss(loss.id, 'callsigns200POW', v)} label="Загиблі полонені" colorClass="text-[#f3a3a0]" isRequired={true} listId="personnel-pow-callsigns-list" />
                                                     </div>
                                                 </div>
                                             ))}
@@ -875,18 +902,18 @@ const EventsApp = (function() {
                                 </div>
 
                                 {(!isAssault && !isUdp) && (
-                                    <div className="space-y-3 bg-slate-950/50 p-4 rounded-xl border border-slate-800/80">
-                                        <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                                    <div className="space-y-3 bg-[#17181b] p-3.5 rounded-sm border border-[#2e3138]">
+                                        <h3 className="text-xs font-semibold text-[#d99b26] uppercase tracking-wider flex items-center gap-2">
                                             <Icon name="calendar-clock" className="w-4 h-4" /> Дата та час події
                                         </h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div>
-                                                <label className="block text-xs font-semibold text-slate-400 mb-1">Дата</label>
-                                                <input type="date" value={formData.actionDetails.startDate} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, startDate: e.target.value}}))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:border-amber-500" />
+                                                <label className="block text-xs font-semibold text-[#b8bec8] mb-1">Дата</label>
+                                                <input type="date" value={formData.actionDetails.startDate} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, startDate: e.target.value}}))} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] tabular-nums focus:outline-none focus:border-[#4c8ed9]" />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-semibold text-slate-400 mb-1">Час</label>
-                                                <input type="time" value={formData.actionDetails.startTime} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, startTime: e.target.value}}))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:border-amber-500" />
+                                                <label className="block text-xs font-semibold text-[#b8bec8] mb-1">Час</label>
+                                                <input type="time" value={formData.actionDetails.startTime} onChange={e => setFormData(p => ({...p, actionDetails: {...p.actionDetails, startTime: e.target.value}}))} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs text-[#f3f4f6] tabular-nums focus:outline-none focus:border-[#4c8ed9]" />
                                             </div>
                                         </div>
                                     </div>
@@ -894,35 +921,35 @@ const EventsApp = (function() {
 
                                 {/* НАШІ ВТРАТИ */}
                                 {(isAssault || isUdp) && (
-                                    <div className="space-y-3 bg-blue-950/20 p-4 rounded-xl border border-blue-900/30">
-                                        <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider border-b border-blue-900/50 pb-1 flex items-center gap-2">
+                                    <div className="space-y-3 bg-[#17181b] p-3.5 rounded-sm border border-[#4c8ed9]/40">
+                                        <h3 className="text-xs font-semibold text-[#4c8ed9] uppercase tracking-wider border-b border-[#2e3138] pb-1.5 flex items-center gap-2">
                                             <Icon name="users" className="w-4 h-4" /> Наші втрати (під час {isAssault ? 'ШД' : 'УПД'})
                                         </h3>
-                                        <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
+                                        <div className="grid grid-cols-3 md:grid-cols-5 gap-3 tabular-nums">
                                             <div>
-                                                <label className="block text-xs font-semibold text-blue-300 mb-1">200 (Загиблі)</label>
-                                                <input type="number" min="0" value={formData.friendlyLosses.count200} onChange={e => setFormData(p => ({...p, friendlyLosses: {...p.friendlyLosses, count200: parseInt(e.target.value)||0}}))} className="w-full bg-slate-900 border border-blue-900/50 rounded-lg px-3 py-1.5 text-sm focus:border-blue-500 font-mono text-blue-200" />
+                                                <label className="block text-xs font-semibold text-[#b8bec8] mb-1">200 (Загиблі)</label>
+                                                <input type="number" min="0" value={formData.friendlyLosses.count200} onChange={e => setFormData(p => ({...p, friendlyLosses: {...p.friendlyLosses, count200: parseInt(e.target.value)||0}}))} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#4c8ed9] font-mono text-[#f3f4f6]" />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-semibold text-blue-300 mb-1">300 (Поранені)</label>
-                                                <input type="number" min="0" value={formData.friendlyLosses.count300} onChange={e => setFormData(p => ({...p, friendlyLosses: {...p.friendlyLosses, count300: parseInt(e.target.value)||0}}))} className="w-full bg-slate-900 border border-blue-900/50 rounded-lg px-3 py-1.5 text-sm focus:border-blue-500 font-mono text-blue-200" />
+                                                <label className="block text-xs font-semibold text-[#b8bec8] mb-1">300 (Поранені)</label>
+                                                <input type="number" min="0" value={formData.friendlyLosses.count300} onChange={e => setFormData(p => ({...p, friendlyLosses: {...p.friendlyLosses, count300: parseInt(e.target.value)||0}}))} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#4c8ed9] font-mono text-[#f3f4f6]" />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-semibold text-blue-300 mb-1">ЗБВ (Зниклі)</label>
-                                                <input type="number" min="0" value={formData.friendlyLosses.countZBV} onChange={e => setFormData(p => ({...p, friendlyLosses: {...p.friendlyLosses, countZBV: parseInt(e.target.value)||0}}))} className="w-full bg-slate-900 border border-blue-900/50 rounded-lg px-3 py-1.5 text-sm focus:border-blue-500 font-mono text-blue-200" />
+                                                <label className="block text-xs font-semibold text-[#b8bec8] mb-1">ЗБВ (Зниклі)</label>
+                                                <input type="number" min="0" value={formData.friendlyLosses.countZBV} onChange={e => setFormData(p => ({...p, friendlyLosses: {...p.friendlyLosses, countZBV: parseInt(e.target.value)||0}}))} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#4c8ed9] font-mono text-[#f3f4f6]" />
                                             </div>
                                             <div className="col-span-3 md:col-span-2">
-                                                <label className="block text-xs font-semibold text-blue-300 mb-1">Деталі / Позивні</label>
-                                                <input type="text" value={formData.friendlyLosses.details} onChange={e => setFormData(p => ({...p, friendlyLosses: {...p.friendlyLosses, details: e.target.value}}))} placeholder="Короткий опис..." className="w-full bg-slate-900 border border-blue-900/50 rounded-lg px-3 py-1.5 text-sm focus:border-blue-500 text-blue-100" />
+                                                <label className="block text-xs font-semibold text-[#b8bec8] mb-1">Деталі / Позивні</label>
+                                                <input type="text" value={formData.friendlyLosses.details} onChange={e => setFormData(p => ({...p, friendlyLosses: {...p.friendlyLosses, details: e.target.value}}))} placeholder="Короткий опис..." className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#4c8ed9] text-[#f3f4f6]" />
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
                                 {/* ДОДАТКОВО */}
-                                <div className="space-y-3">
-                                    <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider border-b border-slate-800 pb-1">Короткий опис події</h3>
-                                    <textarea value={formData.description} onChange={e => setFormData(p => ({...p, description: e.target.value}))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-amber-500 h-20 resize-none" placeholder="Додаткова інформація..."></textarea>
+                                <div className="space-y-2">
+                                    <h3 className="text-xs font-semibold text-[#b8bec8] uppercase tracking-wider border-b border-[#2e3138] pb-1">Короткий опис події</h3>
+                                    <textarea value={formData.description} onChange={e => setFormData(p => ({...p, description: e.target.value}))} className="w-full bg-[#17181b] border border-[#2e3138] rounded-sm px-3 py-2 text-xs text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9] h-20 resize-none" placeholder="Додаткова інформація..."></textarea>
                                 </div>
                                 
                                 <datalist id="personnel-callsigns-list">
@@ -943,12 +970,12 @@ const EventsApp = (function() {
                                 
                             </form>
                             
-                            <div className="p-4 border-t border-slate-800 bg-slate-900/50 rounded-b-2xl flex justify-end gap-3 sticky bottom-0 z-10">
-                                <button type="button" onClick={onClose} className="px-5 py-2 rounded-xl text-sm font-bold text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+                            <div className="px-4 py-3 border-t border-[#2e3138] bg-[#17181b] flex justify-end gap-2 sticky bottom-0 z-10">
+                                <button type="button" onClick={onClose} className="px-4 py-1.5 rounded-sm text-xs font-semibold text-[#cbd5e1] bg-[#222429] hover:bg-[#282b31] border border-[#2e3138] transition-colors">
                                     Скасувати
                                 </button>
-                                <button type="button" onClick={handleSubmit} className="px-5 py-2 rounded-xl text-sm font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-lg transition flex items-center gap-2">
-                                    <Icon name="save" className="w-4 h-4" />
+                                <button type="button" onClick={handleSubmit} className="px-4 py-1.5 rounded-sm text-xs font-semibold bg-[#2b67ab] hover:bg-[#3477c2] border border-[#4c8ed9] text-white transition-colors flex items-center gap-1.5">
+                                    <Icon name="save" className="w-3.5 h-3.5" />
                                     Зберегти подію
                                 </button>
                             </div>
@@ -958,6 +985,11 @@ const EventsApp = (function() {
             };
 
         const EventViewModal = ({ event, onClose }) => {
+                const dialogRef = useRef(null);
+                useEffect(() => {
+                    if (!event) return;
+                    return bindDialogFocusTrap(dialogRef, onClose);
+                }, [event, onClose]);
                 if (!event) return null;
                 const isAssault = event.types.includes(EVENT_TYPES.ASSAULT);
                 const isUdp = event.types.includes(EVENT_TYPES.UDP);
@@ -969,51 +1001,60 @@ const EventsApp = (function() {
                 const totalPOW = event.enemyLosses.reduce((sum, l) => sum + (l.countPOW || 0), 0);
                 
                 return (
-                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-                        <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-5xl shadow-2xl flex flex-col max-h-[90vh]">
-                            <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-800/50 rounded-t-2xl sticky top-0 z-10">
-                                <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-                                    <Icon name="file-text" className="w-5 h-5 text-blue-400" />
+                    <div
+                        className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 overflow-y-auto overscroll-contain"
+                        onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+                    >
+                        <div
+                            ref={dialogRef}
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="Деталі події"
+                            className="bg-[#17181b] border border-[#2e3138] rounded-sm w-full max-w-5xl flex flex-col max-h-[90vh] text-[#f3f4f6] overscroll-contain"
+                        >
+                            <div className="flex items-center justify-between px-4 py-3 border-b border-[#2e3138] bg-[#17181b] sticky top-0 z-10">
+                                <h2 className="text-base font-bold text-[#f3f4f6] flex items-center gap-2">
+                                    <Icon name="file-text" className="w-4 h-4 text-[#4c8ed9]" />
                                     Деталі події
                                 </h2>
-                                <button onClick={onClose} className="p-2 bg-slate-700 text-slate-200 hover:bg-slate-600 rounded-lg transition shadow-md">
-                                    <Icon name="x" className="w-5 h-5" />
+                                <button type="button" aria-label="Закрити деталі події" onClick={onClose} className="p-1.5 bg-[#222429] border border-[#2e3138] hover:border-[#3c404a] text-[#b8bec8] hover:text-[#f3f4f6] hover:bg-[#282b31] rounded-sm transition-colors">
+                                    <Icon name="x" className="w-4 h-4" />
                                 </button>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 bg-[#101113]">
                                 {/* Заголовок */}
-                                <div className="flex flex-wrap gap-2 items-center">
-                                    {event.types.map(t => <span key={t} className="px-3 py-1 bg-amber-900/40 text-amber-400 border border-amber-700/50 rounded-lg text-sm font-bold uppercase tracking-wide">{t}</span>)}
-                                    {event.isFireContact && <span className="px-3 py-1 bg-red-900/40 text-red-400 border border-red-800/50 rounded-lg text-sm font-bold uppercase flex items-center gap-1"><Icon name="flame" className="w-4 h-4"/>Вогневий контакт</span>}
-                                    {!event.isRealEvent && <span className="px-3 py-1 bg-slate-800 text-slate-400 border border-slate-700 rounded-lg text-sm font-bold uppercase">Тестова подія</span>}
-                                    <div className="ml-auto text-sm text-slate-400 font-medium">Створено: {formatDateTimeUI(event.createdAt)}</div>
+                                <div className="flex flex-wrap gap-1.5 items-center">
+                                    {event.types.map(t => <span key={t} className="px-2.5 py-0.5 bg-[#d99b26]/15 text-[#d99b26] border border-[#d99b26]/40 rounded-sm text-xs font-semibold uppercase tracking-wide">{t}</span>)}
+                                    {event.isFireContact && <span className="px-2.5 py-0.5 bg-[#d9534f]/15 text-[#f3a3a0] border border-[#d9534f]/40 rounded-sm text-xs font-semibold uppercase flex items-center gap-1"><Icon name="flame" className="w-3.5 h-3.5"/>Вогневий контакт</span>}
+                                    {!event.isRealEvent && <span className="px-2.5 py-0.5 bg-[#222429] text-[#b8bec8] border border-[#2e3138] rounded-sm text-xs font-semibold uppercase">Тестова подія</span>}
+                                    <div className="ml-auto text-xs text-[#b8bec8] font-mono tabular-nums">Створено: {formatDateTimeUI(event.createdAt)}</div>
                                 </div>
                                 
                                 {/* Деталі дій */}
                                 {(isAssault || isUdp) && (
-                                    <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-                                        <h3 className="text-amber-500 font-bold uppercase text-xs flex items-center gap-2 mb-2"><Icon name="map" className="w-4 h-4"/> Інформація про дію</h3>
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                                    <div className="bg-[#17181b] p-4 rounded-sm border border-[#2e3138] space-y-3">
+                                        <h3 className="text-[#d99b26] font-semibold uppercase text-xs flex items-center gap-2 border-b border-[#2e3138] pb-1.5"><Icon name="map" className="w-4 h-4"/> Інформація про дію</h3>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm tabular-nums">
                                             {isAssault ? (
                                                 <>
-                                                    <div><span className="block text-xs text-slate-500 mb-0.5">Дата проведення</span> <span className="text-slate-200 font-medium">{event.actionDetails.startDate}</span></div>
-                                                    <div><span className="block text-xs text-slate-500 mb-0.5">Час проведення</span> <span className="text-slate-200 font-medium">{event.actionDetails.startTime || '—'} — {event.actionDetails.endTime || <span className="text-red-400 font-bold animate-pulse">Триває (не закрито)</span>}</span></div>
+                                                    <div><span className="block text-xs text-[#989fa9] mb-0.5">Дата проведення</span> <span className="text-[#f3f4f6] font-medium font-mono">{event.actionDetails.startDate}</span></div>
+                                                    <div><span className="block text-xs text-[#989fa9] mb-0.5">Час проведення</span> <span className="text-[#f3f4f6] font-medium font-mono">{event.actionDetails.startTime || '—'} — {event.actionDetails.endTime || <span className="text-[#f3a3a0] font-semibold font-sans">Триває (не закрито)</span>}</span></div>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <div><span className="block text-xs text-slate-500 mb-0.5">Дата початку</span> <span className="text-slate-200 font-medium">{event.actionDetails.startDate} {event.actionDetails.startTime}</span></div>
-                                                    <div><span className="block text-xs text-slate-500 mb-0.5">Дата закінчення</span> <span className="text-slate-200 font-medium">{event.actionDetails.endDate} {event.actionDetails.endTime}</span></div>
+                                                    <div><span className="block text-xs text-[#989fa9] mb-0.5">Дата початку</span> <span className="text-[#f3f4f6] font-medium font-mono">{event.actionDetails.startDate} {event.actionDetails.startTime}</span></div>
+                                                    <div><span className="block text-xs text-[#989fa9] mb-0.5">Дата закінчення</span> <span className="text-[#f3f4f6] font-medium font-mono">{event.actionDetails.endDate} {event.actionDetails.endTime}</span></div>
                                                 </>
                                             )}
-                                            <div><span className="block text-xs text-slate-500 mb-0.5">Проводили</span> <span className="text-slate-200 font-medium">{event.actionDetails.conductedBy || '-'}</span></div>
-                                            <div className="col-span-2 md:col-span-1"><span className="block text-xs text-slate-500 mb-0.5">Док. місце</span> <span className="text-slate-200 font-medium">{event.actionDetails.docLoc || '-'}</span></div>
-                                            <div className="col-span-2 md:col-span-2"><span className="block text-xs text-slate-500 mb-0.5">Факт. місце</span> <span className="text-slate-200 font-medium">{event.actionDetails.factLoc || '-'}</span></div>
+                                            <div><span className="block text-xs text-[#989fa9] mb-0.5">Проводили</span> <span className="text-[#f3f4f6] font-medium">{event.actionDetails.conductedBy || '-'}</span></div>
+                                            <div className="col-span-2 md:col-span-1"><span className="block text-xs text-[#989fa9] mb-0.5">Док. місце</span> <span className="text-[#f3f4f6] font-medium">{event.actionDetails.docLoc || '-'}</span></div>
+                                            <div className="col-span-2 md:col-span-2"><span className="block text-xs text-[#989fa9] mb-0.5">Факт. місце</span> <span className="text-[#f3f4f6] font-medium">{event.actionDetails.factLoc || '-'}</span></div>
                                             {isAssault && (
                                                 <>
-                                                    <div className="col-span-2 md:col-span-1"><span className="block text-xs text-slate-500 mb-0.5">Напрямок</span> <span className="text-slate-200 font-medium">{event.actionDetails.direction || '-'}</span></div>
-                                                    <div><span className="block text-xs text-slate-500 mb-0.5">Наш о/с</span> <span className="text-slate-200 font-medium">{event.actionDetails.friendlyCount || '0'}</span></div>
-                                                    <div><span className="block text-xs text-slate-500 mb-0.5">Ворог (група)</span> <span className="text-slate-200 font-medium">{event.actionDetails.enemySize || '0'}</span></div>
-                                                    {event.actionDetails.hasVehicles && <div className="col-span-2 md:col-span-3"><span className="block text-xs text-slate-500 mb-0.5">Техніка ворога</span> <span className="text-slate-200 font-medium">{event.actionDetails.vehicleDetails || 'Так'}</span></div>}
+                                                    <div className="col-span-2 md:col-span-1"><span className="block text-xs text-[#989fa9] mb-0.5">Напрямок</span> <span className="text-[#f3f4f6] font-medium">{event.actionDetails.direction || '-'}</span></div>
+                                                    <div><span className="block text-xs text-[#989fa9] mb-0.5">Наш о/с</span> <span className="text-[#f3f4f6] font-medium font-mono">{event.actionDetails.friendlyCount || '0'}</span></div>
+                                                    <div><span className="block text-xs text-[#989fa9] mb-0.5">Ворог (група)</span> <span className="text-[#f3f4f6] font-medium font-mono">{event.actionDetails.enemySize || '0'}</span></div>
+                                                    {event.actionDetails.hasVehicles && <div className="col-span-2 md:col-span-3"><span className="block text-xs text-[#989fa9] mb-0.5">Техніка ворога</span> <span className="text-[#f3f4f6] font-medium">{event.actionDetails.vehicleDetails || 'Так'}</span></div>}
                                                 </>
                                             )}
                                         </div>
@@ -1021,70 +1062,70 @@ const EventsApp = (function() {
                                 )}
                                 
                                 {/* Втрати ворога */}
-                                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
-                                        <h3 className="text-red-500 font-bold uppercase text-xs flex items-center gap-2"><Icon name="crosshair" className="w-4 h-4"/> Втрати противника</h3>
-                                        <div className="flex gap-3 text-sm font-mono">
-                                            <span className="text-red-400">200: {totalE200}</span>
-                                            <span className="text-rose-400">200*: {totalE200Unc}</span>
-                                            <span className="text-purple-400">Вияв: {totalE200Disc}</span>
-                                            <span className="text-amber-400">300: {totalE300}</span>
-                                            <span className="text-emerald-400">Полон: {totalPOW}</span>
+                                <div className="bg-[#17181b] p-4 rounded-sm border border-[#2e3138]">
+                                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2 border-b border-[#2e3138]">
+                                        <h3 className="text-[#f3a3a0] font-semibold uppercase text-xs flex items-center gap-2"><Icon name="crosshair" className="w-4 h-4"/> Втрати противника</h3>
+                                        <div className="flex flex-wrap gap-3 text-xs font-mono tabular-nums">
+                                            <span className="text-[#f3a3a0]">200: {totalE200}</span>
+                                            <span className="text-[#e5989b]">200*: {totalE200Unc}</span>
+                                            <span className="text-[#b8bec8]">Вияв: {totalE200Disc}</span>
+                                            <span className="text-[#d99b26]">300: {totalE300}</span>
+                                            <span className="text-[#3da372]">Полон: {totalPOW}</span>
                                         </div>
                                     </div>
                                     {event.enemyLosses.length > 0 ? (
-                                        <div className="space-y-2">
+                                        <div className="divide-y divide-[#2e3138] border border-[#2e3138] rounded-sm bg-[#101113]">
                                             {event.enemyLosses.map((l, i) => (
-                                                <div key={i} className="flex flex-col gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-700/50 text-sm">
+                                                <div key={i} className="flex flex-col gap-1.5 p-2.5 text-sm">
                                                     <div className="flex flex-wrap md:flex-nowrap items-center gap-3 w-full">
                                                         <div className="w-full md:w-1/3 shrink-0 flex items-center gap-1.5">
-                                                            {l.time && <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-800/60 shrink-0">{l.time}</span>}
-                                                            <span className="font-semibold text-slate-300">{l.weapon}</span> 
-                                                            {l.inflicter && <span className="text-slate-500 text-xs ml-1">(від: {l.inflicter})</span>}
+                                                            {l.time && <span className="font-mono text-xs px-1.5 py-0.5 rounded-sm bg-[#d99b26]/12 text-[#d99b26] border border-[#d99b26]/35 shrink-0 tabular-nums">{l.time}</span>}
+                                                            <span className="font-semibold text-[#f3f4f6]">{l.weapon}</span> 
+                                                            {l.inflicter && <span className="text-[#b8bec8] text-xs ml-1">(від: {l.inflicter})</span>}
                                                         </div>
-                                                        <div className="flex-1 flex gap-4 justify-end font-mono text-xs md:text-sm">
-                                                            {(l.count200 || 0) + (l.count200POW || 0) > 0 && <span className="text-red-400" title="200">200: {(l.count200 || 0) + (l.count200POW || 0)}</span>}
-                                                            {l.count200Unconfirmed > 0 && <span className="text-rose-400" title="200*">200*: {l.count200Unconfirmed}</span>}
-                                                            {l.count200Discovered > 0 && <span className="text-purple-400" title="Виявлені 200">В: {l.count200Discovered}</span>}
-                                                            {l.count300 > 0 && <span className="text-amber-400" title="300">300: {l.count300}</span>}
-                                                            {l.countPOW > 0 && <span className="text-emerald-400" title="Полонені">П: {l.countPOW}</span>}
+                                                        <div className="flex-1 flex gap-4 justify-end font-mono text-xs md:text-sm tabular-nums">
+                                                            {(l.count200 || 0) + (l.count200POW || 0) > 0 && <span className="text-[#f3a3a0]" title="200">200: {(l.count200 || 0) + (l.count200POW || 0)}</span>}
+                                                            {l.count200Unconfirmed > 0 && <span className="text-[#e5989b]" title="200*">200*: {l.count200Unconfirmed}</span>}
+                                                            {l.count200Discovered > 0 && <span className="text-[#b8bec8]" title="Виявлені 200">В: {l.count200Discovered}</span>}
+                                                            {l.count300 > 0 && <span className="text-[#d99b26]" title="300">300: {l.count300}</span>}
+                                                            {l.countPOW > 0 && <span className="text-[#3da372]" title="Полонені">П: {l.countPOW}</span>}
                                                         </div>
                                                     </div>
                                                     
                                                     {((l.callsigns200 && l.callsigns200.some(c=>c)) || (l.callsigns200Unconfirmed && l.callsigns200Unconfirmed.some(c=>c)) || (l.callsigns200Discovered && l.callsigns200Discovered.some(c=>c)) || (l.callsigns300 && l.callsigns300.some(c=>c)) || (l.callsignsPOW && l.callsignsPOW.some(c=>c)) || (l.callsigns200POW && l.callsigns200POW.some(c=>c))) && (
-                                                        <div className="pt-1.5 mt-0.5 border-t border-slate-800/60 flex gap-4 text-[11px] font-mono flex-wrap">
-                                                            {l.callsigns200 && l.callsigns200.some(c=>c) && <span className="text-red-400/80">200: {l.callsigns200.filter(c=>c).join(', ')}</span>}
-                                                            {l.callsigns200Unconfirmed && l.callsigns200Unconfirmed.some(c=>c) && <span className="text-rose-300/80">200*: {l.callsigns200Unconfirmed.filter(c=>c).join(', ')}</span>}
-                                                            {l.callsigns200Discovered && l.callsigns200Discovered.some(c=>c) && <span className="text-purple-400/80">Вияв: {l.callsigns200Discovered.filter(c=>c).join(', ')}</span>}
-                                                            {l.callsigns300 && l.callsigns300.some(c=>c) && <span className="text-amber-400/80">300: {l.callsigns300.filter(c=>c).join(', ')}</span>}
-                                                            {l.callsignsPOW && l.callsignsPOW.some(c=>c) && <span className="text-emerald-400/80">Полон: {l.callsignsPOW.filter(c=>c).join(', ')}</span>}
-                                                            {l.callsigns200POW && l.callsigns200POW.some(c=>c) && <span className="text-rose-500/80">Заг.Полон: {l.callsigns200POW.filter(c=>c).join(', ')}</span>}
+                                                        <div className="pt-1.5 mt-0.5 border-t border-[#2e3138] flex gap-4 text-[11px] font-mono flex-wrap">
+                                                            {l.callsigns200 && l.callsigns200.some(c=>c) && <span className="text-[#f3a3a0]">200: {l.callsigns200.filter(c=>c).join(', ')}</span>}
+                                                            {l.callsigns200Unconfirmed && l.callsigns200Unconfirmed.some(c=>c) && <span className="text-[#e5989b]">200*: {l.callsigns200Unconfirmed.filter(c=>c).join(', ')}</span>}
+                                                            {l.callsigns200Discovered && l.callsigns200Discovered.some(c=>c) && <span className="text-[#b8bec8]">Вияв: {l.callsigns200Discovered.filter(c=>c).join(', ')}</span>}
+                                                            {l.callsigns300 && l.callsigns300.some(c=>c) && <span className="text-[#d99b26]">300: {l.callsigns300.filter(c=>c).join(', ')}</span>}
+                                                            {l.callsignsPOW && l.callsignsPOW.some(c=>c) && <span className="text-[#3da372]">Полон: {l.callsignsPOW.filter(c=>c).join(', ')}</span>}
+                                                            {l.callsigns200POW && l.callsigns200POW.some(c=>c) && <span className="text-[#f3a3a0]">Заг.Полон: {l.callsigns200POW.filter(c=>c).join(', ')}</span>}
                                                         </div>
                                                     )}
                                                 </div>
                                             ))}
                                         </div>
-                                    ) : <div className="text-slate-500 text-sm italic">Немає записів про втрати</div>}
+                                    ) : <div className="text-[#989fa9] text-sm italic">Немає записів про втрати</div>}
                                 </div>
                                 
                                 {/* Наші втрати */}
                                 {(event.friendlyLosses.count200 > 0 || event.friendlyLosses.count300 > 0 || event.friendlyLosses.countZBV > 0 || event.friendlyLosses.details) && (
-                                    <div className="bg-blue-950/20 p-4 rounded-xl border border-blue-900/40">
-                                        <h3 className="text-blue-400 font-bold uppercase text-xs flex items-center gap-2 mb-3"><Icon name="users" className="w-4 h-4"/> Наші втрати</h3>
-                                        <div className="flex flex-wrap gap-6 text-sm">
-                                            <div className="font-mono text-blue-300"><span className="text-blue-500 text-xs mr-1 block uppercase">Загиблі (200)</span> {event.friendlyLosses.count200}</div>
-                                            <div className="font-mono text-blue-300"><span className="text-blue-500 text-xs mr-1 block uppercase">Поранені (300)</span> {event.friendlyLosses.count300}</div>
-                                            <div className="font-mono text-blue-300"><span className="text-blue-500 text-xs mr-1 block uppercase">Зниклі (ЗБВ)</span> {event.friendlyLosses.countZBV || 0}</div>
-                                            {event.friendlyLosses.details && <div className="w-full text-blue-200 mt-2"><span className="block text-blue-500 text-xs mb-1 uppercase">Деталі</span>{event.friendlyLosses.details}</div>}
+                                    <div className="bg-[#17181b] p-4 rounded-sm border border-[#4c8ed9]/40">
+                                        <h3 className="text-[#4c8ed9] font-semibold uppercase text-xs flex items-center gap-2 mb-2.5 border-b border-[#2e3138] pb-1.5"><Icon name="users" className="w-4 h-4"/> Наші втрати</h3>
+                                        <div className="flex flex-wrap gap-6 text-sm tabular-nums">
+                                            <div className="font-mono text-[#f3f4f6]"><span className="text-[#b8bec8] text-xs mr-1 block uppercase font-sans">Загиблі (200)</span> {event.friendlyLosses.count200}</div>
+                                            <div className="font-mono text-[#f3f4f6]"><span className="text-[#b8bec8] text-xs mr-1 block uppercase font-sans">Поранені (300)</span> {event.friendlyLosses.count300}</div>
+                                            <div className="font-mono text-[#f3f4f6]"><span className="text-[#b8bec8] text-xs mr-1 block uppercase font-sans">Зниклі (ЗБВ)</span> {event.friendlyLosses.countZBV || 0}</div>
+                                            {event.friendlyLosses.details && <div className="w-full text-[#cbd5e1] mt-1"><span className="block text-[#b8bec8] text-xs mb-1 uppercase">Деталі</span>{event.friendlyLosses.details}</div>}
                                         </div>
                                     </div>
                                 )}
                                 
                                 {/* Опис */}
                                 {event.description && (
-                                    <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                                        <h3 className="text-slate-500 font-bold uppercase text-xs mb-2">Короткий опис</h3>
-                                        <p className="text-slate-300 text-sm whitespace-pre-wrap">{event.description}</p>
+                                    <div className="bg-[#17181b] p-4 rounded-sm border border-[#2e3138]">
+                                        <h3 className="text-[#b8bec8] font-semibold uppercase text-xs mb-1.5">Короткий опис</h3>
+                                        <p className="text-[#cbd5e1] text-sm whitespace-pre-wrap">{event.description}</p>
                                     </div>
                                 )}
                             </div>
@@ -1116,22 +1157,19 @@ const EventsApp = (function() {
                 const vehicleDetails = event.actionDetails?.vehicleDetails;
 
                 return (
-                    <div className={`relative rounded-xl p-3 sm:p-3.5 flex flex-col gap-2 transition-all shadow-sm group overflow-hidden ${
+                    <div className={`relative rounded-sm p-3 flex flex-col gap-2 transition-colors group overflow-hidden ${
                         isUnclosedAssault 
-                            ? 'bg-red-950/30 border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)] animate-pulse' 
-                            : 'bg-slate-900/85 border border-slate-800 hover:border-slate-700'
+                            ? 'bg-[#17181b] border border-[#d9534f] border-l-[3px]' 
+                            : 'bg-[#17181b] border border-[#3a3e47] hover:border-[#464b57]'
                     }`}>
                         {/* Попередження про незакритий ШД */}
                         {isUnclosedAssault && (
-                            <div className="flex flex-wrap items-center justify-between gap-2 bg-red-900/70 border border-red-500/80 rounded-lg px-3 py-1.5 text-xs text-red-100 font-bold">
+                            <div className="flex flex-wrap items-center justify-between gap-2 bg-[#d9534f]/15 border border-[#d9534f]/45 rounded-sm px-3 py-1.5 text-xs text-[#f3a3a0] font-semibold">
                                 <div className="flex items-center gap-2">
-                                    <span className="relative flex h-2.5 w-2.5 shrink-0">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                                    </span>
+                                    <span className="inline-flex h-2 w-2 bg-[#d9534f] shrink-0" aria-hidden="true" />
                                     <span>УВАГА: Штурмові дії (ШД) не закрито! Не вказано час закінчення.</span>
                                 </div>
-                                <button onClick={() => onEdit(event)} className="bg-red-600 hover:bg-red-500 text-white px-2.5 py-1 rounded-md text-xs font-bold transition flex items-center gap-1.5 shadow">
+                                <button onClick={() => onEdit(event)} className="bg-[#d9534f]/25 hover:bg-[#d9534f]/40 border border-[#d9534f]/60 text-[#f3a3a0] px-2.5 py-1 rounded-sm text-xs font-semibold transition-colors flex items-center gap-1.5">
                                     <Icon name="clock" className="w-3.5 h-3.5" /> Вказати час завершення →
                                 </button>
                             </div>
@@ -1140,32 +1178,32 @@ const EventsApp = (function() {
                         {/* Верхній ряд: Дата/Час, Типи подій, Дії */}
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="flex flex-wrap items-center gap-1.5">
-                                <div className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 px-2 py-0.5 rounded-md">
-                                    <Icon name="calendar" className="w-3.5 h-3.5 text-amber-500" />
+                                <div className="text-xs font-semibold text-[#cbd5e1] flex items-center gap-1.5 bg-[#101113] border border-[#2e3138] px-2 py-0.5 rounded-sm tabular-nums font-mono">
+                                    <Icon name="calendar" className="w-3.5 h-3.5 text-[#4c8ed9]" />
                                     <span>{formatDateTimeUI(actionDate)}</span>
                                     {event.actionDetails?.endTime && (
-                                        <span className="text-slate-400 font-mono">→ {event.actionDetails.endTime}</span>
+                                        <span className="text-[#b8bec8]">→ {event.actionDetails.endTime}</span>
                                     )}
                                 </div>
 
                                 {(event.types || []).map(t => (
-                                    <span key={t} className={`text-[10.5px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border shadow-sm ${
-                                        t === EVENT_TYPES.ASSAULT ? 'bg-red-950/70 border-red-800 text-red-300' :
-                                        t === EVENT_TYPES.UDP ? 'bg-amber-950/70 border-amber-800 text-amber-300' :
-                                        'bg-slate-800 border-slate-700 text-slate-300'
+                                    <span key={t} className={`text-[10.5px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-sm border ${
+                                        t === EVENT_TYPES.ASSAULT ? 'bg-[#d9534f]/15 border-[#d9534f]/45 text-[#f3a3a0]' :
+                                        t === EVENT_TYPES.UDP ? 'bg-[#d99b26]/15 border-[#d99b26]/45 text-[#d99b26]' :
+                                        'bg-[#222429] border-[#2e3138] text-[#cbd5e1]'
                                     }`}>
                                         {t}
                                     </span>
                                 ))}
 
                                 {event.isFireContact && (
-                                    <span className="text-[10px] font-bold uppercase tracking-wider bg-red-900/50 text-red-300 px-2 py-0.5 rounded-md border border-red-700 flex items-center gap-1" title="Вогневий контакт">
-                                        <Icon name="flame" className="w-3 h-3 text-red-400" /> Контакт
+                                    <span className="text-[10px] font-semibold uppercase tracking-wider bg-[#d9534f]/15 text-[#f3a3a0] px-2 py-0.5 rounded-sm border border-[#d9534f]/45 flex items-center gap-1" title="Вогневий контакт">
+                                        <Icon name="flame" className="w-3 h-3 text-[#d9534f]" /> Контакт
                                     </span>
                                 )}
 
                                 {!event.isRealEvent && (
-                                    <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md border border-slate-700">
+                                    <span className="text-[10px] font-semibold uppercase tracking-wider bg-[#222429] text-[#b8bec8] px-2 py-0.5 rounded-sm border border-[#2e3138]">
                                         ТЕСТ
                                     </span>
                                 )}
@@ -1173,14 +1211,14 @@ const EventsApp = (function() {
 
                             {/* Кнопки дій */}
                             <div className="flex flex-wrap items-center gap-1">
-                                {isAssault && <button type="button" aria-label={`Доповідь ШД ${event.id}`} disabled={!isCompletedAssault(event)} onClick={() => onReport(event)} title={isCompletedAssault(event) ? 'Сформувати чернетку позатермінового донесення' : 'Спочатку вкажіть коректний час завершення ШД'} className="px-2 py-1 bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 rounded-md transition border border-amber-700/60 text-xs font-semibold flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"><Icon name="file-text" className="w-3.5 h-3.5" />Доповідь</button>}
-                                <button type="button" aria-label="Переглянути деталі" onClick={() => onView(event)} className="p-1 hover:bg-slate-800 text-slate-400 hover:text-blue-400 rounded-md transition" title="Переглянути деталі">
+                                {isAssault && <button type="button" aria-label={`Доповідь ШД ${event.id}`} disabled={!isCompletedAssault(event)} onClick={() => onReport(event)} title={isCompletedAssault(event) ? 'Сформувати чернетку позатермінового донесення' : 'Спочатку вкажіть коректний час завершення ШД'} className="px-2 py-1 bg-[#d99b26]/15 hover:bg-[#d99b26]/25 text-[#d99b26] rounded-sm transition-colors border border-[#d99b26]/40 text-xs font-semibold flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"><Icon name="file-text" className="w-3.5 h-3.5" />Доповідь</button>}
+                                <button type="button" aria-label="Переглянути деталі" onClick={() => onView(event)} className="p-1.5 hover:bg-[#222429] border border-transparent hover:border-[#2e3138] text-[#b8bec8] hover:text-[#4c8ed9] rounded-sm transition-colors" title="Переглянути деталі">
                                     <Icon name="eye" className="w-4 h-4" />
                                 </button>
-                                <button type="button" aria-label="Редагувати подію" onClick={() => onEdit(event)} className="p-1 hover:bg-slate-800 text-slate-400 hover:text-amber-400 rounded-md transition" title="Редагувати">
+                                <button type="button" aria-label="Редагувати подію" onClick={() => onEdit(event)} className="p-1.5 hover:bg-[#222429] border border-transparent hover:border-[#2e3138] text-[#b8bec8] hover:text-[#d99b26] rounded-sm transition-colors" title="Редагувати">
                                     <Icon name="edit" className="w-4 h-4" />
                                 </button>
-                                <button type="button" aria-label="Видалити подію" onClick={() => onDelete(event.id)} className="p-1 hover:bg-slate-800 text-slate-400 hover:text-red-400 rounded-md transition" title="Видалити">
+                                <button type="button" aria-label="Видалити подію" onClick={() => onDelete(event.id)} className="p-1.5 hover:bg-[#d9534f]/10 border border-transparent hover:border-[#d9534f]/40 text-[#b8bec8] hover:text-[#f3a3a0] rounded-sm transition-colors" title="Видалити">
                                     <Icon name="trash-2" className="w-4 h-4" />
                                 </button>
                             </div>
@@ -1188,44 +1226,44 @@ const EventsApp = (function() {
 
                         {/* Тактичний контекстний рядок: Локації, Підрозділи, Сили */}
                         {(docLoc || factLoc || direction || position || conductedBy || friendlyCount > 0 || enemySize > 0 || hasVehicles) && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 bg-slate-950/70 border border-slate-800/80 rounded-lg p-2 text-xs">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 border-t border-[#2e3138] pt-2 text-xs">
                                 {(factLoc || docLoc) && (
                                     <div className="flex items-start gap-1.5 min-w-0">
-                                        <Icon name="map-pin" className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                        <Icon name="map-pin" className="w-3.5 h-3.5 text-[#38bdf8] shrink-0 mt-0.5" />
                                         <div className="min-w-0 truncate">
-                                            <span className="text-slate-500 font-semibold block text-[10px] uppercase">Локація</span>
-                                            <span className="text-slate-200 font-medium">{factLoc || docLoc}</span>
-                                            {factLoc && docLoc && factLoc !== docLoc && <span className="text-slate-400 text-[10px] ml-1">({docLoc})</span>}
+                                            <span className="text-[#989fa9] font-semibold block text-[10px] uppercase tracking-wider">Локація</span>
+                                            <span className="text-[#38bdf8] font-semibold">{factLoc || docLoc}</span>
+                                            {factLoc && docLoc && factLoc !== docLoc && <span className="text-[#c4b5fd] text-[10.5px] ml-1">({docLoc})</span>}
                                         </div>
                                     </div>
                                 )}
                                 {(direction || position) && (
                                     <div className="flex items-start gap-1.5 min-w-0">
-                                        <Icon name="navigation" className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
+                                        <Icon name="navigation" className="w-3.5 h-3.5 text-[#a5b4fc] shrink-0 mt-0.5" />
                                         <div className="min-w-0 truncate">
-                                            <span className="text-slate-500 font-semibold block text-[10px] uppercase">Напрямок / Позиція</span>
-                                            <span className="text-slate-200 font-medium">{direction || position}</span>
+                                            <span className="text-[#989fa9] font-semibold block text-[10px] uppercase tracking-wider">Напрямок / Позиція</span>
+                                            <span className="text-[#a5b4fc] font-semibold">{direction || position}</span>
                                         </div>
                                     </div>
                                 )}
                                 {conductedBy && (
                                     <div className="flex items-start gap-1.5 min-w-0">
-                                        <Icon name="shield" className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                                        <Icon name="shield" className="w-3.5 h-3.5 text-[#34d399] shrink-0 mt-0.5" />
                                         <div className="min-w-0 truncate">
-                                            <span className="text-slate-500 font-semibold block text-[10px] uppercase">Хто проводив</span>
-                                            <span className="text-slate-200 font-medium">{conductedBy}</span>
+                                            <span className="text-[#989fa9] font-semibold block text-[10px] uppercase tracking-wider">Хто проводив</span>
+                                            <span className="text-[#f9fafb] font-semibold">{conductedBy}</span>
                                         </div>
                                     </div>
                                 )}
                                 {(friendlyCount > 0 || enemySize > 0 || hasVehicles) && (
                                     <div className="flex items-start gap-1.5 min-w-0">
-                                        <Icon name="users" className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                                        <div className="min-w-0 truncate">
-                                            <span className="text-slate-500 font-semibold block text-[10px] uppercase">Сили сторін</span>
-                                            <span className="text-slate-300 font-medium">
-                                                {friendlyCount > 0 && <span className="text-blue-300 mr-2">Наші: {friendlyCount}</span>}
-                                                {enemySize > 0 && <span className="text-red-300 mr-2">Ворог: {enemySize}</span>}
-                                                {hasVehicles && <span className="text-amber-300">Техніка: {vehicleDetails || 'Так'}</span>}
+                                        <Icon name="users" className="w-3.5 h-3.5 text-[#b8bec8] shrink-0 mt-0.5" />
+                                        <div className="min-w-0 truncate tabular-nums">
+                                            <span className="text-[#989fa9] font-semibold block text-[10px] uppercase tracking-wider">Сили сторін</span>
+                                            <span className="text-[#cbd5e1] font-medium">
+                                                {friendlyCount > 0 && <span className="text-[#7eb6f2] font-semibold mr-2">Наші: {friendlyCount}</span>}
+                                                {enemySize > 0 && <span className="text-[#f3a3a0] font-semibold mr-2">Ворог: {enemySize}</span>}
+                                                {hasVehicles && <span className="text-[#d99b26] font-semibold">Техніка: {vehicleDetails || 'Так'}</span>}
                                             </span>
                                         </div>
                                     </div>
@@ -1234,30 +1272,30 @@ const EventsApp = (function() {
                         )}
 
                         {/* Підсумок втрат сторін та деталізація уражень */}
-                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/60 text-xs">
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#2e3138] text-xs">
                             <div className="flex flex-wrap items-center gap-2">
                                 {/* Загальні втрати противника */}
-                                <div className="flex flex-wrap gap-1.5 items-center">
-                                    {totalE200 > 0 && <div className="bg-red-950/50 border border-red-900/60 px-2 py-0.5 rounded-md flex items-center gap-1.5 text-xs"><Icon name="skull" className="w-3.5 h-3.5 text-red-500"/> <span className="text-slate-300">200:</span><b className="text-red-400 font-mono">{totalE200}</b></div>}
-                                    {totalE200Unc > 0 && <div className="bg-rose-950/50 border border-rose-900/60 px-2 py-0.5 rounded-md flex items-center gap-1.5 text-xs"><Icon name="help-circle" className="w-3.5 h-3.5 text-rose-400"/> <span className="text-slate-300">200*:</span><b className="text-rose-300 font-mono">{totalE200Unc}</b></div>}
-                                    {totalE200Disc > 0 && <div className="bg-coyote-600/10 border border-coyote-500/30 px-2 py-0.5 rounded-md flex items-center gap-1.5 text-xs"><Icon name="eye" className="w-3.5 h-3.5 text-coyote-400"/> <span className="text-slate-300">Вияв:</span><b className="text-coyote-400 font-mono">{totalE200Disc}</b></div>}
-                                    {totalE300 > 0 && <div className="bg-amber-950/50 border border-amber-900/60 px-2 py-0.5 rounded-md flex items-center gap-1.5 text-xs"><Icon name="activity" className="w-3.5 h-3.5 text-amber-500"/> <span className="text-slate-300">300:</span><b className="text-amber-400 font-mono">{totalE300}</b></div>}
-                                    {totalPOW > 0 && <div className="bg-emerald-950/50 border border-emerald-900/60 px-2 py-0.5 rounded-md flex items-center gap-1.5 text-xs"><Icon name="users" className="w-3.5 h-3.5 text-emerald-500"/> <span className="text-slate-300">Полон:</span><b className="text-emerald-400 font-mono">{totalPOW}</b></div>}
+                                <div className="flex flex-wrap gap-1.5 items-center tabular-nums">
+                                    {totalE200 > 0 && <div className="bg-[#d9534f]/12 border border-[#d9534f]/40 px-2 py-0.5 rounded-sm flex items-center gap-1.5 text-xs"><Icon name="skull" className="w-3.5 h-3.5 text-[#d9534f]"/> <span className="text-[#cbd5e1]">200:</span><b className="text-[#f3a3a0] font-mono">{totalE200}</b></div>}
+                                    {totalE200Unc > 0 && <div className="bg-[#d9534f]/10 border border-[#d9534f]/30 px-2 py-0.5 rounded-sm flex items-center gap-1.5 text-xs"><Icon name="help-circle" className="w-3.5 h-3.5 text-[#e5989b]"/> <span className="text-[#cbd5e1]">200*:</span><b className="text-[#e5989b] font-mono">{totalE200Unc}</b></div>}
+                                    {totalE200Disc > 0 && <div className="bg-[#222429] border border-[#2e3138] px-2 py-0.5 rounded-sm flex items-center gap-1.5 text-xs"><Icon name="eye" className="w-3.5 h-3.5 text-[#b8bec8]"/> <span className="text-[#cbd5e1]">Вияв:</span><b className="text-[#f3f4f6] font-mono">{totalE200Disc}</b></div>}
+                                    {totalE300 > 0 && <div className="bg-[#d99b26]/12 border border-[#d99b26]/40 px-2 py-0.5 rounded-sm flex items-center gap-1.5 text-xs"><Icon name="activity" className="w-3.5 h-3.5 text-[#d99b26]"/> <span className="text-[#cbd5e1]">300:</span><b className="text-[#d99b26] font-mono">{totalE300}</b></div>}
+                                    {totalPOW > 0 && <div className="bg-[#3da372]/12 border border-[#3da372]/40 px-2 py-0.5 rounded-sm flex items-center gap-1.5 text-xs"><Icon name="users" className="w-3.5 h-3.5 text-[#3da372]"/> <span className="text-[#cbd5e1]">Полон:</span><b className="text-[#3da372] font-mono">{totalPOW}</b></div>}
                                     {totalE200 + totalE200Unc + totalE200Disc + totalE300 + totalPOW === 0 && (
-                                        <span className="text-xs text-slate-500 italic">Без втрат противника</span>
+                                        <span className="text-xs text-[#989fa9] italic">Без втрат противника</span>
                                     )}
                                 </div>
 
                                 {/* Деталізація конкретних ударів/засобів поряд */}
                                 {event.enemyLosses && event.enemyLosses.length > 0 && (
-                                    <div className="flex flex-wrap gap-1.5 items-center">
+                                    <div className="flex flex-wrap gap-1.5 items-center tabular-nums">
                                         {event.enemyLosses.map((l, idx) => (
-                                            <div key={idx} className="bg-slate-950/80 border border-slate-800 rounded-md px-2 py-0.5 text-[11px] text-slate-300 flex items-center gap-1.5">
-                                                {l.time && <span className="font-mono text-amber-300 font-bold bg-amber-950/60 px-1 rounded border border-amber-900/50">{l.time}</span>}
-                                                <span className="font-semibold text-slate-200">{l.weapon}</span>
-                                                {l.inflicter && <span className="text-slate-400">(від: {l.inflicter})</span>}
+                                            <div key={idx} className="bg-[#101113] border border-[#2e3138] rounded-sm px-2 py-0.5 text-[11px] text-[#cbd5e1] flex items-center gap-1.5">
+                                                {l.time && <span className="font-mono text-[#d99b26] font-semibold bg-[#d99b26]/10 px-1 rounded-sm border border-[#d99b26]/30">{l.time}</span>}
+                                                <span className="font-semibold text-[#f3f4f6]">{l.weapon}</span>
+                                                {l.inflicter && <span className="text-[#b8bec8]">(від: {l.inflicter})</span>}
                                                 {((l.callsigns200 && l.callsigns200.some(c=>c)) || (l.callsigns200Unconfirmed && l.callsigns200Unconfirmed.some(c=>c)) || (l.callsigns200Discovered && l.callsigns200Discovered.some(c=>c)) || (l.callsigns300 && l.callsigns300.some(c=>c)) || (l.callsignsPOW && l.callsignsPOW.some(c=>c)) || (l.callsigns200POW && l.callsigns200POW.some(c=>c))) && (
-                                                    <span className="text-slate-400" title="Деталізовані позивні">
+                                                    <span className="text-[#b8bec8]" title="Деталізовані позивні">
                                                         [{[
                                                             ...(l.callsigns200||[]).filter(c=>c).map(c=>`200:${c}`),
                                                             ...(l.callsigns200Unconfirmed||[]).filter(c=>c).map(c=>`200*:${c}`),
@@ -1268,13 +1306,13 @@ const EventsApp = (function() {
                                                         ].join(', ')}]
                                                     </span>
                                                 )}
-                                                <span className="font-mono text-slate-400 ml-1">
-                                                    {l.count200 > 0 && <span className="text-red-400 mr-1">200:{l.count200}</span>}
-                                                    {l.count200Unconfirmed > 0 && <span className="text-rose-400 mr-1">200*:{l.count200Unconfirmed}</span>}
-                                                    {l.count200Discovered > 0 && <span className="text-coyote-400 mr-1">Вияв:{l.count200Discovered}</span>}
-                                                    {l.count300 > 0 && <span className="text-amber-400 mr-1">300:{l.count300}</span>}
-                                                    {l.count200POW > 0 && <span className="text-rose-500 mr-1" title="200 з полонених">200(п):{l.count200POW}</span>}
-                                                    {l.countPOW > 0 && <span className="text-emerald-400">Полон:{l.countPOW}</span>}
+                                                <span className="font-mono text-[#b8bec8] ml-1">
+                                                    {l.count200 > 0 && <span className="text-[#f3a3a0] mr-1">200:{l.count200}</span>}
+                                                    {l.count200Unconfirmed > 0 && <span className="text-[#e5989b] mr-1">200*:{l.count200Unconfirmed}</span>}
+                                                    {l.count200Discovered > 0 && <span className="text-[#b8bec8] mr-1">Вияв:{l.count200Discovered}</span>}
+                                                    {l.count300 > 0 && <span className="text-[#d99b26] mr-1">300:{l.count300}</span>}
+                                                    {l.count200POW > 0 && <span className="text-[#f3a3a0] mr-1" title="200 з полонених">200(п):{l.count200POW}</span>}
+                                                    {l.countPOW > 0 && <span className="text-[#3da372]">Полон:{l.countPOW}</span>}
                                                 </span>
                                             </div>
                                         ))}
@@ -1284,12 +1322,12 @@ const EventsApp = (function() {
 
                             {/* Втрати наших сил (якщо є) */}
                             {(event.friendlyLosses?.count200 > 0 || event.friendlyLosses?.count300 > 0 || event.friendlyLosses?.countZBV > 0) && (
-                                <div className="bg-blue-950/30 border border-blue-900/40 rounded-md px-2 py-0.5 text-xs flex items-center gap-2">
-                                    <span className="font-bold text-blue-400 uppercase text-[10px]">Наші:</span>
+                                <div className="bg-[#4c8ed9]/12 border border-[#4c8ed9]/40 rounded-sm px-2 py-0.5 text-xs flex items-center gap-2 tabular-nums">
+                                    <span className="font-semibold text-[#4c8ed9] uppercase text-[10px]">Наші:</span>
                                     <div className="flex gap-2 font-mono">
-                                        {event.friendlyLosses.count200 > 0 && <span className="text-blue-300 font-bold">200:{event.friendlyLosses.count200}</span>}
-                                        {event.friendlyLosses.count300 > 0 && <span className="text-blue-300">300:{event.friendlyLosses.count300}</span>}
-                                        {event.friendlyLosses.countZBV > 0 && <span className="text-indigo-300">ЗБВ:{event.friendlyLosses.countZBV}</span>}
+                                        {event.friendlyLosses.count200 > 0 && <span className="text-[#f3f4f6] font-semibold">200:{event.friendlyLosses.count200}</span>}
+                                        {event.friendlyLosses.count300 > 0 && <span className="text-[#cbd5e1]">300:{event.friendlyLosses.count300}</span>}
+                                        {event.friendlyLosses.countZBV > 0 && <span className="text-[#b8bec8]">ЗБВ:{event.friendlyLosses.countZBV}</span>}
                                     </div>
                                 </div>
                             )}
@@ -1302,9 +1340,9 @@ const EventsApp = (function() {
                                 role="region"
                                 aria-label="Опис події"
                                 title="Натисніть або наведіть для перегляду повного тексту"
-                                className="text-xs text-slate-300 bg-slate-950/50 border border-slate-800/80 rounded-lg p-2.5 leading-relaxed whitespace-pre-wrap break-words line-clamp-2 hover:line-clamp-none focus:line-clamp-none focus:outline-none focus:ring-1 focus:ring-amber-500/50 transition-all cursor-pointer"
+                                className="text-xs text-[#dbe4ef] border-t border-[#2e3138] pt-2 leading-relaxed whitespace-pre-wrap break-words line-clamp-2 hover:line-clamp-none focus:line-clamp-none focus:outline-none cursor-pointer"
                             >
-                                <span className="text-slate-500 font-semibold uppercase text-[10px] block mb-0.5">Опис події:</span>
+                                <span className="text-[#989fa9] font-semibold uppercase tracking-wider text-[10px] block mb-0.5">Опис події:</span>
                                 {event.description}
                             </div>
                         )}
@@ -1322,11 +1360,11 @@ const EventsApp = (function() {
                     ['Увесь час', '', ''],
                 ];
                 return (
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-1">
                         {btns.map(([label, from, to]) => {
                             const active = dateFrom === from && dateTo === to;
                             return (
-                                <button key={label} type="button" onClick={() => apply(from, to)} className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition ${active ? 'bg-amber-600/30 border-amber-500/60 text-amber-200' : 'bg-slate-950 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200'}`}>
+                                <button key={label} type="button" onClick={() => apply(from, to)} className={`px-2.5 py-1 rounded-sm text-[11px] font-semibold border transition-colors ${active ? 'bg-[#2b67ab]/25 border-[#4c8ed9] text-[#f3f4f6]' : 'bg-[#101113] border-[#2e3138] text-[#b8bec8] hover:border-[#3c404a] hover:text-[#f3f4f6]'}`}>
                                     {label}
                                 </button>
                             );
@@ -1345,10 +1383,18 @@ const EventsApp = (function() {
                 const [query, setQuery] = useState('');
                 const [weaponFilter, setWeaponFilter] = useState('all');
                 const [onlyWithLosses, setOnlyWithLosses] = useState(false);
+                const [visibleLimit, setVisibleLimit] = useState(50);
                 const searchInputRef = useRef(null);
 
                 useEffect(() => {
+                    setVisibleLimit(50);
+                }, [filterType, filterStatus, filterFireContact, dateFrom, dateTo, query, weaponFilter, onlyWithLosses]);
+
+                useEffect(() => {
                     const handleKeyDown = (e) => {
+                        if (document.querySelector('[data-suite-module="enemy"]')?.dataset.suiteActive !== 'true') return;
+                        if (document.querySelector('[role="dialog"]')) return;
+                        if (e.ctrlKey || e.metaKey || e.altKey) return;
                         const inInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
                         if (e.key === 'Escape') {
                             if (inInput) {
@@ -1360,14 +1406,11 @@ const EventsApp = (function() {
                         if (e.key === '/' || e.key === '?') {
                             e.preventDefault();
                             searchInputRef.current?.focus();
-                        } else if (e.key === 'n' || e.key === 'N' || e.key === 'т' || e.key === 'Т') {
-                            e.preventDefault();
-                            setIsFormOpen(true);
                         }
                     };
                     window.addEventListener('keydown', handleKeyDown);
                     return () => window.removeEventListener('keydown', handleKeyDown);
-                }, [setIsFormOpen]);
+                }, []);
 
                 const resetFilters = () => {
                     setFilterType('all');
@@ -1407,59 +1450,80 @@ const EventsApp = (function() {
                     });
                 }, [events, filterType, filterStatus, filterFireContact, dateFrom, dateTo, query, weaponFilter, onlyWithLosses]);
 
-                const sortedEvents = [...filteredEvents].sort((a, b) => {
+                const sortedEvents = useMemo(() => [...filteredEvents].sort((a, b) => {
                     const dateA = a.actionDetails?.startDate ? new Date(`${a.actionDetails.startDate}T${a.actionDetails.startTime||'00:00'}`) : new Date(a.createdAt);
                     const dateB = b.actionDetails?.startDate ? new Date(`${b.actionDetails.startDate}T${b.actionDetails.startTime||'00:00'}`) : new Date(b.createdAt);
                     return dateB - dateA;
-                });
-                
-                const assaultsCount = filteredEvents.filter(e => e.types.includes(EVENT_TYPES.ASSAULT)).length;
-                const udpsCount = filteredEvents.filter(e => e.types.includes(EVENT_TYPES.UDP)).length;
-                const unclosedAssaultsCount = filteredEvents.filter(e => e.types.includes(EVENT_TYPES.ASSAULT) && (!e.actionDetails?.endTime || !String(e.actionDetails.endTime).trim())).length;
-                const feedTotals = useMemo(() => {
-                    let e200=0,e200u=0,e200d=0,e300=0,epow=0;
-                    filteredEvents.forEach(ev => (ev.enemyLosses||[]).forEach(l => {
-                        e200 += l.count200||0; e200u += l.count200Unconfirmed||0; e200d += l.count200Discovered||0; e300 += l.count300||0; epow += l.countPOW||0;
-                    }));
-                    return { e200, e200u, e200d, e300, epow };
+                }), [filteredEvents]);
+
+                const { assaultsCount, udpsCount, unclosedAssaultsCount, feedTotals } = useMemo(() => {
+                    let assaults = 0, udps = 0, unclosed = 0;
+                    let e200 = 0, e200u = 0, e200d = 0, e300 = 0, epow = 0;
+                    filteredEvents.forEach(ev => {
+                        const types = ev.types || [];
+                        const isAssault = types.includes(EVENT_TYPES.ASSAULT);
+                        if (isAssault) {
+                            assaults++;
+                            if (!ev.actionDetails?.endTime || !String(ev.actionDetails.endTime).trim()) unclosed++;
+                        }
+                        if (types.includes(EVENT_TYPES.UDP)) udps++;
+                        (ev.enemyLosses || []).forEach(l => {
+                            e200 += l.count200 || 0;
+                            e200u += l.count200Unconfirmed || 0;
+                            e200d += l.count200Discovered || 0;
+                            e300 += l.count300 || 0;
+                            epow += l.countPOW || 0;
+                        });
+                    });
+                    return {
+                        assaultsCount: assaults,
+                        udpsCount: udps,
+                        unclosedAssaultsCount: unclosed,
+                        feedTotals: { e200, e200u, e200d, e300, epow }
+                    };
                 }, [filteredEvents]);
+
+                const visibleEvents = useMemo(
+                    () => sortedEvents.slice(0, visibleLimit),
+                    [sortedEvents, visibleLimit]
+                );
                 
                 return (
-                    <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-[#020617]">
-                        <div className="w-full max-w-[2400px] px-2 lg:px-4 mx-auto">
-                            <div className="flex justify-between items-center mb-6 gap-3">
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-[#101113] text-[#f3f4f6]">
+                        <div className="w-full max-w-[2400px] px-1 lg:px-3 mx-auto">
+                            <div className="flex flex-wrap justify-between items-center mb-4 gap-3">
                                 <div>
-                                    <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Стрічка подій</h1>
-                                    <p className="text-xs text-slate-500 mt-0.5">N — нова подія · пошук по опису, позивних і засобах</p>
+                                    <h1 className="text-xl font-bold text-[#f3f4f6] tracking-tight">Стрічка подій</h1>
+                                    <p className="text-xs text-[#b8bec8] mt-0.5">N — нова подія · пошук по опису, позивних і засобах</p>
                                 </div>
-                                <button onClick={() => setIsFormOpen(true)} className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-amber-900/20 transition-all active:scale-95">
+                                <button onClick={() => setIsFormOpen(true)} className="bg-[#2b67ab] hover:bg-[#3477c2] border border-[#4c8ed9] text-white px-3.5 py-1.5 rounded-sm font-semibold text-xs flex items-center gap-1.5 transition-colors">
                                     <Icon name="plus" className="w-4 h-4" /> Додати подію
                                 </button>
                             </div>
 
-                            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 mb-4 space-y-3">
-                                <div className="flex flex-wrap items-end gap-3">
+                            <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-3.5 mb-3 space-y-3">
+                                <div className="flex flex-wrap items-end gap-2.5">
                                     <label className="flex flex-col gap-1 min-w-[180px] flex-1">
-                                        <span className="text-xs text-slate-400 font-semibold uppercase">Пошук</span>
+                                        <span className="text-[11px] text-[#b8bec8] font-semibold uppercase">Пошук</span>
                                         <div className="relative">
-                                            <Icon name="search" className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5 pointer-events-none" />
-                                            <input ref={searchInputRef} value={query} onChange={e=>setQuery(e.target.value)} placeholder="Опис, позивний, зброя..." className="w-full bg-slate-950 border border-slate-700 rounded-lg pl-8 pr-2 py-1.5 text-sm text-slate-200 focus:border-amber-500" />
+                                            <Icon name="search" className="w-3.5 h-3.5 text-[#989fa9] absolute left-2.5 top-2.5 pointer-events-none" />
+                                            <input ref={searchInputRef} value={query} onChange={e=>setQuery(e.target.value)} placeholder="Опис, позивний, зброя..." className="w-full bg-[#101113] border border-[#2e3138] rounded-sm pl-8 pr-2 py-1.5 text-xs text-[#f3f4f6] placeholder-[#989fa9] focus:outline-none focus:border-[#4c8ed9]" />
                                         </div>
                                     </label>
                                     <label className="flex flex-col gap-1">
-                                        <span className="text-xs text-slate-400 font-semibold uppercase">Період з</span>
-                                        <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-200 focus:border-amber-500" />
+                                        <span className="text-[11px] text-[#b8bec8] font-semibold uppercase">Період з</span>
+                                        <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} className="bg-[#101113] border border-[#2e3138] rounded-sm px-2 py-1.5 text-xs text-[#f3f4f6] tabular-nums focus:outline-none focus:border-[#4c8ed9]" />
                                     </label>
                                     <label className="flex flex-col gap-1">
-                                        <span className="text-xs text-slate-400 font-semibold uppercase">По</span>
-                                        <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-200 focus:border-amber-500" />
+                                        <span className="text-[11px] text-[#b8bec8] font-semibold uppercase">По</span>
+                                        <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} className="bg-[#101113] border border-[#2e3138] rounded-sm px-2 py-1.5 text-xs text-[#f3f4f6] tabular-nums focus:outline-none focus:border-[#4c8ed9]" />
                                     </label>
                                     <DatePresets dateFrom={dateFrom} dateTo={dateTo} setDateFrom={setDateFrom} setDateTo={setDateTo} />
                                 </div>
-                                <div className="flex flex-wrap gap-4">
+                                <div className="flex flex-wrap gap-3">
                                     <label className="flex flex-col gap-1">
-                                        <span className="text-xs text-slate-400 font-semibold uppercase">Тип події</span>
-                                        <select value={filterType} onChange={e=>setFilterType(e.target.value)} className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-200 focus:border-amber-500">
+                                        <span className="text-[11px] text-[#b8bec8] font-semibold uppercase">Тип події</span>
+                                        <select value={filterType} onChange={e=>setFilterType(e.target.value)} className="bg-[#101113] border border-[#2e3138] rounded-sm px-2 py-1.5 text-xs text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9]">
                                             <option value="all">Усі типи</option>
                                             <option value={EVENT_TYPES.ASSAULT}>{EVENT_TYPES.ASSAULT}</option>
                                             <option value={EVENT_TYPES.UDP}>{EVENT_TYPES.UDP}</option>
@@ -1467,67 +1531,64 @@ const EventsApp = (function() {
                                         </select>
                                     </label>
                                     <label className="flex flex-col gap-1">
-                                        <span className="text-xs text-slate-400 font-semibold uppercase">Статус</span>
-                                        <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-200 focus:border-amber-500">
+                                        <span className="text-[11px] text-[#b8bec8] font-semibold uppercase">Статус</span>
+                                        <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} className="bg-[#101113] border border-[#2e3138] rounded-sm px-2 py-1.5 text-xs text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9]">
                                             <option value="all">Усі події</option>
                                             <option value="real">Реальні</option>
                                             <option value="test">Тестові</option>
                                         </select>
                                     </label>
                                     <label className="flex flex-col gap-1">
-                                        <span className="text-xs text-slate-400 font-semibold uppercase">Вогневий контакт</span>
-                                        <select value={filterFireContact} onChange={e=>setFilterFireContact(e.target.value)} className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-200 focus:border-amber-500">
+                                        <span className="text-[11px] text-[#b8bec8] font-semibold uppercase">Вогневий контакт</span>
+                                        <select value={filterFireContact} onChange={e=>setFilterFireContact(e.target.value)} className="bg-[#101113] border border-[#2e3138] rounded-sm px-2 py-1.5 text-xs text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9]">
                                             <option value="all">Будь-що</option>
                                             <option value="yes">Так</option>
                                             <option value="no">Ні</option>
                                         </select>
                                     </label>
                                     <label className="flex flex-col gap-1">
-                                        <span className="text-xs text-slate-400 font-semibold uppercase">Засіб ураження</span>
-                                        <select value={weaponFilter} onChange={e=>setWeaponFilter(e.target.value)} className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-200 focus:border-amber-500">
+                                        <span className="text-[11px] text-[#b8bec8] font-semibold uppercase">Засіб ураження</span>
+                                        <select value={weaponFilter} onChange={e=>setWeaponFilter(e.target.value)} className="bg-[#101113] border border-[#2e3138] rounded-sm px-2 py-1.5 text-xs text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9]">
                                             <option value="all">Усі засоби</option>
                                             {settings.weapons.map(w => <option key={w} value={w}>{w}</option>)}
                                         </select>
                                     </label>
-                                    <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-slate-300 self-end pb-1.5">
-                                        <input type="checkbox" checked={onlyWithLosses} onChange={e=>setOnlyWithLosses(e.target.checked)} className="w-4 h-4 rounded bg-slate-900 border-slate-700" />
+                                    <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-[#cbd5e1] self-end pb-1.5">
+                                        <input type="checkbox" checked={onlyWithLosses} onChange={e=>setOnlyWithLosses(e.target.checked)} className="w-4 h-4 rounded-sm bg-[#101113] border-[#2e3138] accent-[#4c8ed9]" />
                                         Лише з втратами
                                     </label>
-                                    <button type="button" onClick={resetFilters} className="self-end px-3 py-1.5 rounded-lg text-sm font-semibold bg-slate-800 border border-slate-700 text-slate-300 hover:border-amber-500/50 hover:text-white flex items-center gap-1.5">
+                                    <button type="button" onClick={resetFilters} className="self-end px-3 py-1.5 rounded-sm text-xs font-semibold bg-[#222429] border border-[#2e3138] text-[#cbd5e1] hover:border-[#3c404a] hover:text-white flex items-center gap-1.5 transition-colors">
                                         <Icon name="rotate-ccw" className="w-3.5 h-3.5" /> Скинути фільтри
                                     </button>
                                 </div>
-                                <div className="text-xs text-slate-500 flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-1 border-t border-slate-800 pt-3">
-                                    <span>Знайдено: <strong className="text-slate-300">{filteredEvents.length}</strong></span>
-                                    <span>ШД: <strong className="text-slate-300">{assaultsCount}</strong></span>
+                                <div className="text-xs text-[#b8bec8] flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-1 border-t border-[#2e3138] pt-2.5 tabular-nums font-mono">
+                                    <span>Знайдено: <strong className="text-[#f3f4f6]">{filteredEvents.length}</strong></span>
+                                    <span>ШД: <strong className="text-[#f3f4f6]">{assaultsCount}</strong></span>
                                     {unclosedAssaultsCount > 0 && (
-                                        <span className="text-red-300 font-bold flex items-center gap-1.5 bg-red-950/60 border border-red-700/80 px-2 py-0.5 rounded-lg animate-pulse">
-                                            <span className="relative flex h-2 w-2">
-                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                                            </span>
+                                        <span className="text-[#f3a3a0] font-semibold flex items-center gap-1.5 bg-[#d9534f]/15 border border-[#d9534f]/50 px-2 py-0.5 rounded-sm">
+                                            <span className="inline-flex h-2 w-2 bg-[#d9534f] shrink-0" aria-hidden="true" />
                                             Незакритих ШД: {unclosedAssaultsCount}
                                         </span>
                                     )}
-                                    <span>УПД: <strong className="text-slate-300">{udpsCount}</strong></span>
-                                    <span className="text-red-400">200: {feedTotals.e200}</span>
-                                    <span className="text-rose-400">200*: {feedTotals.e200u}</span>
-                                    <span className="text-coyote-400">Вияв: {feedTotals.e200d}</span>
-                                    <span className="text-amber-400">300: {feedTotals.e300}</span>
-                                    <span className="text-emerald-400">Полон: {feedTotals.epow}</span>
+                                    <span>УПД: <strong className="text-[#f3f4f6]">{udpsCount}</strong></span>
+                                    <span className="text-[#f3a3a0]">200: {feedTotals.e200}</span>
+                                    <span className="text-[#e5989b]">200*: {feedTotals.e200u}</span>
+                                    <span className="text-[#b8bec8]">Вияв: {feedTotals.e200d}</span>
+                                    <span className="text-[#d99b26]">300: {feedTotals.e300}</span>
+                                    <span className="text-[#3da372]">Полон: {feedTotals.epow}</span>
                                 </div>
                             </div>
                             
                             {sortedEvents.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-slate-800 rounded-3xl text-slate-500">
-                                    <Icon name="clipboard-list" className="w-12 h-12 mb-3 text-slate-700" />
-                                    <p className="text-lg font-medium">{events.length === 0 ? 'Подій ще немає' : 'Нічого не знайдено за фільтрами'}</p>
-                                    <p className="text-sm">{events.length === 0 ? 'Натисніть "Додати подію", щоб розпочати облік.' : 'Змініть період або скиньте фільтри.'}</p>
+                                <div className="flex flex-col items-center justify-center h-64 border border-dashed border-[#2e3138] bg-[#17181b] rounded-sm text-[#b8bec8]">
+                                    <Icon name="clipboard-list" className="w-10 h-10 mb-3 text-[#989fa9]" />
+                                    <p className="text-base font-medium text-[#f3f4f6]">{events.length === 0 ? 'Подій ще немає' : 'Нічого не знайдено за фільтрами'}</p>
+                                    <p className="text-xs mt-1">{events.length === 0 ? 'Натисніть "Додати подію", щоб розпочати облік.' : 'Змініть період або скиньте фільтри.'}</p>
                                     {events.length > 0 && (
                                         <button 
                                             type="button" 
                                             onClick={resetFilters} 
-                                            className="mt-3 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg border border-slate-700 transition"
+                                            className="mt-3 px-3 py-1.5 bg-[#222429] hover:bg-[#282b31] text-[#f3f4f6] text-xs font-semibold rounded-sm border border-[#2e3138] transition-colors"
                                         >
                                             Скинути фільтри
                                         </button>
@@ -1535,7 +1596,7 @@ const EventsApp = (function() {
                                 </div>
                             ) : (
                                 <div className="flex flex-col gap-2">
-                                    {sortedEvents.map(ev => (
+                                    {visibleEvents.map(ev => (
                                         <EventRow 
                                             key={ev.id} 
                                             event={ev} 
@@ -1545,6 +1606,15 @@ const EventsApp = (function() {
                                             onReport={setAssaultReportEvent}
                                         />
                                     ))}
+                                    {sortedEvents.length > visibleLimit && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setVisibleLimit(prev => prev + 50)}
+                                            className="mt-2 py-2 px-4 rounded-sm bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] text-xs font-semibold text-[#f3f4f6] transition-colors self-center tabular-nums"
+                                        >
+                                            Показати ще (показано {visibleEvents.length} з {sortedEvents.length})
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -1968,98 +2038,114 @@ const EventsApp = (function() {
                         `Співвідношення (обрані типи в блоці вище): 1 : ${ratio}`
                     ].join('\n');
                     try {
-                        await navigator.clipboard.writeText(text);
+                        if (navigator.clipboard?.writeText) {
+                            await navigator.clipboard.writeText(text);
+                        } else {
+                            throw new Error('Clipboard API unavailable');
+                        }
                         showToast('Зведення скопійовано');
                     } catch {
-                        showToast('Не вдалося скопіювати');
+                        try {
+                            const ta = document.createElement('textarea');
+                            ta.value = text;
+                            ta.setAttribute('readonly', '');
+                            ta.style.position = 'fixed';
+                            ta.style.opacity = '0';
+                            document.body.appendChild(ta);
+                            ta.select();
+                            const ok = document.execCommand('copy');
+                            ta.remove();
+                            showToast(ok ? 'Зведення скопійовано' : 'Не вдалося скопіювати');
+                        } catch {
+                            showToast('Не вдалося скопіювати');
+                        }
                     }
                 };
 
                 const toggleCurve = (id) => setVisibleCurves(p => ({ ...p, [id]: !p[id] }));
                 
                 return (
-                    <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-[#020617]">
-                        <div className="w-full max-w-[2400px] px-2 lg:px-4 mx-auto space-y-6">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Дашборд (Звіти)</h1>
-                                <div className="flex flex-wrap items-center gap-3 bg-slate-900 p-2 rounded-xl border border-slate-800">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs text-slate-400 font-semibold pl-2">З:</span>
-                                        <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs focus:border-amber-500" />
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-[#101113] text-[#f3f4f6]">
+                        <div className="w-full max-w-[2400px] px-1 lg:px-3 mx-auto space-y-5">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                <h1 className="text-xl font-bold text-[#f3f4f6] tracking-tight">Дашборд (Звіти)</h1>
+                                <div className="flex flex-wrap items-center gap-2.5 bg-[#17181b] p-2 rounded-sm border border-[#2e3138] tabular-nums">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-xs text-[#b8bec8] font-semibold pl-1">З:</span>
+                                        <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} className="bg-[#101113] border border-[#2e3138] rounded-sm px-2 py-1 text-xs text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9]" />
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs text-slate-400 font-semibold">По:</span>
-                                        <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs focus:border-amber-500" />
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-xs text-[#b8bec8] font-semibold">По:</span>
+                                        <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} className="bg-[#101113] border border-[#2e3138] rounded-sm px-2 py-1 text-xs text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9]" />
                                     </div>
                                     <DatePresets dateFrom={dateFrom} dateTo={dateTo} setDateFrom={setDateFrom} setDateTo={setDateTo} />
-                                    <button type="button" onClick={copySummary} className="ml-auto px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 border border-slate-700 text-slate-200 hover:border-amber-500/50 flex items-center gap-1">
+                                    <button type="button" onClick={copySummary} className="ml-auto px-2.5 py-1 rounded-sm text-[11px] font-semibold bg-[#222429] border border-[#2e3138] hover:border-[#3c404a] text-[#f3f4f6] flex items-center gap-1.5 transition-colors">
                                         <Icon name="copy" className="w-3.5 h-3.5" /> Копіювати зведення
                                     </button>
                                 </div>
                             </div>
                             
                             {/* Блок 1: Співвідношення втрат */}
-                            <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-                                <h2 className="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2"><Icon name="pie-chart" className="w-5 h-5 text-amber-500"/> Співвідношення втрат (сума за період)</h2>
+                            <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-5">
+                                <h2 className="text-sm font-semibold text-[#f3f4f6] uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-[#2e3138] pb-2"><Icon name="pie-chart" className="w-4 h-4 text-[#4c8ed9]"/> Співвідношення втрат (сума за період)</h2>
                                 
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <div className="col-span-1 lg:col-span-2 flex flex-col md:flex-row items-center justify-around bg-slate-950/50 p-6 rounded-xl border border-slate-800/50 gap-6">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                                    <div className="col-span-1 lg:col-span-2 flex flex-col md:flex-row items-center justify-around bg-[#101113] p-5 rounded-sm border border-[#2e3138] gap-6 tabular-nums">
                                         <div className="text-center w-full md:w-auto">
-                                            <div className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Наші втрати</div>
-                                            <div className="text-4xl font-mono font-bold text-blue-400">{friendlyTotal}</div>
-                                            <div className="text-[10px] text-slate-500 mt-2 font-mono">200: {stats.f200} | 300: {stats.f300} | ЗБВ: {stats.fzbv}</div>
+                                            <div className="text-xs font-semibold text-[#b8bec8] uppercase tracking-wider mb-1.5">Наші втрати</div>
+                                            <div className="text-4xl font-mono font-bold text-[#4c8ed9]">{friendlyTotal}</div>
+                                            <div className="text-[11px] text-[#989fa9] mt-2 font-mono">200: {stats.f200} | 300: {stats.f300} | ЗБВ: {stats.fzbv}</div>
                                         </div>
                                         <div className="flex flex-col items-center w-full md:w-auto">
-                                            <div className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Співвідношення</div>
-                                            <div className="text-5xl font-mono font-bold text-amber-400 whitespace-nowrap">1 : {ratio}</div>
+                                            <div className="text-xs font-semibold text-[#b8bec8] uppercase tracking-wider mb-1">Співвідношення</div>
+                                            <div className="text-4xl md:text-5xl font-mono font-bold text-[#d99b26] whitespace-nowrap">1 : {ratio}</div>
                                         </div>
                                         <div className="text-center w-full md:w-auto">
-                                            <div className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Втрати ворога</div>
-                                            <div className="text-4xl font-mono font-bold text-red-400">{enemyTotal}</div>
-                                            <div className="text-[10px] text-slate-500 mt-2 font-mono">200: {stats.e200} | 200*: {stats.e200u} | вияв: {stats.e200d} | 300: {stats.e300} | полон: {stats.epow}</div>
+                                            <div className="text-xs font-semibold text-[#b8bec8] uppercase tracking-wider mb-1.5">Втрати ворога</div>
+                                            <div className="text-4xl font-mono font-bold text-[#f3a3a0]">{enemyTotal}</div>
+                                            <div className="text-[11px] text-[#989fa9] mt-2 font-mono">200: {stats.e200} | 200*: {stats.e200u} | вияв: {stats.e200d} | 300: {stats.e300} | полон: {stats.epow}</div>
                                         </div>
                                     </div>
                                     
-                                    <div className="bg-slate-950/50 p-5 rounded-xl border border-slate-800/50 flex flex-col justify-center space-y-4 relative z-10">
+                                    <div className="bg-[#101113] p-4 rounded-sm border border-[#2e3138] flex flex-col justify-center space-y-3">
                                         <div>
-                                            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Втрати ворога</h3>
+                                            <h3 className="text-[10px] font-semibold text-[#989fa9] uppercase tracking-wider mb-2">Втрати ворога</h3>
                                             <div className="space-y-1.5">
-                                                <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-300 hover:text-white transition">
-                                                    <input type="checkbox" checked={includeE200} onChange={e=>setIncludeE200(e.target.checked)} className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500" />
+                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-[#cbd5e1] hover:text-white transition-colors">
+                                                    <input type="checkbox" checked={includeE200} onChange={e=>setIncludeE200(e.target.checked)} className="w-4 h-4 rounded-sm bg-[#17181b] border-[#2e3138] accent-[#4c8ed9]" />
                                                     200 (Вбито)
                                                 </label>
-                                                <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-300 hover:text-white transition">
-                                                    <input type="checkbox" checked={include200Unc} onChange={e=>setInclude200Unc(e.target.checked)} className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500" />
+                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-[#cbd5e1] hover:text-white transition-colors">
+                                                    <input type="checkbox" checked={include200Unc} onChange={e=>setInclude200Unc(e.target.checked)} className="w-4 h-4 rounded-sm bg-[#17181b] border-[#2e3138] accent-[#4c8ed9]" />
                                                     200* (Ймовірно)
                                                 </label>
-                                                <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-coyote-400 hover:text-coyote-300 transition">
-                                                    <input type="checkbox" checked={include200Disc} onChange={e=>setInclude200Disc(e.target.checked)} className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-coyote-500 focus:ring-coyote-500" />
+                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-[#cbd5e1] hover:text-white transition-colors">
+                                                    <input type="checkbox" checked={include200Disc} onChange={e=>setInclude200Disc(e.target.checked)} className="w-4 h-4 rounded-sm bg-[#17181b] border-[#2e3138] accent-[#4c8ed9]" />
                                                     Виявлені 200
                                                 </label>
-                                                <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-300 hover:text-white transition">
-                                                    <input type="checkbox" checked={include300} onChange={e=>setInclude300(e.target.checked)} className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500" />
+                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-[#cbd5e1] hover:text-white transition-colors">
+                                                    <input type="checkbox" checked={include300} onChange={e=>setInclude300(e.target.checked)} className="w-4 h-4 rounded-sm bg-[#17181b] border-[#2e3138] accent-[#4c8ed9]" />
                                                     300 (Поранені)
                                                 </label>
-                                                <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-300 hover:text-white transition">
-                                                    <input type="checkbox" checked={includePOW} onChange={e=>setIncludePOW(e.target.checked)} className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500" />
+                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-[#cbd5e1] hover:text-white transition-colors">
+                                                    <input type="checkbox" checked={includePOW} onChange={e=>setIncludePOW(e.target.checked)} className="w-4 h-4 rounded-sm bg-[#17181b] border-[#2e3138] accent-[#4c8ed9]" />
                                                     Полонені
                                                 </label>
                                             </div>
                                         </div>
-                                        <div className="border-t border-slate-800 pt-3">
-                                            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Наші втрати</h3>
+                                        <div className="border-t border-[#2e3138] pt-3">
+                                            <h3 className="text-[10px] font-semibold text-[#989fa9] uppercase tracking-wider mb-2">Наші втрати</h3>
                                             <div className="space-y-1.5">
-                                                <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-300 hover:text-white transition">
-                                                    <input type="checkbox" checked={includeF200} onChange={e=>setIncludeF200(e.target.checked)} className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-blue-500 focus:ring-blue-500" />
+                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-[#cbd5e1] hover:text-white transition-colors">
+                                                    <input type="checkbox" checked={includeF200} onChange={e=>setIncludeF200(e.target.checked)} className="w-4 h-4 rounded-sm bg-[#17181b] border-[#2e3138] accent-[#4c8ed9]" />
                                                     Наші 200
                                                 </label>
-                                                <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-300 hover:text-white transition">
-                                                    <input type="checkbox" checked={includeF300} onChange={e=>setIncludeF300(e.target.checked)} className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-blue-500 focus:ring-blue-500" />
+                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-[#cbd5e1] hover:text-white transition-colors">
+                                                    <input type="checkbox" checked={includeF300} onChange={e=>setIncludeF300(e.target.checked)} className="w-4 h-4 rounded-sm bg-[#17181b] border-[#2e3138] accent-[#4c8ed9]" />
                                                     Наші 300
                                                 </label>
-                                                <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-300 hover:text-white transition">
-                                                    <input type="checkbox" checked={includeFZBV} onChange={e=>setIncludeFZBV(e.target.checked)} className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-blue-500 focus:ring-blue-500" />
+                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-[#cbd5e1] hover:text-white transition-colors">
+                                                    <input type="checkbox" checked={includeFZBV} onChange={e=>setIncludeFZBV(e.target.checked)} className="w-4 h-4 rounded-sm bg-[#17181b] border-[#2e3138] accent-[#4c8ed9]" />
                                                     ЗБВ
                                                 </label>
                                             </div>
@@ -2069,204 +2155,204 @@ const EventsApp = (function() {
                             </div>
 
                             {/* Блок 2: Загальні цифри (противник) - 5 симетричних інтерактивних карток */}
-                            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-                                    <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                                        <Icon name="bar-chart" className="w-4 h-4 text-amber-500"/> Загальні цифри (противник)
+                            <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-5">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3.5 border-b border-[#2e3138] pb-2">
+                                    <h2 className="text-xs font-semibold text-[#f3f4f6] uppercase tracking-wider flex items-center gap-2">
+                                        <Icon name="bar-chart" className="w-4 h-4 text-[#4c8ed9]"/> Загальні цифри (противник)
                                     </h2>
-                                    <span className="text-[11px] text-slate-400">💡 Натискайте на картку, щоб активувати/зняти тип у підрахунках нижче</span>
+                                    <span className="text-[11px] text-[#b8bec8]">Натискайте на картку, щоб активувати/зняти тип у підрахунках нижче</span>
                                 </div>
-                                <div data-testid="discovered-total" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-2">
-                                    <div onClick={() => setStatsFilters(p => ({...p, e200: !p.e200}))} className={`cursor-pointer transition border p-4 rounded-xl text-center select-none ${statsFilters.e200 ? 'bg-red-950/20 border-red-900/50' : 'bg-slate-950/50 border-slate-800 opacity-50 hover:opacity-80'}`}>
+                                <div data-testid="discovered-total" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 mb-2 tabular-nums">
+                                    <div onClick={() => setStatsFilters(p => ({...p, e200: !p.e200}))} className={`cursor-pointer transition-colors border p-3.5 rounded-sm text-center select-none ${statsFilters.e200 ? 'bg-[#d9534f]/10 border-[#d9534f]/50' : 'bg-[#101113] border-[#2e3138] opacity-55 hover:opacity-85'}`}>
                                         <div className="flex items-center justify-center gap-1.5 mb-1">
-                                            <input type="checkbox" checked={statsFilters.e200} readOnly className="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-red-500 pointer-events-none" />
-                                            <div className="text-xs text-slate-400 uppercase font-semibold">200 (Вбито)</div>
+                                            <input type="checkbox" checked={statsFilters.e200} readOnly className="w-3.5 h-3.5 rounded-sm bg-[#17181b] border-[#2e3138] accent-[#d9534f] pointer-events-none" />
+                                            <div className="text-xs text-[#b8bec8] uppercase font-semibold">200 (Вбито)</div>
                                         </div>
-                                        <div className={`text-3xl font-bold font-mono ${statsFilters.e200 ? 'text-red-500' : 'text-slate-500'}`}>{stats.e200}</div>
+                                        <div className={`text-3xl font-bold font-mono ${statsFilters.e200 ? 'text-[#f3a3a0]' : 'text-[#989fa9]'}`}>{stats.e200}</div>
                                     </div>
-                                    <div onClick={() => setStatsFilters(p => ({...p, e200u: !p.e200u}))} className={`cursor-pointer transition border p-4 rounded-xl text-center select-none ${statsFilters.e200u ? 'bg-rose-950/20 border-rose-900/50' : 'bg-slate-950/50 border-slate-800 opacity-50 hover:opacity-80'}`}>
+                                    <div onClick={() => setStatsFilters(p => ({...p, e200u: !p.e200u}))} className={`cursor-pointer transition-colors border p-3.5 rounded-sm text-center select-none ${statsFilters.e200u ? 'bg-[#d9534f]/8 border-[#d9534f]/40' : 'bg-[#101113] border-[#2e3138] opacity-55 hover:opacity-85'}`}>
                                         <div className="flex items-center justify-center gap-1.5 mb-1">
-                                            <input type="checkbox" checked={statsFilters.e200u} readOnly className="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-rose-500 pointer-events-none" />
-                                            <div className="text-xs text-slate-400 uppercase font-semibold">200* (Ймов)</div>
+                                            <input type="checkbox" checked={statsFilters.e200u} readOnly className="w-3.5 h-3.5 rounded-sm bg-[#17181b] border-[#2e3138] accent-[#e5989b] pointer-events-none" />
+                                            <div className="text-xs text-[#b8bec8] uppercase font-semibold">200* (Ймов)</div>
                                         </div>
-                                        <div className={`text-3xl font-bold font-mono ${statsFilters.e200u ? 'text-rose-400' : 'text-slate-500'}`}>{stats.e200u}</div>
+                                        <div className={`text-3xl font-bold font-mono ${statsFilters.e200u ? 'text-[#e5989b]' : 'text-[#989fa9]'}`}>{stats.e200u}</div>
                                     </div>
-                                    <div onClick={() => setStatsFilters(p => ({...p, e200d: !p.e200d}))} className={`cursor-pointer transition border p-4 rounded-xl text-center select-none ${statsFilters.e200d ? 'bg-coyote-600/10 border-coyote-500/40' : 'bg-slate-950/50 border-slate-800 opacity-50 hover:opacity-80'}`}>
+                                    <div onClick={() => setStatsFilters(p => ({...p, e200d: !p.e200d}))} className={`cursor-pointer transition-colors border p-3.5 rounded-sm text-center select-none ${statsFilters.e200d ? 'bg-[#222429] border-[#4c8ed9]/50' : 'bg-[#101113] border-[#2e3138] opacity-55 hover:opacity-85'}`}>
                                         <div className="flex items-center justify-center gap-1.5 mb-1">
-                                            <input type="checkbox" checked={statsFilters.e200d} readOnly className="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-coyote-500 pointer-events-none" />
-                                            <div className="text-xs text-slate-400 uppercase font-semibold">Виявлені 200</div>
+                                            <input type="checkbox" checked={statsFilters.e200d} readOnly className="w-3.5 h-3.5 rounded-sm bg-[#17181b] border-[#2e3138] accent-[#4c8ed9] pointer-events-none" />
+                                            <div className="text-xs text-[#b8bec8] uppercase font-semibold">Виявлені 200</div>
                                         </div>
-                                        <div data-testid="discovered-total-value" className={`text-3xl font-bold font-mono ${statsFilters.e200d ? 'text-coyote-400' : 'text-slate-500'}`}>{stats.e200d}</div>
+                                        <div data-testid="discovered-total-value" className={`text-3xl font-bold font-mono ${statsFilters.e200d ? 'text-[#f3f4f6]' : 'text-[#989fa9]'}`}>{stats.e200d}</div>
                                     </div>
-                                    <div onClick={() => setStatsFilters(p => ({...p, e300: !p.e300}))} className={`cursor-pointer transition border p-4 rounded-xl text-center select-none ${statsFilters.e300 ? 'bg-amber-950/20 border-amber-900/50' : 'bg-slate-950/50 border-slate-800 opacity-50 hover:opacity-80'}`}>
+                                    <div onClick={() => setStatsFilters(p => ({...p, e300: !p.e300}))} className={`cursor-pointer transition-colors border p-3.5 rounded-sm text-center select-none ${statsFilters.e300 ? 'bg-[#d99b26]/10 border-[#d99b26]/50' : 'bg-[#101113] border-[#2e3138] opacity-55 hover:opacity-85'}`}>
                                         <div className="flex items-center justify-center gap-1.5 mb-1">
-                                            <input type="checkbox" checked={statsFilters.e300} readOnly className="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-amber-500 pointer-events-none" />
-                                            <div className="text-xs text-slate-400 uppercase font-semibold">300 (Поран)</div>
+                                            <input type="checkbox" checked={statsFilters.e300} readOnly className="w-3.5 h-3.5 rounded-sm bg-[#17181b] border-[#2e3138] accent-[#d99b26] pointer-events-none" />
+                                            <div className="text-xs text-[#b8bec8] uppercase font-semibold">300 (Поран)</div>
                                         </div>
-                                        <div className={`text-3xl font-bold font-mono ${statsFilters.e300 ? 'text-amber-500' : 'text-slate-500'}`}>{stats.e300}</div>
+                                        <div className={`text-3xl font-bold font-mono ${statsFilters.e300 ? 'text-[#d99b26]' : 'text-[#989fa9]'}`}>{stats.e300}</div>
                                     </div>
-                                    <div onClick={() => setStatsFilters(p => ({...p, epow: !p.epow}))} className={`cursor-pointer transition border p-4 rounded-xl text-center select-none ${statsFilters.epow ? 'bg-emerald-950/20 border-emerald-900/50' : 'bg-slate-950/50 border-slate-800 opacity-50 hover:opacity-80'}`}>
+                                    <div onClick={() => setStatsFilters(p => ({...p, epow: !p.epow}))} className={`cursor-pointer transition-colors border p-3.5 rounded-sm text-center select-none ${statsFilters.epow ? 'bg-[#3da372]/10 border-[#3da372]/50' : 'bg-[#101113] border-[#2e3138] opacity-55 hover:opacity-85'}`}>
                                         <div className="flex items-center justify-center gap-1.5 mb-1">
-                                            <input type="checkbox" checked={statsFilters.epow} readOnly className="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-emerald-500 pointer-events-none" />
-                                            <div className="text-xs text-slate-400 uppercase font-semibold">Полонені</div>
+                                            <input type="checkbox" checked={statsFilters.epow} readOnly className="w-3.5 h-3.5 rounded-sm bg-[#17181b] border-[#2e3138] accent-[#3da372] pointer-events-none" />
+                                            <div className="text-xs text-[#b8bec8] uppercase font-semibold">Полонені</div>
                                         </div>
-                                        <div className={`text-3xl font-bold font-mono ${statsFilters.epow ? 'text-emerald-500' : 'text-slate-500'}`}>{stats.epow}</div>
+                                        <div className={`text-3xl font-bold font-mono ${statsFilters.epow ? 'text-[#3da372]' : 'text-[#989fa9]'}`}>{stats.epow}</div>
                                     </div>
                                 </div>
-                                <div className="text-[10px] text-slate-500 italic text-right">«Виявлені 200» — окремий облік виявлених тіл; зніміть галочку, якщо потрібно виключити з аналітичних розподілів.</div>
+                                <div className="text-[11px] text-[#989fa9] text-right">«Виявлені 200» — окремий облік виявлених тіл; зніміть галочку, якщо потрібно виключити з аналітичних розподілів.</div>
                             </div>
 
                             {/* Блок 3: Поденні втрати і співвідношення */}
-                            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
-                                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
-                                    <h2 className="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                        <Icon name="trending-up" className="w-4 h-4 text-amber-500"/> Поденні втрати і співвідношення
+                            <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-5">
+                                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4 border-b border-[#2e3138] pb-2">
+                                    <h2 className="text-xs font-semibold text-[#f3f4f6] uppercase tracking-wider flex items-center gap-2">
+                                        <Icon name="trending-up" className="w-4 h-4 text-[#4c8ed9]"/> Поденні втрати і співвідношення
                                     </h2>
                                     <div className="flex flex-wrap gap-1.5">
-                                        <button type="button" onClick={()=>applyCurvePreset('200')} className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-950 border border-slate-700 text-slate-300 hover:border-red-500/50">200 vs 200</button>
-                                        <button type="button" onClick={()=>applyCurvePreset('300')} className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-950 border border-slate-700 text-slate-300 hover:border-amber-500/50">300 vs 300</button>
-                                        <button type="button" onClick={()=>applyCurvePreset('confirmed')} className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-950 border border-slate-700 text-slate-300 hover:border-emerald-500/50">200+полон vs наші 200</button>
-                                        <button type="button" onClick={()=>applyCurvePreset('noStar')} className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-950 border border-slate-700 text-slate-300 hover:border-rose-500/50">Усе без 200*</button>
-                                        <button type="button" onClick={()=>setChartType(t => t==='line'?'bar':'line')} className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 border border-slate-600 text-slate-200">{chartType==='line' ? 'Стовпці' : 'Лінії'}</button>
+                                        <button type="button" onClick={()=>applyCurvePreset('200')} className="px-2.5 py-1 rounded-sm text-[11px] font-semibold bg-[#101113] border border-[#2e3138] text-[#cbd5e1] hover:border-[#3c404a]">200 vs 200</button>
+                                        <button type="button" onClick={()=>applyCurvePreset('300')} className="px-2.5 py-1 rounded-sm text-[11px] font-semibold bg-[#101113] border border-[#2e3138] text-[#cbd5e1] hover:border-[#3c404a]">300 vs 300</button>
+                                        <button type="button" onClick={()=>applyCurvePreset('confirmed')} className="px-2.5 py-1 rounded-sm text-[11px] font-semibold bg-[#101113] border border-[#2e3138] text-[#cbd5e1] hover:border-[#3c404a]">200+полон vs наші 200</button>
+                                        <button type="button" onClick={()=>applyCurvePreset('noStar')} className="px-2.5 py-1 rounded-sm text-[11px] font-semibold bg-[#101113] border border-[#2e3138] text-[#cbd5e1] hover:border-[#3c404a]">Усе без 200*</button>
+                                        <button type="button" onClick={()=>setChartType(t => t==='line'?'bar':'line')} className="px-2.5 py-1 rounded-sm text-[11px] font-semibold bg-[#222429] border border-[#3c404a] text-[#f3f4f6]">{chartType==='line' ? 'Стовпці' : 'Лінії'}</button>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-                                    <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
-                                        <div className="text-[10px] font-bold text-slate-500 uppercase mb-2">Окремі криві</div>
-                                        <div className="flex flex-wrap gap-2">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
+                                    <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-3">
+                                        <div className="text-[10px] font-semibold text-[#989fa9] uppercase mb-2">Окремі криві</div>
+                                        <div className="flex flex-wrap gap-1.5">
                                             {LOSS_SERIES.map(s => (
-                                                <label key={s.id} className="series-chip flex items-center gap-1.5 text-xs font-semibold cursor-pointer px-2 py-1 rounded-lg border" style={{ borderColor: visibleCurves[s.id] ? s.color : '#334155', color: visibleCurves[s.id] ? s.color : '#94a3b8' }}>
+                                                <label key={s.id} className="series-chip flex items-center gap-1.5 text-xs font-semibold cursor-pointer px-2 py-1 rounded-sm border" style={{ borderColor: visibleCurves[s.id] ? s.color : '#2e3138', color: visibleCurves[s.id] ? s.color : '#b8bec8' }}>
                                                     <input type="checkbox" checked={!!visibleCurves[s.id]} onChange={()=>toggleCurve(s.id)} />
                                                     {s.short}
                                                 </label>
                                             ))}
                                         </div>
                                     </div>
-                                    <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
-                                        <label className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase mb-2 cursor-pointer">
-                                            <input type="checkbox" checked={showCombined} onChange={e=>setShowCombined(e.target.checked)} />
+                                    <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-3">
+                                        <label className="flex items-center gap-2 text-[10px] font-semibold text-[#989fa9] uppercase mb-2 cursor-pointer">
+                                            <input type="checkbox" checked={showCombined} onChange={e=>setShowCombined(e.target.checked)} className="accent-[#4c8ed9]" />
                                             Зведення противника (сума обраних)
                                         </label>
                                         <div className="flex flex-wrap gap-2">
                                             {LOSS_SERIES.filter(s=>s.side==='enemy').map(s => (
-                                                <label key={s.id} className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-slate-300">
-                                                    <input type="checkbox" checked={!!combineEnemy[s.id]} onChange={()=>setCombineEnemy(p=>({...p,[s.id]:!p[s.id]}))} />
+                                                <label key={s.id} className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-[#cbd5e1]">
+                                                    <input type="checkbox" checked={!!combineEnemy[s.id]} onChange={()=>setCombineEnemy(p=>({...p,[s.id]:!p[s.id]}))} className="accent-[#4c8ed9]" />
                                                     {s.short}
                                                 </label>
                                             ))}
                                         </div>
                                     </div>
-                                    <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
-                                        <label className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase mb-2 cursor-pointer">
-                                            <input type="checkbox" checked={showRatioCurve} onChange={e=>setShowRatioCurve(e.target.checked)} />
+                                    <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-3">
+                                        <label className="flex items-center gap-2 text-[10px] font-semibold text-[#989fa9] uppercase mb-2 cursor-pointer">
+                                            <input type="checkbox" checked={showRatioCurve} onChange={e=>setShowRatioCurve(e.target.checked)} className="accent-[#4c8ed9]" />
                                             Зведення наших + співвідношення
                                         </label>
                                         <div className="flex flex-wrap gap-2">
                                             {LOSS_SERIES.filter(s=>s.side==='ours').map(s => (
-                                                <label key={s.id} className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-slate-300">
-                                                    <input type="checkbox" checked={!!combineOurs[s.id]} onChange={()=>setCombineOurs(p=>({...p,[s.id]:!p[s.id]}))} />
+                                                <label key={s.id} className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-[#cbd5e1]">
+                                                    <input type="checkbox" checked={!!combineOurs[s.id]} onChange={()=>setCombineOurs(p=>({...p,[s.id]:!p[s.id]}))} className="accent-[#4c8ed9]" />
                                                     {s.short}
                                                 </label>
                                             ))}
                                         </div>
                                     </div>
                                 </div>
-                                <p className="text-[11px] text-slate-500 mb-3">Галочки зліва малюють кожен тип окремо. Зведення складає обрані типи в одну криву. Пунктир — поденне співвідношення зведень. Наші втрати беруться з таблиці аналітики.</p>
+                                <p className="text-[11px] text-[#989fa9] mb-3">Галочки зліва малюють кожен тип окремо. Зведення складає обрані типи в одну криву. Пунктир — поденне співвідношення зведень. Наші втрати беруться з таблиці аналітики.</p>
                                 <div className="h-[340px]">
                                     {chartDays.length > 0 && trendChart.datasets.length > 0 ? (
                                         <ChartComponent type={chartType} data={trendChart} options={trendOptions} className="h-full" />
                                     ) : (
-                                        <div className="h-full flex items-center justify-center text-slate-500 text-sm border border-dashed border-slate-800 rounded-xl">Оберіть хоча б одну криву або зведення</div>
+                                        <div className="h-full flex items-center justify-center text-[#989fa9] text-sm border border-dashed border-[#2e3138] rounded-sm">Оберіть хоча б одну криву або зведення</div>
                                     )}
                                 </div>
                             </div>
 
                             {/* Блок 4: Теплова карта інтенсивності */}
                             {chartDays.length > 0 && (
-                                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-                                    <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2"><Icon name="calendar" className="w-4 h-4 text-amber-500"/> Інтенсивність втрат противника по днях</h2>
+                                <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-5">
+                                    <h2 className="text-xs font-semibold text-[#f3f4f6] uppercase tracking-wider mb-3 flex items-center gap-2"><Icon name="calendar" className="w-4 h-4 text-[#4c8ed9]"/> Інтенсивність втрат противника по днях</h2>
                                     <div className="flex flex-wrap gap-1">
                                         {chartDays.map(d => {
                                             const r = dailyMap[d] || {};
                                             const v = (r.e200||0)+(r.e200u||0)+(r.e200d||0)+(r.e300||0)+(r.epow||0);
                                             const a = v === 0 ? 0.08 : 0.18 + 0.82 * (v / heatMax);
                                             return (
-                                                <div key={d} className="heat-cell w-3.5 h-3.5 rounded-sm" title={`${formatDateUA(d)}: противник ${v} (200:${r.e200||0} 200*:${r.e200u||0} вияв:${r.e200d||0} 300:${r.e300||0} полон:${r.epow||0})`} style={{ backgroundColor: `rgba(239,68,68,${a})` }} />
+                                                <div key={d} className="heat-cell w-3.5 h-3.5 rounded-none" title={`${formatDateUA(d)}: противник ${v} (200:${r.e200||0} 200*:${r.e200u||0} вияв:${r.e200d||0} 300:${r.e300||0} полон:${r.epow||0})`} style={{ backgroundColor: `rgba(217,83,79,${a})` }} />
                                             );
                                         })}
                                     </div>
-                                    <div className="text-[10px] text-slate-500 mt-2">Наведіть на клітинку — побачите розкладку за день.</div>
+                                    <div className="text-[11px] text-[#989fa9] mt-2">Наведіть на клітинку — побачите розкладку за день.</div>
                                 </div>
                             )}
                             
-                            {/* Блок 5: Аналітичні графіки (Структура втрат, Засоби ураження, Топ локацій, Час доби) */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Блок 5: Аналітичні графіки */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                                 {/* Графік A: Структура втрат противника */}
-                                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col">
-                                    <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                        <Icon name="pie-chart" className="w-4 h-4 text-rose-500"/> Структура втрат ворога
+                                <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-5 flex flex-col">
+                                    <h2 className="text-xs font-semibold text-[#f3f4f6] uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-[#2e3138] pb-2">
+                                        <Icon name="pie-chart" className="w-4 h-4 text-[#d9534f]"/> Структура втрат ворога
                                     </h2>
                                     <div className="flex-1 min-h-[260px]">
                                         {stats.e200 + stats.e200u + stats.e200d + stats.e300 + stats.epow > 0 ? (
-                                            <ChartComponent type="doughnut" data={lossStructureData} options={{plugins: {legend: {position: 'bottom', labels: {color: '#94a3b8', font: {size: 11, family: 'Inter'}}}, datalabels: {display: false}}, cutout: '55%'}} />
-                                        ) : <div className="flex items-center justify-center h-full text-slate-500 text-sm">Немає даних за період</div>}
+                                            <ChartComponent type="doughnut" data={lossStructureData} options={{plugins: {legend: {position: 'bottom', labels: {color: '#b8bec8', font: {size: 11, family: 'Inter'}}}, datalabels: {display: false}}, cutout: '55%'}} />
+                                        ) : <div className="flex items-center justify-center h-full text-[#989fa9] text-sm">Немає даних за період</div>}
                                     </div>
                                 </div>
 
                                 {/* Графік B: Засоби ураження */}
-                                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col">
-                                    <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                        <Icon name="target" className="w-4 h-4 text-red-500"/> Засоби ураження
+                                <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-5 flex flex-col">
+                                    <h2 className="text-xs font-semibold text-[#f3f4f6] uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-[#2e3138] pb-2">
+                                        <Icon name="target" className="w-4 h-4 text-[#4c8ed9]"/> Засоби ураження
                                     </h2>
                                     <div className="flex-1 min-h-[260px]">
                                         {weaponLabels.length > 0 ? (
-                                            <ChartComponent type="doughnut" data={pieData} options={{plugins: {legend: {position: 'bottom', labels: {color: '#94a3b8', font: {size: 11, family: 'Inter'}}}, datalabels: {display: false}}, cutout: '55%'}} />
-                                        ) : <div className="flex items-center justify-center h-full text-slate-500 text-sm">Немає даних</div>}
+                                            <ChartComponent type="doughnut" data={pieData} options={{plugins: {legend: {position: 'bottom', labels: {color: '#b8bec8', font: {size: 11, family: 'Inter'}}}, datalabels: {display: false}}, cutout: '55%'}} />
+                                        ) : <div className="flex items-center justify-center h-full text-[#989fa9] text-sm">Немає даних</div>}
                                     </div>
                                 </div>
 
                                 {/* Графік C: Топ локацій ураження */}
-                                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                                            <Icon name="map-pin" className="w-4 h-4 text-emerald-400"/> Топ локацій ураження ворога
+                                <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-5 flex flex-col">
+                                    <div className="flex items-center justify-between mb-4 border-b border-[#2e3138] pb-2">
+                                        <h2 className="text-xs font-semibold text-[#f3f4f6] uppercase tracking-wider flex items-center gap-2">
+                                            <Icon name="map-pin" className="w-4 h-4 text-[#3da372]"/> Топ локацій ураження ворога
                                         </h2>
-                                        <span className="text-[10px] text-slate-500 uppercase font-semibold">Місце / Позиція</span>
+                                        <span className="text-[10px] text-[#989fa9] uppercase font-semibold">Місце / Позиція</span>
                                     </div>
                                     <div className="w-full relative mt-2" style={{ height: Math.max(280, locationStats.length * 32) + 'px' }}>
                                         {locationStats.length > 0 ? (
                                             <ChartComponent type="bar" data={locationsChartData} options={locationsChartOptions} className="w-full h-full" />
-                                        ) : <div className="flex items-center justify-center h-full text-slate-500 text-sm">Не вказано локацій у подіях</div>}
+                                        ) : <div className="flex items-center justify-center h-full text-[#989fa9] text-sm">Не вказано локацій у подіях</div>}
                                     </div>
                                 </div>
 
                                 {/* Графік D: Розподіл за часом доби */}
-                                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                                            <Icon name="clock" className="w-4 h-4 text-sky-400"/> Розподіл за часом доби
+                                <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-5 flex flex-col">
+                                    <div className="flex items-center justify-between mb-3 border-b border-[#2e3138] pb-2">
+                                        <h2 className="text-xs font-semibold text-[#f3f4f6] uppercase tracking-wider flex items-center gap-2">
+                                            <Icon name="clock" className="w-4 h-4 text-[#4c8ed9]"/> Розподіл за часом доби
                                         </h2>
-                                        <span className="text-[10px] text-slate-400 font-mono bg-slate-800 px-2 py-0.5 rounded">
+                                        <span className="text-[11px] text-[#b8bec8] font-mono bg-[#101113] border border-[#2e3138] px-2 py-0.5 rounded-sm tabular-nums">
                                             Уражень з часом: {timeStats.withTimeCount}
                                         </span>
                                     </div>
-                                    <div className="grid grid-cols-4 gap-2 mb-3 text-center">
-                                        <div className="bg-slate-950/70 border border-indigo-900/40 rounded-lg p-1.5">
-                                            <div className="text-[10px] text-indigo-400 font-semibold">🌙 Ніч (00-06)</div>
-                                            <div className="text-base font-bold font-mono text-indigo-200">{timeStats.periods.night}</div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3 text-center tabular-nums">
+                                        <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-2">
+                                            <div className="text-[10px] text-[#b8bec8] font-semibold">Ніч (00-06)</div>
+                                            <div className="text-base font-bold font-mono text-[#f3f4f6]">{timeStats.periods.night}</div>
                                         </div>
-                                        <div className="bg-slate-950/70 border border-amber-900/40 rounded-lg p-1.5">
-                                            <div className="text-[10px] text-amber-400 font-semibold">🌅 Ранок (06-12)</div>
-                                            <div className="text-base font-bold font-mono text-amber-200">{timeStats.periods.morning}</div>
+                                        <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-2">
+                                            <div className="text-[10px] text-[#b8bec8] font-semibold">Ранок (06-12)</div>
+                                            <div className="text-base font-bold font-mono text-[#d99b26]">{timeStats.periods.morning}</div>
                                         </div>
-                                        <div className="bg-slate-950/70 border border-red-900/40 rounded-lg p-1.5">
-                                            <div className="text-[10px] text-red-400 font-semibold">☀️ День (12-18)</div>
-                                            <div className="text-base font-bold font-mono text-red-200">{timeStats.periods.day}</div>
+                                        <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-2">
+                                            <div className="text-[10px] text-[#b8bec8] font-semibold">День (12-18)</div>
+                                            <div className="text-base font-bold font-mono text-[#f3a3a0]">{timeStats.periods.day}</div>
                                         </div>
-                                        <div className="bg-slate-950/70 border border-purple-900/40 rounded-lg p-1.5">
-                                            <div className="text-[10px] text-purple-400 font-semibold">🌆 Вечір (18-24)</div>
-                                            <div className="text-base font-bold font-mono text-purple-200">{timeStats.periods.evening}</div>
+                                        <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-2">
+                                            <div className="text-[10px] text-[#b8bec8] font-semibold">Вечір (18-24)</div>
+                                            <div className="text-base font-bold font-mono text-[#4c8ed9]">{timeStats.periods.evening}</div>
                                         </div>
                                     </div>
                                     <div className="flex-1 min-h-[220px]">
@@ -2276,19 +2362,19 @@ const EventsApp = (function() {
                             </div>
 
                             {/* Блок 6: Хто наносив ураження */}
-                            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
-                                <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                    <Icon name="shield" className="w-4 h-4 text-amber-500"/> Хто наносив ураження (підрозділи / позивні)
+                            <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-5">
+                                <h3 className="text-xs font-semibold text-[#f3f4f6] uppercase tracking-wider mb-3 border-b border-[#2e3138] pb-2 flex items-center gap-2">
+                                    <Icon name="shield" className="w-4 h-4 text-[#4c8ed9]"/> Хто наносив ураження (підрозділи / позивні)
                                 </h3>
-                                {topInflicters.length === 0 ? <div className="text-slate-500 text-sm">Немає даних за позивними</div> : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+                                {topInflicters.length === 0 ? <div className="text-[#989fa9] text-sm">Немає даних за позивними</div> : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 tabular-nums">
                                         {topInflicters.map(([name, n]) => (
                                             <div key={name} className="flex items-center gap-3 text-sm">
-                                                <span className="w-44 truncate text-slate-300 font-medium">{name}</span>
-                                                <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-amber-500/80 rounded-full" style={{ width: `${(n / topInflicters[0][1]) * 100}%` }} />
+                                                <span className="w-44 truncate text-[#cbd5e1] font-medium">{name}</span>
+                                                <div className="flex-1 h-2 bg-[#101113] border border-[#2e3138] rounded-none overflow-hidden">
+                                                    <div className="h-full bg-[#4c8ed9]" style={{ width: `${(n / topInflicters[0][1]) * 100}%` }} />
                                                 </div>
-                                                <span className="font-mono text-slate-300 w-10 text-right font-bold">{n}</span>
+                                                <span className="font-mono text-[#f3f4f6] w-10 text-right font-semibold">{n}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -2647,14 +2733,52 @@ const EventsApp = (function() {
                     setExpandedDates(prev => ({...prev, [dateStr]: !prev[dateStr]}));
                 };
 
+                const styleExcelSheet = (ws, wrapKeys = []) => {
+                    ws.views = [{ state: 'frozen', ySplit: 1 }];
+                    if (ws.columns.length > 0) {
+                        ws.autoFilter = {
+                            from: { row: 1, column: 1 },
+                            to: { row: 1, column: ws.columns.length }
+                        };
+                    }
+                    const border = {
+                        top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                    };
+                    const wrapCols = new Set(
+                        wrapKeys.map(k => ws.getColumn(k)?.number).filter(Boolean)
+                    );
+                    const headerRow = ws.getRow(1);
+                    headerRow.height = 24;
+                    headerRow.eachCell((cell) => {
+                        cell.font = { bold: true, color: { argb: 'FFF8FAFC' } };
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+                        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+                        cell.border = border;
+                    });
+                    ws.eachRow((row, rowNumber) => {
+                        if (rowNumber === 1) return;
+                        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                            cell.border = border;
+                            cell.alignment = {
+                                vertical: 'top',
+                                wrapText: wrapCols.has(colNumber)
+                            };
+                        });
+                    });
+                };
+
                 const handleExportExcel = async () => {
-                    if (!window.ExcelJS) {
+                    const ExcelLib = window.ExcelJS || ExcelJS;
+                    if (!ExcelLib) {
                         showToast("Бібліотека ExcelJS не завантажена");
                         return;
                     }
                     
                     try {
-                        const workbook = new window.ExcelJS.Workbook();
+                        const workbook = new ExcelLib.Workbook();
                         const sheet = workbook.addWorksheet('Облік втрат');
                         
                         sheet.columns = [
@@ -2664,6 +2788,7 @@ const EventsApp = (function() {
                             { header: 'Типи', key: 'types', width: 15 },
                             { header: '200', key: 'e200', width: 10 },
                             { header: '200*', key: 'e200u', width: 10 },
+                            { header: 'Вияв. 200', key: 'e200d', width: 11 },
                             { header: '300', key: 'e300', width: 10 },
                             { header: 'Полон', key: 'epow', width: 10 },
                             { header: '200(п)', key: 'e200pow', width: 10 },
@@ -2681,8 +2806,6 @@ const EventsApp = (function() {
                             { header: 'Опис', key: 'desc', width: 50 }
                         ];
                         
-                        sheet.getRow(1).font = { bold: true };
-                        
                         const sortedEvents = [...filteredEvents].sort((a, b) => {
                             const dateA = getEventDateStr(a) || '';
                             const dateB = getEventDateStr(b) || '';
@@ -2695,6 +2818,7 @@ const EventsApp = (function() {
                         sortedEvents.forEach(ev => {
                             const e200 = (ev.enemyLosses||[]).reduce((s,l)=>s+(l.count200||0)+(l.count200POW||0),0);
                             const e200u = (ev.enemyLosses||[]).reduce((s,l)=>s+(l.count200Unconfirmed||0),0);
+                            const e200d = (ev.enemyLosses||[]).reduce((s,l)=>s+(l.count200Discovered||0),0);
                             const e300 = (ev.enemyLosses||[]).reduce((s,l)=>s+(l.count300||0),0);
                             const epow = (ev.enemyLosses||[]).reduce((s,l)=>s+(l.countPOW||0)-(l.count200POW||0),0);
                             const e200pow = (ev.enemyLosses||[]).reduce((s,l)=>s+(l.count200POW||0),0);
@@ -2721,6 +2845,7 @@ const EventsApp = (function() {
                                 types: (ev.types||[]).join('|'),
                                 e200: e200,
                                 e200u: e200u,
+                                e200d: e200d,
                                 e300: e300,
                                 epow: epow,
                                 e200pow: e200pow,
@@ -2738,7 +2863,7 @@ const EventsApp = (function() {
                                 desc: ev.description||''
                             });
                         });
-                        
+                        styleExcelSheet(sheet, ['callsigns', 'desc', 'vehicleDetails']);
                         
                         const sheet2 = workbook.addWorksheet('Деталізація по ураженнях');
                         
@@ -2749,6 +2874,7 @@ const EventsApp = (function() {
                             { header: 'Тип (Зброя)', key: 'weapon', width: 25 },
                             { header: '200', key: 'e200', width: 10 },
                             { header: '200*', key: 'e200u', width: 10 },
+                            { header: 'Вияв. 200', key: 'e200d', width: 11 },
                             { header: '300', key: 'e300', width: 10 },
                             { header: 'Полон', key: 'epow', width: 10 },
                             { header: '200(п)', key: 'e200pow', width: 10 },
@@ -2758,8 +2884,6 @@ const EventsApp = (function() {
                             { header: 'Позивні ворога', key: 'callsigns', width: 40 },
                             { header: 'Опис події', key: 'desc', width: 50 }
                         ];
-                        
-                        sheet2.getRow(1).font = { bold: true };
                         
                         sortedEvents.forEach(ev => {
                             const dStrRaw = getEventDateStr(ev);
@@ -2773,6 +2897,7 @@ const EventsApp = (function() {
                             (ev.enemyLosses||[]).forEach(l => {
                                 const e200 = (l.count200||0) + (l.count200POW||0);
                                 const e200u = l.count200Unconfirmed||0;
+                                const e200d = l.count200Discovered||0;
                                 const e300 = l.count300||0;
                                 const epow = (l.countPOW||0) - (l.count200POW||0);
                                 const e200pow = l.count200POW||0;
@@ -2793,6 +2918,7 @@ const EventsApp = (function() {
                                     weapon: l.weapon || 'Невідомо',
                                     e200: e200,
                                     e200u: e200u,
+                                    e200d: e200d,
                                     e300: e300,
                                     epow: epow,
                                     e200pow: e200pow,
@@ -2804,15 +2930,19 @@ const EventsApp = (function() {
                                 });
                             });
                         });
+                        styleExcelSheet(sheet2, ['callsigns', 'desc']);
                         
                         const buffer = await workbook.xlsx.writeBuffer();
                         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                        const url = URL.createObjectURL(blob);
                         const link = document.createElement('a');
-                        link.href = URL.createObjectURL(blob);
+                        link.href = url;
                         const today = window.SuiteDates.localISO();
                         link.download = `oblik-vtrat-${today}.xlsx`;
+                        document.body.appendChild(link);
                         link.click();
-                        URL.revokeObjectURL(link.href);
+                        link.remove();
+                        setTimeout(() => URL.revokeObjectURL(url), 30000);
                         showToast('Експорт в Excel завершено');
                     } catch (err) {
                         console.error("Excel export error:", err);
@@ -2942,70 +3072,70 @@ const EventsApp = (function() {
                 }, [sortedDates, groupedByDate, dailyFriendlyLosses, weaponFilter]);
 
                 return (
-                    <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-[#020617]">
-                        <div className="w-full max-w-[2400px] px-2 lg:px-4 mx-auto space-y-6">
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-[#101113]">
+                        <div className="w-full max-w-[2400px] px-2 lg:px-4 mx-auto space-y-5">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Аналітика / Звіти <span className="text-sm font-normal text-slate-400">({activeStats.records} записів)</span></h1>
-                                <div className="flex flex-wrap items-center gap-3 bg-slate-900 p-2 rounded-xl border border-slate-800">
+                                <h1 className="text-xl font-semibold text-[#f3f4f6] tracking-tight">Аналітика / Звіти <span className="text-xs font-normal text-[#b8bec8] tabular-nums">({activeStats.records} записів)</span></h1>
+                                <div className="flex flex-wrap items-center gap-2.5 bg-[#17181b] p-2 rounded-sm border border-[#2e3138]">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs text-slate-400 font-semibold pl-2">З:</span>
-                                        <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs focus:border-amber-500" />
+                                        <span className="text-xs text-[#b8bec8] font-medium pl-1.5">З:</span>
+                                        <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} className="bg-[#101113] border border-[#2e3138] rounded-sm px-2 py-1 text-xs text-[#f3f4f6] tabular-nums focus:border-[#4c8ed9] outline-none" />
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs text-slate-400 font-semibold">По:</span>
-                                        <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs focus:border-amber-500" />
+                                        <span className="text-xs text-[#b8bec8] font-medium">По:</span>
+                                        <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} className="bg-[#101113] border border-[#2e3138] rounded-sm px-2 py-1 text-xs text-[#f3f4f6] tabular-nums focus:border-[#4c8ed9] outline-none" />
                                     </div>
-                                    <div className="h-6 w-px bg-slate-800 mx-1"></div>
-                                    <select value={weaponFilter} onChange={e=>setWeaponFilter(e.target.value)} className="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs focus:border-amber-500">
+                                    <div className="h-5 w-px bg-[#2e3138] mx-1"></div>
+                                    <select value={weaponFilter} onChange={e=>setWeaponFilter(e.target.value)} className="bg-[#101113] border border-[#2e3138] rounded-sm px-2 py-1 text-xs text-[#f3f4f6] focus:border-[#4c8ed9] outline-none">
                                         <option value="all">Усі засоби ураження</option>
                                         {settings.weapons.map(w => <option key={w} value={w}>{w}</option>)}
                                     </select>
-                                    <div className="h-6 w-px bg-slate-800 mx-1 hidden lg:block"></div>
-                                    <div className="flex gap-1 bg-slate-950 p-1 border border-slate-700 rounded-lg flex-wrap">
-                                        <button onClick={() => toggleFilter('e200')} className={`px-2 py-0.5 text-[10px] font-bold rounded transition-colors ${eventFilters.e200 ? 'bg-red-500 text-white' : 'text-slate-500 hover:bg-slate-800'}`}>200</button>
-                                        <button onClick={() => toggleFilter('e200u')} className={`px-2 py-0.5 text-[10px] font-bold rounded transition-colors ${eventFilters.e200u ? 'bg-rose-400 text-white' : 'text-slate-500 hover:bg-slate-800'}`}>200*</button>
-                                        <button onClick={() => toggleFilter('e200d')} className={`px-2 py-0.5 text-[10px] font-bold rounded transition-colors ${eventFilters.e200d ? 'bg-purple-500 text-white' : 'text-slate-500 hover:bg-slate-800'}`}>ВИЯВ</button>
-                                        <button onClick={() => toggleFilter('e300')} className={`px-2 py-0.5 text-[10px] font-bold rounded transition-colors ${eventFilters.e300 ? 'bg-amber-500 text-slate-900' : 'text-slate-500 hover:bg-slate-800'}`}>300</button>
-                                        <button onClick={() => toggleFilter('epow')} className={`px-2 py-0.5 text-[10px] font-bold rounded transition-colors ${eventFilters.epow ? 'bg-emerald-500 text-white' : 'text-slate-500 hover:bg-slate-800'}`}>ПОЛОН</button>
-                                        <button onClick={() => toggleFilter('epowDead')} className={`px-2 py-0.5 text-[10px] font-bold rounded transition-colors ${eventFilters.epowDead ? 'bg-rose-600 text-white' : 'text-slate-500 hover:bg-slate-800'}`}>200(п)</button>
+                                    <div className="h-5 w-px bg-[#2e3138] mx-1 hidden lg:block"></div>
+                                    <div className="flex gap-1 bg-[#101113] p-1 border border-[#2e3138] rounded-sm flex-wrap">
+                                        <button onClick={() => toggleFilter('e200')} className={`px-2 py-0.5 text-[10px] font-semibold rounded-sm transition-colors ${eventFilters.e200 ? 'bg-[#d9534f] text-white' : 'text-[#989fa9] hover:bg-[#222429] hover:text-[#f3f4f6]'}`}>200</button>
+                                        <button onClick={() => toggleFilter('e200u')} className={`px-2 py-0.5 text-[10px] font-semibold rounded-sm transition-colors ${eventFilters.e200u ? 'bg-[#a84240] text-white' : 'text-[#989fa9] hover:bg-[#222429] hover:text-[#f3f4f6]'}`}>200*</button>
+                                        <button onClick={() => toggleFilter('e200d')} className={`px-2 py-0.5 text-[10px] font-semibold rounded-sm transition-colors ${eventFilters.e200d ? 'bg-[#8f5fb8] text-white' : 'text-[#989fa9] hover:bg-[#222429] hover:text-[#f3f4f6]'}`}>ВИЯВ</button>
+                                        <button onClick={() => toggleFilter('e300')} className={`px-2 py-0.5 text-[10px] font-semibold rounded-sm transition-colors ${eventFilters.e300 ? 'bg-[#d99b26] text-[#101113]' : 'text-[#989fa9] hover:bg-[#222429] hover:text-[#f3f4f6]'}`}>300</button>
+                                        <button onClick={() => toggleFilter('epow')} className={`px-2 py-0.5 text-[10px] font-semibold rounded-sm transition-colors ${eventFilters.epow ? 'bg-[#3da372] text-white' : 'text-[#989fa9] hover:bg-[#222429] hover:text-[#f3f4f6]'}`}>ПОЛОН</button>
+                                        <button onClick={() => toggleFilter('epowDead')} className={`px-2 py-0.5 text-[10px] font-semibold rounded-sm transition-colors ${eventFilters.epowDead ? 'bg-[#a84240] text-white' : 'text-[#989fa9] hover:bg-[#222429] hover:text-[#f3f4f6]'}`}>200(п)</button>
                                     </div>
                                     <div className="flex-1 min-w-[20px]"></div>
-                                    <button onClick={handleExportExcel} className="bg-emerald-700 hover:bg-emerald-600 text-emerald-50 font-bold py-1.5 px-3 rounded-lg text-xs transition whitespace-nowrap shadow-[0_0_15px_rgba(4,120,87,0.4)] flex items-center gap-1.5 border border-emerald-600">
+                                    <button onClick={handleExportExcel} className="bg-[#235d42] hover:bg-[#2b7251] text-[#f3f4f6] font-medium py-1.5 px-3 rounded-sm text-xs transition-colors whitespace-nowrap flex items-center gap-1.5 border border-[#3da372]/50">
                                         <Icon name="file-spreadsheet" className="w-4 h-4" /> Excel
                                     </button>
-                                    <button onClick={() => onGenerateReport({ events: filteredEvents, allEvents: events, dateFrom, dateTo, weaponFilter, eventFilters })} className="bg-amber-600 hover:bg-amber-500 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition whitespace-nowrap shadow-[0_0_15px_rgba(217,119,6,0.4)] flex items-center gap-1.5">
+                                    <button onClick={() => onGenerateReport({ events: filteredEvents, allEvents: events, dateFrom, dateTo, weaponFilter, eventFilters })} className="bg-[#2b67ab] hover:bg-[#3577c2] text-white font-medium py-1.5 px-3 rounded-sm text-xs transition-colors whitespace-nowrap flex items-center gap-1.5 border border-[#4c8ed9]/60">
                                         <Icon name="printer" className="w-4 h-4" /> PDF Звіт
                                     </button>
                                     <DatePresets dateFrom={dateFrom} dateTo={dateTo} setDateFrom={setDateFrom} setDateTo={setDateTo} />
                                 </div>
                             </div>
 
-                            <div data-testid="medical-sync-status" className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
-                                <h2 className="font-bold text-slate-200 flex items-center gap-2"><Icon name="refresh-cw" className="w-5 h-5 text-emerald-400" /> Наші втрати — автоматично з медичного модуля</h2>
-                                <p className="text-xs text-slate-400">За датою події: бойові 200, 300 та ЗБВ. Бойові травмування включено до 300. Небойові втрати, СЗЧ і дезертирство не враховуються. Один запис епізоду — одна втрата; зміни вносьте в «Медичній евакуації».</p>
-                                <p className="text-xs text-slate-400">Ручне введення й Excel-імпорт вимкнені. Старі ручні та імпортовані підсумки не додаються до автоматичних.</p>
-                                {medicalSync.loading ? <p role="status" className="text-xs text-amber-300">Завантаження медичних записів…</p> : medicalSync.error ? <p role="alert" className="text-xs text-red-300">Не вдалося оновити дані: {medicalSync.error} Перейдіть до медичного модуля й перевірте базу.</p> : <p className="text-xs text-emerald-300">Враховано епізодів: {medicalSync.included}. Інших типів пропущено: {medicalSync.excluded}.</p>}
-                                {!!medicalSync.invalid && <p role="alert" className="text-xs text-amber-300">Не враховано записів із некоректною датою або структурою: {medicalSync.invalid}. Виправте їх у медичному модулі.</p>}
-                                {!!medicalSync.duplicates && <p className="text-xs text-amber-300">Повторних ідентифікаторів епізодів пропущено: {medicalSync.duplicates}.</p>}
+                            <div data-testid="medical-sync-status" className="bg-[#17181b] border border-[#2e3138] rounded-sm p-4 space-y-1.5">
+                                <h2 className="font-semibold text-sm text-[#f3f4f6] flex items-center gap-2"><Icon name="refresh-cw" className="w-4 h-4 text-[#3da372]" /> Наші втрати — автоматично з медичного модуля</h2>
+                                <p className="text-xs text-[#b8bec8]">За датою події: бойові 200, 300 та ЗБВ. Бойові травмування включено до 300. Небойові втрати, СЗЧ і дезертирство не враховуються. Один запис епізоду — одна втрата; зміни вносьте в «Медичній евакуації».</p>
+                                <p className="text-xs text-[#989fa9]">Ручне введення й Excel-імпорт вимкнені. Старі ручні та імпортовані підсумки не додаються до автоматичних.</p>
+                                {medicalSync.loading ? <p role="status" className="text-xs text-[#d99b26] tabular-nums">Завантаження медичних записів…</p> : medicalSync.error ? <p role="alert" className="text-xs text-[#f3a3a0]">Не вдалося оновити дані: {medicalSync.error} Перейдіть до медичного модуля й перевірте базу.</p> : <p className="text-xs text-[#3da372] tabular-nums">Враховано епізодів: {medicalSync.included}. Інших типів пропущено: {medicalSync.excluded}.</p>}
+                                {!!medicalSync.invalid && <p role="alert" className="text-xs text-[#d99b26] tabular-nums">Не враховано записів із некоректною датою або структурою: {medicalSync.invalid}. Виправте їх у медичному модулі.</p>}
+                                {!!medicalSync.duplicates && <p className="text-xs text-[#d99b26] tabular-nums">Повторних ідентифікаторів епізодів пропущено: {medicalSync.duplicates}.</p>}
                             </div>
                             
-                            <p className="text-xs text-purple-200">«Виявлені 200» обліковуються окремо від «200». На вузькому екрані прокрутіть таблицю горизонтально — усі колонки залишаються доступними.</p>
-                            <div data-testid="daily-records" className="bg-slate-900 border border-slate-800 rounded-2xl overflow-x-auto shadow-xl">
-                                <div className="grid grid-cols-10 min-w-[1050px] gap-2 bg-slate-950 p-3 border-b border-slate-800 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">
+                            <p className="text-xs text-[#b8bec8]">«Виявлені 200» обліковуються окремо від «200». На вузькому екрані прокрутіть таблицю горизонтально — усі колонки залишаються доступними.</p>
+                            <div data-testid="daily-records" className="bg-[#17181b] border border-[#2e3138] rounded-sm overflow-x-auto">
+                                <div className="grid grid-cols-10 min-w-[1050px] gap-2 bg-[#101113] p-3 border-b border-[#2e3138] text-[11px] font-semibold text-[#b8bec8] uppercase tracking-wider">
                                     <div className="col-span-2 md:col-span-2">Дата</div>
-                                    <div className="text-center text-red-500">200 (Вор)</div>
-                                    <div className="text-center text-rose-400" title="Не підтверджено">200*</div>
-                                    <div className="text-center text-purple-300">Виявлені 200</div>
-                                    <div className="text-center text-amber-500">300 (Вор)</div>
-                                    <div className="text-center text-emerald-500">Полон</div>
-                                    <div className="text-center text-blue-500 border-l border-slate-800 pl-2">Наші 200</div>
-                                    <div className="text-center text-blue-400">Наші 300</div>
-                                    <div className="text-center text-blue-300">ЗБВ</div>
+                                    <div className="text-center text-[#f3a3a0]">200 (Вор)</div>
+                                    <div className="text-center text-[#f3a3a0]/80" title="Не підтверджено">200*</div>
+                                    <div className="text-center text-[#c084fc]">Виявлені 200</div>
+                                    <div className="text-center text-[#d99b26]">300 (Вор)</div>
+                                    <div className="text-center text-[#3da372]">Полон</div>
+                                    <div className="text-center text-[#4c8ed9] border-l border-[#2e3138] pl-2">Наші 200</div>
+                                    <div className="text-center text-[#6fa8e6]">Наші 300</div>
+                                    <div className="text-center text-[#b8bec8]">ЗБВ</div>
                                 </div>
                                 
-                                <div className="divide-y divide-slate-800/50">
+                                <div className="divide-y divide-[#2e3138]/70">
                                     {sortedDates.length === 0 ? (
-                                        <div className="p-6 text-center text-slate-500 text-sm">Немає даних за обраний період/фільтр</div>
+                                        <div className="p-6 text-center text-[#989fa9] text-sm">Немає даних за обраний період/фільтр</div>
                                     ) : (
                                         sortedDates.map(date => {
                                             const dayData = groupedByDate[date] || { c200: 0, c200Unc: 0, c200Discovered: 0, c300: 0, pow: 0, losses: [] };
@@ -3019,56 +3149,56 @@ const EventsApp = (function() {
                                                 <div key={date} data-document-date={date} className="group min-w-[1050px]">
                                                     <div 
                                                         onClick={() => toggleExpand(date)}
-                                                        className="grid grid-cols-10 gap-2 p-2 hover:bg-slate-800/50 cursor-pointer transition-colors items-center"
+                                                        className="grid grid-cols-10 gap-2 p-2 hover:bg-[#222429] cursor-pointer transition-colors items-center"
                                                     >
                                                         <div className="col-span-2 flex items-center gap-2 px-1">
-                                                            <Icon name={isExpanded ? "chevron-down" : "chevron-right"} className="w-4 h-4 text-slate-500" />
-                                                            <span className="font-semibold text-slate-200">{date}</span>
+                                                            <Icon name={isExpanded ? "chevron-down" : "chevron-right"} className="w-4 h-4 text-[#989fa9]" />
+                                                            <span className="font-mono font-semibold text-sm text-[#f3f4f6] tabular-nums">{date}</span>
                                                         </div>
-                                                        <div className="text-center font-mono font-bold text-red-400 text-sm">{dayData.c200}</div>
-                                                        <div className="text-center font-mono font-bold text-rose-300 text-sm">{dayData.c200Unc}</div>
-                                                        <div data-testid="daily-discovered" className="text-center font-mono font-bold text-purple-300 text-sm bg-purple-950/30 rounded py-1">{dayData.c200Discovered}</div>
-                                                        <div className="text-center font-mono font-bold text-amber-400 text-sm">{dayData.c300}</div>
-                                                        <div className="text-center font-mono font-bold text-emerald-400 text-sm">{dayData.pow}</div>
-                                                        <div className="text-center border-l border-slate-800 pl-2">
-                                                            <span data-testid="daily-friendly-200" className="block font-mono text-sm text-blue-400 py-1">{medicalSync.loading ? '…' : medicalSync.error ? '—' : fLoss.count200 || 0}</span>
+                                                        <div className="text-center font-mono font-semibold text-[#f3a3a0] text-sm tabular-nums">{dayData.c200}</div>
+                                                        <div className="text-center font-mono font-semibold text-[#f3a3a0]/80 text-sm tabular-nums">{dayData.c200Unc}</div>
+                                                        <div data-testid="daily-discovered" className="text-center font-mono font-semibold text-[#c084fc] text-sm bg-[#8f5fb8]/15 border border-[#8f5fb8]/30 rounded-sm py-1 tabular-nums">{dayData.c200Discovered}</div>
+                                                        <div className="text-center font-mono font-semibold text-[#d99b26] text-sm tabular-nums">{dayData.c300}</div>
+                                                        <div className="text-center font-mono font-semibold text-[#3da372] text-sm tabular-nums">{dayData.pow}</div>
+                                                        <div className="text-center border-l border-[#2e3138] pl-2">
+                                                            <span data-testid="daily-friendly-200" className="block font-mono text-sm text-[#4c8ed9] py-1 tabular-nums">{medicalSync.loading ? '…' : medicalSync.error ? '—' : fLoss.count200 || 0}</span>
                                                         </div>
                                                         <div className="text-center">
-                                                            <span data-testid="daily-friendly-300" className="block font-mono text-sm text-blue-300 py-1">{medicalSync.loading ? '…' : medicalSync.error ? '—' : fLoss.count300 || 0}</span>
+                                                            <span data-testid="daily-friendly-300" className="block font-mono text-sm text-[#6fa8e6] py-1 tabular-nums">{medicalSync.loading ? '…' : medicalSync.error ? '—' : fLoss.count300 || 0}</span>
                                                         </div>
                                                         <div className="text-center pr-2">
-                                                            <span data-testid="daily-friendly-zbv" className="block font-mono text-sm text-indigo-300 py-1">{medicalSync.loading ? '…' : medicalSync.error ? '—' : fLoss.countZBV || 0}</span>
+                                                            <span data-testid="daily-friendly-zbv" className="block font-mono text-sm text-[#b8bec8] py-1 tabular-nums">{medicalSync.loading ? '…' : medicalSync.error ? '—' : fLoss.countZBV || 0}</span>
                                                         </div>
                                                     </div>
                                                     
                                                     {/* Деталі розгорнутого рядка */}
                                                     {isExpanded && (
-                                                        <div className="bg-slate-950/80 p-4 border-t border-slate-800">
-                                                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Деталізація за день:</h4>
+                                                        <div className="bg-[#101113] p-4 border-t border-[#2e3138]">
+                                                            <h4 className="text-[11px] font-semibold text-[#b8bec8] uppercase tracking-wider mb-3">Деталізація за день:</h4>
                                                             {dayData.losses.length > 0 ? (
-                                                                <div className="overflow-x-auto">
-                                                                    <table className="w-full text-sm text-left text-slate-300">
-                                                                        <thead className="text-xs text-slate-500 uppercase bg-slate-900 border-b border-slate-800">
+                                                                <div className="overflow-x-auto border border-[#2e3138] rounded-sm">
+                                                                    <table className="w-full text-sm text-left text-[#f3f4f6]">
+                                                                        <thead className="text-[11px] text-[#b8bec8] uppercase bg-[#17181b] border-b border-[#2e3138]">
                                                                             <tr>
-                                                                                <th className="px-3 py-2 rounded-tl-lg text-slate-400">Час</th>
+                                                                                <th className="px-3 py-2 text-[#b8bec8]">Час</th>
                                                                                 <th className="px-4 py-2">Засіб ураження</th>
                                                                                 <th className="px-4 py-2">Хто наносив</th>
                                                                                 <th className="px-4 py-2">Позивний ворога</th>
-                                                                                <th className="px-4 py-2 text-center text-red-400">200</th>
-                                                                                <th className="px-4 py-2 text-center text-rose-300">200*</th>
-                                                                                <th className="px-4 py-2 text-center text-purple-300">Виявлені 200</th>
-                                                                                <th className="px-4 py-2 text-center text-amber-400">300</th>
-                                                                                <th className="px-4 py-2 text-center text-rose-500" title="Вбиті полонені">200(п)</th>
-                                                                                <th className="px-4 py-2 text-center text-emerald-400 rounded-tr-lg">Полон</th>
+                                                                                <th className="px-4 py-2 text-center text-[#f3a3a0]">200</th>
+                                                                                <th className="px-4 py-2 text-center text-[#f3a3a0]/80">200*</th>
+                                                                                <th className="px-4 py-2 text-center text-[#c084fc]">Виявлені 200</th>
+                                                                                <th className="px-4 py-2 text-center text-[#d99b26]">300</th>
+                                                                                <th className="px-4 py-2 text-center text-[#f3a3a0]" title="Вбиті полонені">200(п)</th>
+                                                                                <th className="px-4 py-2 text-center text-[#3da372]">Полон</th>
                                                                             </tr>
                                                                         </thead>
-                                                                        <tbody className="divide-y divide-slate-800/50">
+                                                                        <tbody className="divide-y divide-[#2e3138]/70">
                                                                             {dayData.losses.map((l, i) => (
-                                                                                <tr key={i} className="hover:bg-slate-900/50 transition-colors">
-                                                                                    <td className="px-3 py-2 font-mono text-xs text-amber-400/90 whitespace-nowrap">{l.time ? `🕒 ${l.time}` : <span className="text-slate-600">—</span>}</td>
-                                                                                    <td className="px-4 py-2 font-medium">{l.weapon}</td>
-                                                                                    <td className="px-4 py-2">{l.inflicter || <span className="text-slate-600">-</span>}</td>
-                                                                                    <td className="px-4 py-2 text-xs">
+                                                                                <tr key={i} className="hover:bg-[#222429] transition-colors">
+                                                                                    <td className="px-3 py-2 font-mono text-xs text-[#b8bec8] whitespace-nowrap tabular-nums">{l.time ? l.time : <span className="text-[#989fa9]">—</span>}</td>
+                                                                                    <td className="px-4 py-2 font-medium text-[#f3f4f6]">{l.weapon}</td>
+                                                                                    <td className="px-4 py-2 text-[#b8bec8]">{l.inflicter || <span className="text-[#989fa9]">-</span>}</td>
+                                                                                    <td className="px-4 py-2 text-xs text-[#b8bec8]">
                                                                                         {[
                                                                                             ...(l.callsigns200||[]).filter(c=>c),
                                                                                             ...(l.callsigns200Unconfirmed||[]).filter(c=>c),
@@ -3085,21 +3215,21 @@ const EventsApp = (function() {
                                                                                                 ...(l.callsignsPOW||[]).filter(c=>c),
                                                                                                 ...(l.callsigns200POW||[]).filter(c=>c)
                                                                                             ].join(', ')
-                                                                                        ) : <span className="text-slate-600">-</span>}
+                                                                                        ) : <span className="text-[#989fa9]">-</span>}
                                                                                     </td>
-                                                                                    <td className="px-4 py-2 text-center font-mono">{l.count200 || '-'}</td>
-                                                                                    <td className="px-4 py-2 text-center font-mono">{l.count200Unconfirmed || '-'}</td>
-                                                                                    <td data-testid="detail-discovered" className="px-4 py-2 text-center font-mono text-purple-300">{l.count200Discovered || 0}</td>
-                                                                                    <td className="px-4 py-2 text-center font-mono">{l.count300 || '-'}</td>
-                                                                                    <td className="px-4 py-2 text-center font-mono text-rose-400">{l.count200POW || '-'}</td>
-                                                                                    <td className="px-4 py-2 text-center font-mono">{l.countPOW || '-'}</td>
+                                                                                    <td className="px-4 py-2 text-center font-mono tabular-nums">{l.count200 || '-'}</td>
+                                                                                    <td className="px-4 py-2 text-center font-mono tabular-nums">{l.count200Unconfirmed || '-'}</td>
+                                                                                    <td data-testid="detail-discovered" className="px-4 py-2 text-center font-mono text-[#c084fc] tabular-nums">{l.count200Discovered || 0}</td>
+                                                                                    <td className="px-4 py-2 text-center font-mono tabular-nums">{l.count300 || '-'}</td>
+                                                                                    <td className="px-4 py-2 text-center font-mono text-[#f3a3a0] tabular-nums">{l.count200POW || '-'}</td>
+                                                                                    <td className="px-4 py-2 text-center font-mono tabular-nums">{l.countPOW || '-'}</td>
                                                                                 </tr>
                                                                             ))}
                                                                         </tbody>
                                                                     </table>
                                                                 </div>
                                                             ) : (
-                                                                <div className="text-slate-500 text-sm italic">За цим фільтром немає деталізованих записів.</div>
+                                                                <div className="text-[#989fa9] text-sm">За цим фільтром немає деталізованих записів.</div>
                                                             )}
                                                         </div>
                                                     )}
@@ -3275,23 +3405,23 @@ const EventsApp = (function() {
                 };
 
                 return (
-                    <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-[#020617]">
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-[#101113]">
                         <div className="w-full max-w-5xl mx-auto space-y-6">
-                            <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Налаштування</h1>
+                            <h1 className="text-xl font-semibold text-[#f3f4f6] tracking-tight">Налаштування</h1>
                             <DocumentDesk records={events} onOpen={setViewingEvent} preferences={settings.documentView} onSavePreferences={documentView => saveSettings({...settings, documentView})} />
-                            <p className="text-sm text-slate-400">Дані зберігаються локально в браузері. Робіть резервну копію перед зміною комп’ютера.</p>
+                            <p className="text-sm text-[#b8bec8]">Дані зберігаються локально в браузері. Робіть резервну копію перед зміною комп’ютера.</p>
 
-                            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
-                                <h3 className="text-sm font-bold text-slate-300 uppercase">Резерв і обмін</h3>
+                            <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-5 space-y-3">
+                                <h3 className="text-xs font-semibold text-[#b8bec8] uppercase tracking-wider">Резерв і обмін</h3>
                                 <div className="flex flex-wrap gap-2">
-                                    <button type="button" onClick={exportEncryptedBackup} className="px-3 py-2 rounded-xl text-sm font-semibold bg-slate-800 border border-slate-700 hover:border-amber-500/50 flex items-center gap-2"><Icon name="lock-keyhole" className="w-4 h-4"/> Зашифрована копія</button>
+                                    <button type="button" onClick={exportEncryptedBackup} className="px-3 py-2 rounded-sm text-sm font-medium bg-[#222429] border border-[#2e3138] hover:border-[#4c8ed9] text-[#f3f4f6] flex items-center gap-2 transition-colors"><Icon name="lock-keyhole" className="w-4 h-4 text-[#4c8ed9]"/> Зашифрована копія</button>
                                     
-                                    <button type="button" onClick={()=>fileRef.current?.click()} className="px-3 py-2 rounded-xl text-sm font-semibold bg-slate-800 border border-slate-700 hover:border-amber-500/50 flex items-center gap-2"><Icon name="upload" className="w-4 h-4"/> Відновити копію</button>
+                                    <button type="button" onClick={()=>fileRef.current?.click()} className="px-3 py-2 rounded-sm text-sm font-medium bg-[#222429] border border-[#2e3138] hover:border-[#4c8ed9] text-[#f3f4f6] flex items-center gap-2 transition-colors"><Icon name="upload" className="w-4 h-4 text-[#4c8ed9]"/> Відновити копію</button>
                                     <input ref={fileRef} type="file" accept=".oblik" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) importEncryptedBackup(f); e.target.value=''; }} />
                                 </div>
-                                <p className="text-xs text-slate-500">Копія містить усі події, щоденні втрати й налаштування. Для відновлення потрібен пароль, заданий під час її створення.</p>
-                                <p className="text-xs text-slate-400">Шифрується файл .oblik. Дані браузера, локальна копія для повернення та CSV не зашифровані. Без пароля відновити зашифрований файл неможливо.</p>
-                                <button type="button" className="text-sm text-amber-300 underline underline-offset-4" onClick={async () => {
+                                <p className="text-xs text-[#989fa9]">Копія містить усі події, щоденні втрати й налаштування. Для відновлення потрібен пароль, заданий під час її створення.</p>
+                                <p className="text-xs text-[#b8bec8]">Шифрується файл .oblik. Дані браузера, локальна копія для повернення та CSV не зашифровані. Без пароля відновити зашифрований файл неможливо.</p>
+                                <button type="button" className="text-sm text-[#4c8ed9] hover:text-[#6fa8e6] underline underline-offset-4" onClick={async () => {
                                     try {
                                         const previous = await localforage.getItem('document_before_restore_v1');
                                         if (!previous) { showToast('Попередньої копії ще немає'); return; }
@@ -3301,53 +3431,53 @@ const EventsApp = (function() {
                                 }}>Повернути дані до попереднього відновлення</button>
                             </div>
 
-                            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-                                <h3 className="text-sm font-bold text-slate-300 uppercase mb-4">Засоби ураження</h3>
+                            <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-5">
+                                <h3 className="text-xs font-semibold text-[#b8bec8] uppercase tracking-wider mb-3">Засоби ураження</h3>
                                 <div className="flex gap-2 mb-3">
-                                    <input value={newWeapon} onChange={e=>setNewWeapon(e.target.value)} onKeyDown={e=>e.key==='Enter' && addItem('weapons', newWeapon, setNewWeapon)} placeholder="Новий засіб..." className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm" />
-                                    <button type="button" onClick={()=>addItem('weapons', newWeapon, setNewWeapon)} className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-sm font-bold">Додати</button>
+                                    <input value={newWeapon} onChange={e=>setNewWeapon(e.target.value)} onKeyDown={e=>e.key==='Enter' && addItem('weapons', newWeapon, setNewWeapon)} placeholder="Новий засіб..." className="flex-1 bg-[#101113] border border-[#2e3138] rounded-sm px-3 py-1.5 text-sm text-[#f3f4f6] focus:border-[#4c8ed9] outline-none" />
+                                    <button type="button" onClick={()=>addItem('weapons', newWeapon, setNewWeapon)} className="px-3 py-1.5 bg-[#2b67ab] hover:bg-[#3577c2] text-white border border-[#4c8ed9]/60 rounded-sm text-sm font-medium transition-colors">Додати</button>
                                 </div>
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-1.5">
                                     {settings.weapons.map(w => (
-                                        <span key={w} className="px-3 py-1 bg-slate-800 rounded-lg text-sm text-slate-300 border border-slate-700 flex items-center gap-2">
+                                        <span key={w} className="px-2.5 py-1 bg-[#222429] rounded-sm text-xs text-[#f3f4f6] border border-[#2e3138] flex items-center gap-2">
                                             {w}
-                                            <button type="button" onClick={()=>removeItem('weapons', w)} className="text-slate-500 hover:text-red-400"><Icon name="x" className="w-3.5 h-3.5"/></button>
+                                            <button type="button" onClick={()=>removeItem('weapons', w)} className="text-[#989fa9] hover:text-[#f3a3a0]"><Icon name="x" className="w-3.5 h-3.5"/></button>
                                         </span>
                                     ))}
                                 </div>
                             </div>
-                            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-                                <h3 className="text-sm font-bold text-slate-300 uppercase mb-4">Позиції</h3>
+                            <div className="bg-[#17181b] border border-[#2e3138] rounded-sm p-5">
+                                <h3 className="text-xs font-semibold text-[#b8bec8] uppercase tracking-wider mb-3">Позиції</h3>
                                 <div className="flex gap-2 mb-3">
-                                    <input value={newPosition} onChange={e=>setNewPosition(e.target.value)} onKeyDown={e=>e.key==='Enter' && addItem('positions', newPosition, setNewPosition)} placeholder="Нова позиція..." className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm" />
-                                    <button type="button" onClick={()=>addItem('positions', newPosition, setNewPosition)} className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-sm font-bold">Додати</button>
+                                    <input value={newPosition} onChange={e=>setNewPosition(e.target.value)} onKeyDown={e=>e.key==='Enter' && addItem('positions', newPosition, setNewPosition)} placeholder="Нова позиція..." className="flex-1 bg-[#101113] border border-[#2e3138] rounded-sm px-3 py-1.5 text-sm text-[#f3f4f6] focus:border-[#4c8ed9] outline-none" />
+                                    <button type="button" onClick={()=>addItem('positions', newPosition, setNewPosition)} className="px-3 py-1.5 bg-[#2b67ab] hover:bg-[#3577c2] text-white border border-[#4c8ed9]/60 rounded-sm text-sm font-medium transition-colors">Додати</button>
                                 </div>
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-1.5">
                                     {settings.positions.map(p => (
-                                        <span key={p} className="px-3 py-1 bg-slate-800 rounded-lg text-sm text-slate-300 border border-slate-700 flex items-center gap-2">
+                                        <span key={p} className="px-2.5 py-1 bg-[#222429] rounded-sm text-xs text-[#f3f4f6] border border-[#2e3138] flex items-center gap-2">
                                             {p}
-                                            <button type="button" onClick={()=>removeItem('positions', p)} className="text-slate-500 hover:text-red-400"><Icon name="x" className="w-3.5 h-3.5"/></button>
+                                            <button type="button" onClick={()=>removeItem('positions', p)} className="text-[#989fa9] hover:text-[#f3a3a0]"><Icon name="x" className="w-3.5 h-3.5"/></button>
                                         </span>
                                     ))}
                                 </div>
                             </div>
 
                             {/* Небезпечна зона / Очищення */}
-                            <div className="bg-slate-900 border border-red-950/80 rounded-2xl p-5">
+                            <div className="bg-[#17181b] border border-[#d9534f]/40 rounded-sm p-5">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="space-y-0.5">
-                                        <div className="text-xs font-bold text-red-400 uppercase flex items-center gap-1.5">
-                                            <Icon name="alert-triangle" className="w-4 h-4 text-red-400" />
+                                        <div className="text-xs font-semibold text-[#f3a3a0] uppercase tracking-wider flex items-center gap-1.5">
+                                            <Icon name="alert-triangle" className="w-4 h-4 text-[#f3a3a0]" />
                                             <span>Небезпечна зона</span>
                                         </div>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-[#b8bec8] tabular-nums">
                                             Повне очищення збережених даних вкладки (зараз у базі: {events.length} подій, {personnel.length} в/сл противника)
                                         </p>
                                     </div>
                                     <button
                                         type="button"
                                         onClick={() => setIsClearDbConfirmOpen(true)}
-                                        className="px-4 py-2 bg-red-950/80 hover:bg-red-900 border border-red-800 text-red-300 hover:text-white font-bold rounded-xl text-xs transition cursor-pointer shrink-0 shadow-sm flex items-center gap-1.5"
+                                        className="px-3.5 py-2 bg-[#d9534f]/15 hover:bg-[#d9534f]/25 border border-[#d9534f]/50 text-[#f3a3a0] hover:text-white font-medium rounded-sm text-xs transition-colors cursor-pointer shrink-0 flex items-center gap-1.5"
                                     >
                                         <Icon name="trash-2" className="w-4 h-4" />
                                         Очистити базу
@@ -3356,56 +3486,56 @@ const EventsApp = (function() {
                             </div>
 
                             {isClearDbConfirmOpen && (
-                                <div onClick={(e) => { if (e.target === e.currentTarget && !isClearing) setIsClearDbConfirmOpen(false); }} className="fixed inset-0 z-[210] bg-black/90 flex items-center justify-center p-4">
-                                    <div className="bg-slate-900 border border-red-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl p-6 space-y-4">
+                                <div onClick={(e) => { if (e.target === e.currentTarget && !isClearing) setIsClearDbConfirmOpen(false); }} className="fixed inset-0 z-[210] bg-black/80 flex items-center justify-center p-4 overscroll-contain">
+                                    <div className="bg-[#17181b] border border-[#d9534f]/60 w-full max-w-md rounded-sm overflow-hidden p-5 space-y-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center shrink-0">
-                                                <Icon name="alert-octagon" className="w-6 h-6 text-red-500" />
+                                            <div className="w-9 h-9 rounded-sm bg-[#d9534f]/15 border border-[#d9534f]/40 flex items-center justify-center shrink-0">
+                                                <Icon name="alert-octagon" className="w-5 h-5 text-[#f3a3a0]" />
                                             </div>
                                             <div>
-                                                <h3 className="font-bold text-white text-base">Очищення бази «Втрати Противника»</h3>
-                                                <p className="text-xs text-slate-400">Оберіть які саме дані потрібно видалити</p>
+                                                <h3 className="font-semibold text-[#f3f4f6] text-base">Очищення бази «Втрати Противника»</h3>
+                                                <p className="text-xs text-[#b8bec8]">Оберіть які саме дані потрібно видалити</p>
                                             </div>
                                         </div>
 
-                                        <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 space-y-3">
+                                        <div className="bg-[#101113] border border-[#2e3138] rounded-sm p-3.5 space-y-3">
                                             <label className="flex items-start gap-2.5 cursor-pointer">
                                                 <input
                                                     type="checkbox"
                                                     checked={clearEventsOption}
                                                     onChange={e => setClearEventsOption(e.target.checked)}
-                                                    className="w-4 h-4 mt-0.5 rounded bg-slate-900 border-slate-700 text-red-600 focus:ring-0"
+                                                    className="w-4 h-4 mt-0.5 rounded-sm bg-[#17181b] border-[#2e3138] text-[#d9534f] focus:ring-0"
                                                 />
                                                 <div className="text-xs">
-                                                    <div className="font-semibold text-slate-200">Видалити всі події та втрати ворога</div>
-                                                    <div className="text-slate-400">Стрічка подій ({events.length} записів)</div>
+                                                    <div className="font-medium text-[#f3f4f6]">Видалити всі події та втрати ворога</div>
+                                                    <div className="text-[#b8bec8] tabular-nums">Стрічка подій ({events.length} записів)</div>
                                                 </div>
                                             </label>
 
-                                            <label className="flex items-start gap-2.5 cursor-pointer border-t border-slate-800/80 pt-2.5">
+                                            <label className="flex items-start gap-2.5 cursor-pointer border-t border-[#2e3138] pt-2.5">
                                                 <input
                                                     type="checkbox"
                                                     checked={clearPersonnelOption}
                                                     onChange={e => setClearPersonnelOption(e.target.checked)}
-                                                    className="w-4 h-4 mt-0.5 rounded bg-slate-900 border-slate-700 text-red-600 focus:ring-0"
+                                                    className="w-4 h-4 mt-0.5 rounded-sm bg-[#17181b] border-[#2e3138] text-[#d9534f] focus:ring-0"
                                                 />
                                                 <div className="text-xs">
-                                                    <div className="font-semibold text-slate-200">Видалити базу особового складу противника</div>
-                                                    <div className="text-slate-400">Реєстр в/сл противника ({personnel.length} записів)</div>
+                                                    <div className="font-medium text-[#f3f4f6]">Видалити базу особового складу противника</div>
+                                                    <div className="text-[#b8bec8] tabular-nums">Реєстр в/сл противника ({personnel.length} записів)</div>
                                                 </div>
                                             </label>
                                         </div>
 
-                                        <p className="text-xs text-amber-300/90 bg-amber-950/30 border border-amber-900/40 rounded-lg p-2.5 leading-relaxed">
+                                        <p className="text-xs text-[#d99b26] bg-[#d99b26]/10 border border-[#d99b26]/30 rounded-sm p-2.5 leading-relaxed">
                                             Перед очищенням автоматично зберігається копія попереднього стану. За потреби дані можна буде повернути кнопкою «Повернути дані до попереднього відновлення».
                                         </p>
 
-                                        <div className="flex gap-3 justify-end pt-2">
+                                        <div className="flex gap-2.5 justify-end pt-1">
                                             <button
                                                 type="button"
                                                 disabled={isClearing}
                                                 onClick={() => setIsClearDbConfirmOpen(false)}
-                                                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition cursor-pointer"
+                                                className="px-3.5 py-2 bg-[#222429] hover:bg-[#2e3138] border border-[#2e3138] text-[#f3f4f6] text-xs font-medium rounded-sm transition-colors cursor-pointer"
                                             >
                                                 Скасувати
                                             </button>
@@ -3413,7 +3543,7 @@ const EventsApp = (function() {
                                                 type="button"
                                                 disabled={isClearing || (!clearEventsOption && !clearPersonnelOption)}
                                                 onClick={handleClearDatabase}
-                                                className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:hover:bg-red-600 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-red-900 cursor-pointer"
+                                                className="px-3.5 py-2 bg-[#d9534f] hover:bg-[#c24440] disabled:opacity-50 disabled:hover:bg-[#d9534f] text-white text-xs font-medium rounded-sm transition-colors cursor-pointer"
                                             >
                                                 {isClearing ? 'Очищення…' : 'Так, очистити'}
                                             </button>
@@ -3422,8 +3552,8 @@ const EventsApp = (function() {
                                 </div>
                             )}
 
-                            <div className="text-xs text-slate-500 leading-relaxed">
-                                Клавіші: <span className="text-slate-300">N</span> нова подія · <span className="text-slate-300">1–4</span> вкладки · <span className="text-slate-300">Esc</span> закрити вікно.
+                            <div className="text-xs text-[#989fa9] leading-relaxed">
+                                Клавіші: <span className="text-[#f3f4f6] font-mono">N</span> нова подія · <span className="text-[#f3f4f6] font-mono">1–4</span> вкладки · <span className="text-[#f3f4f6] font-mono">Esc</span> закрити вікно.
                             </div>
                         </div>
                     </div>
@@ -3706,12 +3836,11 @@ const EventsApp = (function() {
             useEffect(() => {
                 const onKey = (e) => {
                     if (document.querySelector('[data-suite-module="enemy"]')?.dataset.suiteActive !== 'true') return;
-                    const tag = (e.target.tagName || '').toLowerCase();
-                    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
-                    if (e.key === 'Escape') {
-                        setIsFormOpen(false); setEditingEvent(null); setViewingEvent(null);
-                    }
-                    if (e.key === 'n' || e.key === 'N') { e.preventDefault(); setIsFormOpen(true); }
+                    if (e.ctrlKey || e.metaKey || e.altKey) return;
+                    if (document.querySelector('[role="dialog"]')) return;
+                    const tag = (e.target?.tagName || '').toLowerCase();
+                    if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target?.isContentEditable) return;
+                    if (e.key === 'n' || e.key === 'N' || e.key === 'т' || e.key === 'Т') { e.preventDefault(); setIsFormOpen(true); }
                     if (e.key === '1') setActiveTab('list');
                     if (e.key === '2') setActiveTab('dashboard');
                     if (e.key === '3') setActiveTab('analytics');
@@ -3741,40 +3870,40 @@ const EventsApp = (function() {
                 <EnemyAppContext.Provider value={{ allPOWs, dailyFriendlyLosses, deleteEvent, events, medicalSync, replaceDocumentData, requestPassword, saveEvents, savePersonnel, saveSettings, setDeletedRecord, setEditingEvent, setIsFormOpen, setViewingEvent, setAssaultReportEvent, settings, showToast, personnel }}>
                 <div className="flex flex-col h-full">
                     {/* Header Nav */}
-                    <header className="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 shrink-0 print:hidden">
-                        <div className="w-full max-w-[2400px] px-2 lg:px-4 mx-auto h-16 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-red-600 flex items-center justify-center shadow-lg">
-                                    <Icon name="crosshair" className="w-5 h-5 text-white" />
+                    <header className="bg-[#17181b] border-b border-[#2e3138] sticky top-0 z-40 shrink-0 print:hidden">
+                        <div className="w-full max-w-[2400px] px-2 lg:px-4 mx-auto h-14 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2.5 shrink-0">
+                                <div className="w-7 h-7 rounded-sm bg-[#2b1719] border border-[#ef4444]/45 flex items-center justify-center text-[#f87171]">
+                                    <Icon name="crosshair" className="w-4 h-4" />
                                 </div>
-                                <span className="font-bold text-lg tracking-tight text-white hidden sm:block">Втрати Противника</span>
-                                <span className="hidden md:inline text-[10px] font-mono text-slate-500 border border-slate-800 rounded-md px-1.5 py-0.5">{events.filter(e=>e.isRealEvent!==false).length} подій</span>
+                                <span className="font-semibold text-base tracking-tight text-[#f3f4f6] hidden sm:block">Втрати Противника</span>
+                                <span className="hidden md:inline text-[11px] font-mono text-[#c2c7d0] bg-[#101113] border border-[#2e3138] rounded-sm px-1.5 py-0.5 tabular-nums">{events.filter(e=>e.isRealEvent!==false).length} подій</span>
                             </div>
                             
-                            <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 overflow-x-auto snap-x hide-scrollbar">
-                                <button onClick={() => setActiveTab('list')} className={`shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold transition flex items-center gap-2 snap-start ${activeTab === 'list' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}>
+                            <div className="flex bg-[#101113] p-0.5 rounded-sm border border-[#2e3138] overflow-x-auto snap-x hide-scrollbar gap-0.5">
+                                <button onClick={() => setActiveTab('list')} className={`shrink-0 px-3 py-1 rounded-sm text-xs sm:text-sm font-medium transition-colors flex items-center gap-1.5 snap-start border ${activeTab === 'list' ? 'bg-[#2b1719] text-[#fef2f2] border-[#ef4444]/65 [&_svg]:text-[#f87171]' : 'border-transparent text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429]'}`}>
                                     <Icon name="list" className="w-4 h-4" /> Стрічка
                                 </button>
-                                <button onClick={() => setActiveTab('dashboard')} className={`shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold transition flex items-center gap-2 snap-start ${activeTab === 'dashboard' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}>
+                                <button onClick={() => setActiveTab('dashboard')} className={`shrink-0 px-3 py-1 rounded-sm text-xs sm:text-sm font-medium transition-colors flex items-center gap-1.5 snap-start border ${activeTab === 'dashboard' ? 'bg-[#2b1719] text-[#fef2f2] border-[#ef4444]/65 [&_svg]:text-[#f87171]' : 'border-transparent text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429]'}`}>
                                     <Icon name="pie-chart" className="w-4 h-4" /> Дашборд
                                 </button>
-                                <button onClick={() => setActiveTab('analytics')} className={`shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold transition flex items-center gap-2 snap-start ${activeTab === 'analytics' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}>
+                                <button onClick={() => setActiveTab('analytics')} className={`shrink-0 px-3 py-1 rounded-sm text-xs sm:text-sm font-medium transition-colors flex items-center gap-1.5 snap-start border ${activeTab === 'analytics' ? 'bg-[#2b1719] text-[#fef2f2] border-[#ef4444]/65 [&_svg]:text-[#f87171]' : 'border-transparent text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429]'}`}>
                                     <Icon name="bar-chart-2" className="w-4 h-4" /> Таблиця
                                 </button>
-                                <button onClick={() => setActiveTab('personnel')} className={`shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold transition flex items-center gap-2 snap-start ${activeTab === 'personnel' ? 'bg-slate-800 text-amber-400 shadow-sm' : 'text-slate-400 hover:text-amber-400/70'}`}>
-                                    <Icon name="users" className="w-5 h-5" /> База в/сл противника
+                                <button onClick={() => setActiveTab('personnel')} className={`shrink-0 px-3 py-1 rounded-sm text-xs sm:text-sm font-medium transition-colors flex items-center gap-1.5 snap-start border ${activeTab === 'personnel' ? 'bg-[#2b1719] text-[#fef2f2] border-[#ef4444]/65 [&_svg]:text-[#f87171]' : 'border-transparent text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429]'}`}>
+                                    <Icon name="users" className="w-4 h-4" /> База в/сл противника
                                 </button>
-                                <button onClick={() => setActiveTab('settings')} className={`shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold transition flex items-center gap-2 snap-start ${activeTab === 'settings' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}>
-                                    <Icon name="settings" className="w-5 h-5" /> Налаштування
+                                <button onClick={() => setActiveTab('settings')} className={`shrink-0 px-3 py-1 rounded-sm text-xs sm:text-sm font-medium transition-colors flex items-center gap-1.5 snap-start border ${activeTab === 'settings' ? 'bg-[#2b1719] text-[#fef2f2] border-[#ef4444]/65 [&_svg]:text-[#f87171]' : 'border-transparent text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429]'}`}>
+                                    <Icon name="settings" className="w-4 h-4" /> Налаштування
                                 </button>
                             </div>
                         </div>
                     </header>
 
                     {/* Main Content */}
-                    {deletedRecord && <div className="px-4 py-2 bg-amber-950/30 border-b border-amber-800/40 text-sm flex justify-between items-center gap-3">
+                    {deletedRecord && <div className="px-4 py-2 bg-[#17181b] border-b border-[#d99b26]/50 text-xs sm:text-sm text-[#f3f4f6] flex justify-between items-center gap-3">
                         <span>Останній видалений запис можна повернути до закриття сторінки.</span>
-                        <button type="button" className="rounded-lg px-3 py-2 border border-amber-700 text-amber-200" onClick={async () => {
+                        <button type="button" className="rounded-sm px-3 py-1.5 bg-[#d99b26]/15 hover:bg-[#d99b26]/25 border border-[#d99b26]/50 text-[#d99b26] font-medium transition-colors" onClick={async () => {
                             try {
                                 if (!events.some(e => e.id === deletedRecord.id)) await saveEvents([deletedRecord, ...events]);
                                 setDeletedRecord(null);
@@ -3893,23 +4022,36 @@ const EventsApp = (function() {
                         />
                     )}
                     {passwordPrompt && (
-                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                            <form onSubmit={(e) => {
-                                e.preventDefault();
-                                const val = e.target.password.value;
-                                if (passwordPrompt.validate) {
-                                    const err = passwordPrompt.validate(val);
-                                    if (err) { showToast(err); return; }
-                                }
-                                const resolve = passwordPrompt.resolve;
-                                setPasswordPrompt(null);
-                                resolve(val);
-                            }} className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4">
-                                <h3 className="text-lg font-bold text-white">{passwordPrompt.title}</h3>
-                                <input name="password" type="password" autoFocus placeholder={passwordPrompt.placeholder} className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-white focus:border-amber-500 outline-none" />
-                                <div className="flex justify-end gap-3 pt-2">
-                                    <button type="button" onClick={() => { passwordPrompt.resolve(null); setPasswordPrompt(null); }} className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition">Скасувати</button>
-                                    <button type="submit" className="px-4 py-2 rounded-xl text-sm font-semibold bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-900/20 transition">{passwordPrompt.confirmText}</button>
+                        <div className="fixed inset-0 bg-black/75 z-[100] flex items-center justify-center p-4 overscroll-contain">
+                            <form
+                                role="dialog"
+                                aria-modal="true"
+                                aria-label={passwordPrompt.title || 'Підтвердження паролем'}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Escape') {
+                                        e.preventDefault();
+                                        passwordPrompt.resolve(null);
+                                        setPasswordPrompt(null);
+                                    }
+                                }}
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const val = e.target.password.value;
+                                    if (passwordPrompt.validate) {
+                                        const err = passwordPrompt.validate(val);
+                                        if (err) { showToast(err); return; }
+                                    }
+                                    const resolve = passwordPrompt.resolve;
+                                    setPasswordPrompt(null);
+                                    resolve(val);
+                                }}
+                                className="bg-[#17181b] border border-[#2e3138] rounded-sm w-full max-w-sm p-5 space-y-4"
+                            >
+                                <h3 className="text-base font-semibold text-[#f3f4f6]">{passwordPrompt.title}</h3>
+                                <input name="password" type="password" autoFocus placeholder={passwordPrompt.placeholder} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-3 py-2 text-sm text-[#f3f4f6] focus:border-[#4c8ed9] outline-none" />
+                                <div className="flex justify-end gap-2.5 pt-1">
+                                    <button type="button" onClick={() => { passwordPrompt.resolve(null); setPasswordPrompt(null); }} className="px-3.5 py-2 rounded-sm text-xs font-medium text-[#b8bec8] hover:text-[#f3f4f6] bg-[#222429] border border-[#2e3138] transition-colors">Скасувати</button>
+                                    <button type="submit" className="px-3.5 py-2 rounded-sm text-xs font-medium bg-[#2b67ab] hover:bg-[#3577c2] text-white border border-[#4c8ed9]/60 transition-colors">{passwordPrompt.confirmText}</button>
                                 </div>
                             </form>
                         </div>

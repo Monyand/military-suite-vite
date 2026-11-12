@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { OVT_TEMPLATE_LISTS, OVT_STATUSES, ovtTemplateName, addOvtTemplateLines, emptyOvtTemplates, validateOvtTemplates, normalizeOvtTemplates } from '../core/ovt-templates.js';
 
 export function OvtTemplatesEditor({ value, onChange, onPendingChange }) {
-    const templates = normalizeOvtTemplates(value ?? emptyOvtTemplates());
+    const templates = useMemo(() => normalizeOvtTemplates(value ?? emptyOvtTemplates()), [value]);
     const [buffers, setBuffers] = useState({});
     const [equipmentType, setEquipmentType] = useState('');
     const [category, setCategory] = useState('Транспорт');
@@ -13,14 +13,14 @@ export function OvtTemplatesEditor({ value, onChange, onPendingChange }) {
         try { onChange(validateOvtTemplates(action())); setMessage(''); return true; }
         catch (error) { setMessage(error.message); return false; }
     };
-    const types = templates.equipmentTypes.filter(e => (e.category || 'Транспорт') === category).map(ovtTemplateName);
-    const sections = OVT_TEMPLATE_LISTS.filter(([key]) => {
+    const types = useMemo(() => templates.equipmentTypes.filter(e => (e.category || 'Транспорт') === category).map(ovtTemplateName), [templates.equipmentTypes, category]);
+    const sections = useMemo(() => OVT_TEMPLATE_LISTS.filter(([key]) => {
         if (category === 'Транспорт') return key !== 'crews';
         if (category === 'БпЛА') return ['tasks', 'crews', 'models', 'descriptions'].includes(key);
         return ['tasks', 'models', 'descriptions'].includes(key);
     }).flatMap(([key, title, example]) => key === 'consequences'
         ? [...OVT_STATUSES, ''].map(status => ({ key, title: status ? 'Наслідок · ' + status : 'Наслідок · Нерозподілені', example: status === 'ПОШКОДЖЕНО' ? 'транспортний засіб був пошкоджений' : example, status, id: category + key + status }))
-        : [{ key, title, example, id: category + key }]);
+        : [{ key, title, example, id: category + key }]), [category]);
     const updateEntry = (key, index, patch) => change(() => {
         const next = structuredClone(templates), entry = next[key][index];
         next[key][index] = { ...(typeof entry === 'string' ? { name: entry } : entry), ...patch };
@@ -29,8 +29,8 @@ export function OvtTemplatesEditor({ value, onChange, onPendingChange }) {
     const OVT_CATEGORIES = ['Транспорт', 'БпЛА', 'Зброя', 'Інше'];
     return <div data-testid="ovt-template-editor">
         <h3>Шаблони ОВТ</h3>
-        <div className="sd-nav" style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-            {OVT_CATEGORIES.map(cat => <button type="button" key={cat} aria-pressed={category === cat} onClick={() => { setCategory(cat); setEquipmentType(''); }} className="dj-tab" style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #1e293b', background: category === cat ? '#1e293b' : 'transparent', color: category === cat ? '#fff' : '#94a3b8' }}>{cat}</button>)}
+        <div className="sd-actions" style={{ marginBottom: '12px' }}>
+            {OVT_CATEGORIES.map(cat => <button type="button" key={cat} aria-pressed={category === cat} onClick={() => { setCategory(cat); setEquipmentType(''); }}>{cat}</button>)}
         </div>
         {category === 'Транспорт' ? <>
             <p className="sd-note">Моделі, завдання, маршрути й описи — спільні для обох статусів, з прив’язкою лише до типу транспорту/техніки. Тільки наслідки поділені на «ЗНИЩЕНО» та «ПОШКОДЖЕНО». Власні варіанти запам’ятовуються після збереження події.</p>

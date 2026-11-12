@@ -30,8 +30,8 @@ export function StatusHistoryChainBadge({ episodes = [], onReview }) {
     });
     const text = chain.map(item => item.label + (item.count > 1 ? ` ×${item.count}` : '')).join(' → ');
     return <button type="button" onClick={event => { event.stopPropagation(); onReview?.(); }} title={text + (issues.length ? '. Натисніть, щоб перевірити дати.' : '. Історія дат подій.')}
-        className={'text-[10px] border rounded px-2 py-1 text-left ' + (issues.length ? 'text-rose-200 bg-rose-950 border-rose-500 animate-pulse' : 'text-amber-300 bg-amber-950/70 border-amber-700')}>
-        {issues.length ? '⚠ Помилка дат · ' : '↳ '}{text}
+        className={'text-[10px] border rounded-sm px-2 py-1 text-left transition-colors ' + (issues.length ? 'text-[#f3a3a0] bg-[#d9534f]/15 border-[#d9534f]/60' : 'text-[#d99b26] bg-[#d99b26]/10 border-[#d99b26]/40')}>
+        {issues.length ? 'Помилка дат · ' : '↳ '}{text}
     </button>;
 }
 

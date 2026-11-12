@@ -44,6 +44,8 @@ const DocumentJournal = (() => {
                 Object.fromEntries(Object.entries(filters()).map(([key, fallback]) => [key, typeof value?.filters?.[tab]?.[key] === typeof fallback ? value.filters[tab][key] : fallback]))
             ])) });
             const norm = value => String(value ?? '').normalize('NFKC').trim().toLocaleLowerCase('uk-UA').replace(/\s+/g, ' ');
+            const HOMOGLYPHS = { a: 'а', c: 'с', e: 'е', i: 'і', o: 'о', p: 'р', x: 'х', y: 'у' };
+            const normSearch = value => norm(value).replace(/[’ʼ`′]/g, "'").replace(/[aceiopxy]/g, ch => HOMOGLYPHS[ch] || ch);
             const checked = value => value === true || value === 1 || ['так', 'true', '1', '✓', '✔', '☑'].includes(norm(value));
             const dateKey = value => {
                 let text = String(value ?? '').trim();
@@ -150,13 +152,19 @@ const DocumentJournal = (() => {
                 return { incoming, ignored, issues };
             };
             const hasDoc = row => !!norm(row.docNumber ?? row.urgentDocNo) && !['-', '—', '--', '?', 'неофіційно', 'немає', 'ні', 'не вказано', 'очікується', 'невідомо', 'без номера', 'б/н', 'н/д', 'n/a'].includes(norm(row.docNumber ?? row.urgentDocNo));
-            const filtered = (tab, rows, options) => rows.filter(row => {
-                const haystack = schemas[tab].fields.filter(([, , type]) => type !== 'checkbox').map(([key]) => row[key]).join(' ');
-                return (!options.search || norm(haystack).includes(norm(options.search))) &&
-                    (!options.from || row.date >= options.from) && (!options.to || row.date <= options.to) &&
-                    (!options.status || row.status === options.status) && (!options.category || (options.category === '__uncategorized' ? !row.category : tab === 'positions' ? matchesPositionCategory(row.category, options.category) : row.category === options.category)) && (!options.event || row.isEvent === (options.event === 'marked')) &&
-                    (!options.unreported || !row.reportedInPbd) && (!options.missingDoc || !hasDoc(row));
-            }).sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || ''));
+            const filtered = (tab, rows, options) => {
+                const search = options.search ? normSearch(options.search) : '';
+                const searchKeys = search ? schemas[tab].fields.filter(([, , type]) => type !== 'checkbox').map(([key]) => key) : null;
+                return rows.filter(row => {
+                    if (search) {
+                        const haystack = searchKeys.map(key => row[key]).join(' ');
+                        if (!normSearch(haystack).includes(search)) return false;
+                    }
+                    return (!options.from || row.date >= options.from) && (!options.to || row.date <= options.to) &&
+                        (!options.status || row.status === options.status) && (!options.category || (options.category === '__uncategorized' ? !row.category : tab === 'positions' ? matchesPositionCategory(row.category, options.category) : row.category === options.category)) && (!options.event || row.isEvent === (options.event === 'marked')) &&
+                        (!options.unreported || !row.reportedInPbd) && (!options.missingDoc || !hasDoc(row));
+                }).sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || ''));
+            };
             return { KEY, tabs, schemas, positionCategoryCards, matchesPositionCategory, filters, defaultOvtDict, empty, settings, norm, checked, dateKey, dateLabel, timeValue, cleanRow, rowError, migrate, validate, fingerprint, merge, readWorkbook, hasDoc, filtered };
         })();
 

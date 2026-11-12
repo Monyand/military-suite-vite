@@ -1,10 +1,20 @@
-import { default as React, useState } from 'react';
+import { default as React, useMemo, useState } from 'react';
+
+const HOMOGLYPHS = { a: 'а', c: 'с', e: 'е', i: 'і', o: 'о', p: 'р', x: 'х', y: 'у' };
+const normSearchText = (value) => String(value ?? '')
+    .normalize('NFKC')
+    .trim()
+    .toLocaleLowerCase('uk-UA')
+    .replace(/[’ʼ`′]/g, "'")
+    .replace(/[aceiopxy]/g, ch => HOMOGLYPHS[ch] || ch)
+    .replace(/\s+/g, ' ');
 
 export const PersonnelView = ({ personnel, savePersonnel, showToast, Icon, generateId }) => {
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [editingId, setEditingId] = useState(null);
-    
+    const [pendingDeleteId, setPendingDeleteId] = useState(null);
+
     const [formData, setFormData] = useState({ callsign: '', status: 'alive', notes: '' });
 
     const handleSave = async (e) => {
@@ -27,32 +37,41 @@ export const PersonnelView = ({ personnel, savePersonnel, showToast, Icon, gener
     };
 
     const handleDelete = async (id) => {
-        if (confirm('Видалити цей запис?')) {
-            await savePersonnel(personnel.filter(p => p.id !== id));
-            showToast('Запис видалено');
+        await savePersonnel(personnel.filter(p => p.id !== id));
+        setPendingDeleteId(prev => (prev === id ? null : prev));
+        if (editingId === id) {
+            setEditingId(null);
+            setFormData({ callsign: '', status: 'alive', notes: '' });
         }
+        showToast('Запис видалено');
     };
 
-    const filtered = personnel.filter(p => {
-        if (filterStatus !== 'all' && p.status !== filterStatus) return false;
-        if (search && !p.callsign.toLowerCase().includes(search.toLowerCase())) return false;
-        return true;
-    });
+    const filtered = useMemo(() => {
+        const needle = normSearchText(search);
+        return personnel.filter(p => {
+            if (filterStatus !== 'all' && p.status !== filterStatus) return false;
+            if (needle) {
+                const hay = normSearchText(`${p.callsign || ''} ${p.notes || ''}`);
+                if (!hay.includes(needle)) return false;
+            }
+            return true;
+        });
+    }, [personnel, filterStatus, search]);
 
     const getStatusColor = (status) => {
-        switch(status) {
-            case '200': 
-            case '200_disc': 
+        switch (status) {
+            case '200':
+            case '200_disc':
             case '200_pow':
-                return 'text-red-500 border-red-500 bg-red-500/10';
-            case '200_unc': return 'text-rose-400 border-rose-400 bg-rose-500/10';
-            case '300': return 'text-amber-500 border-amber-500 bg-amber-500/10';
-            case 'pow': return 'text-emerald-500 border-emerald-500 bg-emerald-500/10';
-            default: return 'text-slate-400 border-slate-600';
+                return 'text-[#f3a3a0] border-[#d9534f]/60 bg-[#d9534f]/15';
+            case '200_unc': return 'text-[#e5989b] border-[#d9534f]/40 bg-[#d9534f]/10';
+            case '300': return 'text-[#d99b26] border-[#d99b26]/50 bg-[#d99b26]/12';
+            case 'pow': return 'text-[#3da372] border-[#3da372]/50 bg-[#3da372]/12';
+            default: return 'text-[#b8bec8] border-[#2e3138] bg-[#222429]';
         }
     };
     const getStatusLabel = (status) => {
-        switch(status) {
+        switch (status) {
             case '200': return '200 (Вбито)';
             case '200_unc': return '200* (Ймовірно)';
             case '200_disc': return 'Вияв. 200';
@@ -64,15 +83,15 @@ export const PersonnelView = ({ personnel, savePersonnel, showToast, Icon, gener
     };
 
     return (
-        <div className="flex-1 flex flex-col md:flex-row gap-4 p-4 overflow-hidden h-full">
+        <div className="flex-1 flex flex-col md:flex-row gap-4 p-4 overflow-hidden h-full bg-[#101113] text-[#f3f4f6]">
             {/* Ліва панель: Список */}
-            <div className="flex-[2] flex flex-col gap-3 min-h-0 bg-slate-900/50 rounded-xl border border-slate-800 p-4">
-                <div className="flex items-center gap-3">
-                    <div className="text-slate-400 text-sm whitespace-nowrap font-medium px-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg">
+            <div className="flex-[2] flex flex-col gap-3 min-h-0 bg-[#17181b] rounded-sm border border-[#2e3138] p-4">
+                <div className="flex items-center flex-wrap gap-2">
+                    <div className="text-[#b8bec8] text-xs whitespace-nowrap font-semibold px-2.5 py-1.5 bg-[#101113] border border-[#2e3138] rounded-sm tabular-nums">
                         Всього: {filtered.length}
                     </div>
-                    <input type="text" placeholder="Пошук (позивний)..." value={search} onChange={e => setSearch(e.target.value)} className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200" />
-                    <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200">
+                    <input type="text" placeholder="Пошук (позивний або примітки)..." value={search} onChange={e => setSearch(e.target.value)} className="flex-1 min-w-[160px] bg-[#101113] border border-[#2e3138] rounded-sm px-3 py-1.5 text-sm text-[#f3f4f6] placeholder-[#989fa9] focus:outline-none focus:border-[#4c8ed9]" />
+                    <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-[#101113] border border-[#2e3138] rounded-sm px-3 py-1.5 text-sm text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9]">
                         <option value="all">Всі статуси</option>
                         <option value="alive">Живі</option>
                         <option value="300">300 (Поранені)</option>
@@ -83,41 +102,52 @@ export const PersonnelView = ({ personnel, savePersonnel, showToast, Icon, gener
                         <option value="200_pow">200 (Загиблий полонений)</option>
                     </select>
                 </div>
-                <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto divide-y divide-[#2e3138] border border-[#2e3138] rounded-sm bg-[#101113] custom-scrollbar">
                     {filtered.map(p => (
-                        <div key={p.id} className="bg-slate-950 border border-slate-800 rounded-lg p-3 flex items-center justify-between hover:border-slate-700 transition group">
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <span className="font-bold text-slate-200 font-mono text-base">{p.callsign}</span>
-                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${getStatusColor(p.status)} uppercase`}>{getStatusLabel(p.status)}</span>
+                        <div key={p.id} className="px-3.5 py-2.5 flex items-center justify-between gap-2 hover:bg-[#222429] transition-colors group">
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-semibold text-[#f3f4f6] font-mono text-sm">{p.callsign}</span>
+                                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-sm border ${getStatusColor(p.status)} uppercase`}>{getStatusLabel(p.status)}</span>
                                 </div>
-                                {p.notes && <div className="text-xs text-slate-500 mt-1 italic">{p.notes}</div>}
+                                {p.notes && <div className="text-xs text-[#b8bec8] mt-1">{p.notes}</div>}
                             </div>
-                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
-                                <button type="button" aria-label="Редагувати запис" title="Редагувати" onClick={() => { setEditingId(p.id); setFormData({ callsign: p.callsign, status: p.status, notes: p.notes || '' }); }} className="p-2 text-slate-400 hover:text-amber-400 hover:bg-amber-400/10 rounded-lg">
+                            <div className={`flex items-center gap-1.5 shrink-0 transition-opacity ${pendingDeleteId === p.id ? 'opacity-100' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100'}`}>
+                                <button type="button" aria-label="Редагувати запис" title="Редагувати" onClick={() => { setPendingDeleteId(null); setEditingId(p.id); setFormData({ callsign: p.callsign, status: p.status, notes: p.notes || '' }); }} className="p-1.5 text-[#b8bec8] hover:text-[#4c8ed9] hover:bg-[#222429] rounded-sm border border-transparent hover:border-[#2e3138]">
                                     <Icon name="edit-2" className="w-4 h-4" />
                                 </button>
-                                <button type="button" aria-label="Видалити запис" title="Видалити" onClick={() => handleDelete(p.id)} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg">
-                                    <Icon name="trash-2" className="w-4 h-4" />
-                                </button>
+                                {pendingDeleteId === p.id ? (
+                                    <>
+                                        <button type="button" onClick={() => handleDelete(p.id)} className="px-2 py-1 text-xs font-semibold bg-[#d9534f]/20 hover:bg-[#d9534f]/30 border border-[#d9534f]/60 text-[#f3a3a0] rounded-sm transition-colors">
+                                            Видалити?
+                                        </button>
+                                        <button type="button" onClick={() => setPendingDeleteId(null)} className="px-2 py-1 text-xs font-semibold bg-[#222429] hover:bg-[#282b31] border border-[#2e3138] text-[#cbd5e1] rounded-sm transition-colors">
+                                            Ні
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button type="button" aria-label="Видалити запис" title="Видалити" onClick={() => setPendingDeleteId(p.id)} className="p-1.5 text-[#b8bec8] hover:text-[#f3a3a0] hover:bg-[#d9534f]/10 rounded-sm border border-transparent hover:border-[#d9534f]/40">
+                                        <Icon name="trash-2" className="w-4 h-4" />
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}
-                    {filtered.length === 0 && <div className="text-center text-slate-500 text-sm py-8">Нічого не знайдено</div>}
+                    {filtered.length === 0 && <div className="text-center text-[#989fa9] text-sm py-8">Нічого не знайдено</div>}
                 </div>
             </div>
 
             {/* Права панель: Форма */}
-            <div className="flex-1 flex flex-col gap-3 bg-slate-900/80 rounded-xl border border-slate-800 p-4 h-fit sticky top-4">
-                <h3 className="font-bold text-slate-200">{editingId ? 'Редагувати запис' : 'Додати в базу'}</h3>
-                <form onSubmit={handleSave} className="space-y-4">
+            <div className="flex-1 flex flex-col gap-3 bg-[#17181b] rounded-sm border border-[#2e3138] p-4 h-fit sticky top-4">
+                <h3 className="font-bold text-sm text-[#f3f4f6] border-b border-[#2e3138] pb-2.5">{editingId ? 'Редагувати запис' : 'Додати в базу'}</h3>
+                <form onSubmit={handleSave} className="space-y-3.5">
                     <div>
-                        <label className="block text-xs font-semibold text-slate-400 mb-1">Позивний <span className="text-red-400">*</span></label>
-                        <input type="text" required value={formData.callsign} onChange={e => setFormData({...formData, callsign: e.target.value})} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-amber-500" placeholder="Напр. Тайсон" />
+                        <label className="block text-xs font-semibold text-[#b8bec8] mb-1">Позивний <span className="text-[#f3a3a0]">*</span></label>
+                        <input type="text" required value={formData.callsign} onChange={e => setFormData({ ...formData, callsign: e.target.value })} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-3 py-1.5 text-sm text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9]" placeholder="Напр. Тайсон" />
                     </div>
                     <div>
-                        <label className="block text-xs font-semibold text-slate-400 mb-1">Статус</label>
-                        <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-amber-500">
+                        <label className="block text-xs font-semibold text-[#b8bec8] mb-1">Статус</label>
+                        <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-3 py-1.5 text-sm text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9]">
                             <option value="alive">Живий / Активний</option>
                             <option value="300">300 (Поранено)</option>
                             <option value="pow">Полонений</option>
@@ -128,13 +158,13 @@ export const PersonnelView = ({ personnel, savePersonnel, showToast, Icon, gener
                         </select>
                     </div>
                     <div>
-                        <label className="block text-xs font-semibold text-slate-400 mb-1">Примітки</label>
-                        <textarea value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-amber-500 min-h-[80px]" placeholder="Додаткова інформація..."></textarea>
+                        <label className="block text-xs font-semibold text-[#b8bec8] mb-1">Примітки</label>
+                        <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} className="w-full bg-[#101113] border border-[#2e3138] rounded-sm px-3 py-1.5 text-sm text-[#f3f4f6] focus:outline-none focus:border-[#4c8ed9] min-h-[80px]" placeholder="Додаткова інформація..."></textarea>
                     </div>
-                    <div className="flex gap-2 pt-2">
-                        <button type="submit" className="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 rounded-lg transition">{editingId ? 'Зберегти' : 'Додати'}</button>
+                    <div className="flex gap-2 pt-1">
+                        <button type="submit" className="flex-1 bg-[#2b67ab] hover:bg-[#3477c2] border border-[#4c8ed9] text-white font-semibold text-xs py-2 rounded-sm transition-colors">{editingId ? 'Зберегти' : 'Додати'}</button>
                         {editingId && (
-                            <button type="button" onClick={() => { setEditingId(null); setFormData({ callsign: '', status: 'alive', notes: '' }); }} className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 rounded-lg transition">Скасувати</button>
+                            <button type="button" onClick={() => { setEditingId(null); setFormData({ callsign: '', status: 'alive', notes: '' }); }} className="flex-1 bg-[#222429] hover:bg-[#282b31] border border-[#2e3138] text-[#cbd5e1] font-semibold text-xs py-2 rounded-sm transition-colors">Скасувати</button>
                         )}
                     </div>
                 </form>

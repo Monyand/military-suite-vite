@@ -66,10 +66,11 @@ const createPersonnelModule = () => {
 
     function toggleDarkMode() {
         isDarkMode = !isDarkMode;
-        window.SuiteRuntime.setLocalItem('tactical_dark_mode', isDarkMode ? 'true' : 'false');
+        if (window.SuiteRuntime?.setLocalItem) window.SuiteRuntime.setLocalItem('tactical_dark_mode', isDarkMode ? 'true' : 'false');
+        else localStorage.setItem('tactical_dark_mode', isDarkMode ? 'true' : 'false');
         applyTheme();
         if (typeof lucide !== 'undefined') lucide.createIcons();
-        showToast(isDarkMode ? '🌙 Нічний режим увімкнено' : '☀️ Денний режим увімкнено');
+        showToast(isDarkMode ? 'Темну тему увімкнено' : 'Світлу тему увімкнено');
     }
 
     function applySidebarState() {
@@ -86,7 +87,8 @@ const createPersonnelModule = () => {
 
     function toggleSidebar() {
         isSidebarCollapsed = !isSidebarCollapsed;
-        window.SuiteRuntime.setLocalItem('tactical_sidebar_collapsed', isSidebarCollapsed ? 'true' : 'false');
+        if (window.SuiteRuntime?.setLocalItem) window.SuiteRuntime.setLocalItem('tactical_sidebar_collapsed', isSidebarCollapsed ? 'true' : 'false');
+        else localStorage.setItem('tactical_sidebar_collapsed', isSidebarCollapsed ? 'true' : 'false');
         applySidebarState();
         if (typeof lucide !== 'undefined') lucide.createIcons();
     }
@@ -94,12 +96,12 @@ const createPersonnelModule = () => {
     // ─── КОНСТАНТИ ────────────────────────────────────────────────────────────
     const RANKS = ['Солдат','Ст. солдат','Мл. сержант','Сержант','Ст. сержант','Мл. лейтенант','Лейтенант','Ст. лейтенант','Капітан','Майор'];
     const STATUSES = {
-        '200':      { label: '200 (Загиблий)',     color: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800',                  icon: 'crosshair' },
-        'mia':      { label: 'Зниклий',            color: 'bg-gray-200 text-gray-800 border-gray-400 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500',                icon: 'alert-triangle' },
-        '300':      { label: '300 (Поранений)',    color: 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800', icon: 'heart-pulse' },
-        'sick':     { label: 'Хворий/травма',      color: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800', icon: 'activity' },
-        'detached': { label: 'Відрив',             color: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800', icon: 'plane-takeoff' },
-        'ok':       { label: 'В строю',            color: 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800',     icon: 'shield' }
+        '200':      { label: '200 (Загиблий)',     color: 'bg-[rgba(224,82,82,0.14)] text-[#fca5a5] border-[rgba(224,82,82,0.45)]',      icon: 'crosshair' },
+        'mia':      { label: 'Зниклий',            color: 'bg-[#222429] text-[#b8bec8] border-[#3c404a]',                                  icon: 'alert-triangle' },
+        '300':      { label: '300 (Поранений)',    color: 'bg-[rgba(234,88,12,0.14)] text-[#fdba74] border-[rgba(234,88,12,0.42)]',      icon: 'heart-pulse' },
+        'sick':     { label: 'Хворий/травма',      color: 'bg-[rgba(217,155,38,0.12)] text-[#fcd34d] border-[rgba(217,155,38,0.40)]',    icon: 'activity' },
+        'detached': { label: 'Відрив',             color: 'bg-[rgba(76,142,217,0.14)] text-[#93c5fd] border-[rgba(76,142,217,0.40)]',    icon: 'plane-takeoff' },
+        'ok':       { label: 'В строю',            color: 'bg-[rgba(52,168,115,0.14)] text-[#6ee7b7] border-[rgba(52,168,115,0.40)]',    icon: 'shield' }
     };
     const STATUS_KEYS    = ['200', 'mia', '300', 'sick', 'detached', 'ok'];
     const POSITION_TYPES = [{id:'combat',label:'Бойова'},{id:'non_combat',label:'Не бойова'}];
@@ -215,6 +217,13 @@ const createPersonnelModule = () => {
 
     function getOrderedPositions() { buildPosCache(); return posCache; }
     function getPosName(id)        { buildPosCache(); return posMap[id] || 'Невідомо'; }
+    function findBasePpdPosition() {
+        return positions.find(p => p.id === 'pos_ppd')
+            || positions.find(p => (p.name || '').toUpperCase().includes('ППД'))
+            || positions.find(p => p.type === 'non_combat')
+            || positions[0]
+            || null;
+    }
 
     // ─── КЕШОВАНІ ФОРМАТЕРИ ДАТ ───────────────────────────────────────────────
     const _dtFmt = new Intl.DateTimeFormat('uk-UA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -231,6 +240,15 @@ const createPersonnelModule = () => {
         if (!iso) return '—';
         return _dFmt.format(new Date(iso));
     }
+    function formatDuration(ms) {
+        const safeMs = Math.max(0, ms || 0);
+        const ds = Math.floor(safeMs / 86400000);
+        const hs = Math.floor((safeMs % 86400000) / 3600000);
+        const mins = Math.floor((safeMs % 3600000) / 60000);
+        if (ds > 0) return `${ds}д ${hs}г`;
+        if (hs > 0) return mins > 0 ? `${hs}г ${mins}хв` : `${hs}г`;
+        return `${Math.max(1, mins)}хв`;
+    }
 
     function toLocalISO(iso) {
         if (!iso) return '';
@@ -246,6 +264,20 @@ const createPersonnelModule = () => {
     
     function jsEsc(str) { return JSON.stringify(str).replace(/"/g, '&quot;'); }
 
+    const HOMOGLYPHS = { 'i': 'і', 'c': 'с', 'p': 'р', 'o': 'о', 'a': 'а', 'e': 'е', 'x': 'х', 'y': 'у', 'k': 'к', 'm': 'м', 't': 'т', 'b': 'в', 'h': 'н' };
+    function normSearchText(str) {
+        if (!str) return '';
+        return String(str)
+            .toLowerCase()
+            .replace(/[\u2018\u2019\u02BC\u0060\u00B4']/g, "'")
+            .replace(/[icpoaexykmtbh]/g, ch => HOMOGLYPHS[ch] || ch)
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+    function normPersonName(str) {
+        return (str || '').toLowerCase().replace(/[\u2018\u2019\u02BC\u0060\u00B4']/g, "'").replace(/\s+/g, ' ').trim();
+    }
+
     // ─── ІКОНКИ ───────────────────────────────────────────────────────────────
     function scheduleIcons() {
         if (typeof lucide !== 'undefined') {
@@ -253,7 +285,7 @@ const createPersonnelModule = () => {
         }
     }
 
-    // ─── CHIP FILTERS & CHANGELOG MODAL ──────────────────────────────────────
+    // ─── CHIP FILTERS ────────────────────────────────────────────────────────
     let currentQuickStatus = 'all';
 
     function setQuickStatusFilter(statusKey) {
@@ -277,9 +309,9 @@ const createPersonnelModule = () => {
         document.querySelectorAll('.chip-btn').forEach(btn => {
             const st = btn.getAttribute('data-status');
             if (st === currentQuickStatus) {
-                btn.className = 'chip-btn px-2.5 py-1 rounded-lg text-xs font-bold transition-all border bg-olive-600 text-white border-olive-500 shadow-xs cursor-pointer';
+                btn.className = 'chip-btn px-2.5 py-1 rounded-sm text-xs font-semibold tabular-nums transition-colors border bg-[#2b67ab] text-white border-[#4c8ed9] cursor-pointer inline-flex items-center gap-1.5';
             } else {
-                btn.className = 'chip-btn px-2.5 py-1 rounded-lg text-xs font-bold transition-all border bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-olive-500/20 cursor-pointer';
+                btn.className = 'chip-btn px-2.5 py-1 rounded-sm text-xs font-semibold tabular-nums transition-colors border bg-[#222429] text-[#b8bec8] border-[#2e3138] hover:border-[#3c404a] hover:text-[#f3f4f6] cursor-pointer inline-flex items-center gap-1.5';
             }
         });
     }
@@ -302,209 +334,6 @@ const createPersonnelModule = () => {
         if (el('chip-count-detached')) el('chip-count-detached').innerText = `(${detachedCount})`;
     }
 
-    // ─── AUTONOMOUS CHANGELOG DATA ───────────────────────────────────────────
-    const APP_CHANGELOG = [
-        {
-            version: "1.6.0",
-            date: "08.10.2026",
-            isCurrent: true,
-            sections: [
-                {
-                    title: "🛡️ Трьохрівневе збереження даних (Triple-Tier Persistence)",
-                    items: [
-                        "<b>Інтеграція IndexedDB (TacticalTaktDB_v1)</b>: Повноцінна браузерна база даних без ліміту 5 МБ, захищена від скидання сесій та очищення кешу браузера.",
-                        "<b>Фоновий бекап на фізичний диск Диспетчера</b>: Автоматична синхронізація всього стану в <code>_backups/takt_oblik_latest.json</code>.",
-                        "<b>Auto-Hydrate при старті</b>: Якщо LocalStorage порожній (наприклад, перехід на Brave Browser або очищення історії), система автоматично підтягує актуальну базу бійців та позицій за 0.1 секунди.",
-                        "<b>Індикатор та швидкі кнопки в сайдбарі</b>: Бейдж <code>🟢 Диск: HH:MM:SS</code> та кнопки «На диск» / «З диска»."
-                    ]
-                }
-            ]
-        },
-        {
-            version: "1.5.0",
-            date: "22.09.2026",
-            isCurrent: false,
-            sections: [
-                {
-                    title: "🛡️ Відмовостійкість та захист сховища (Anti-WSOD)",
-                    items: [
-                        "<b>Безпечний бутлоадер (safeGetJSON)</b>: Перехоплення помилок пошкодження LocalStorage унеможливлює «білий екран смерті» при раптовому знеструмленні чи збоях запису браузера.",
-                        "<b>Контроль квоти LocalStorage та оптимізація RAM</b>: Захист операцій збереження від QuotaExceededError з тактичним попередженням у тості, стек скасувань обмежено до 15 знімків для збереження пам'яті.",
-                        "<b>Поглиблена валідація імпорту бекапів</b>: Сувора перевірка структури даних (Array.isArray) при завантаженні JSON з автостворенням базових тилових позицій."
-                    ]
-                },
-                {
-                    title: "⚔️ Тактична логіка бойових змін та евакуації",
-                    items: [
-                        "<b>Автоматичний відвід з бойових ВОП/РОП</b>: Переведення бійців у санітарні, безповоротні чи тилові статуси (300, 200, sick, mia, detached) через масове оновлення або одиничну картку автоматично переміщує їх до Госпіталю/ППД.",
-                        "<b>Автоматичне закриття змін у Журналі виходів</b>: Фіксація закінчення бойового чергування в журналі, скидання таймера перебування та зняття повноважень старшого позиції."
-                    ]
-                },
-                {
-                    title: "📐 UX, тултіпи та стандартизація Z-Index",
-                    items: [
-                        "<b>Виправлення тултіпа примітки</b>: Усунуто відображення [object Object] при наведенні курсора на іконку примітки бійця.",
-                        "<b>Стандартизація Z-Index (AGENTS.md)</b>: Усі модальні вікна уніфіковано до z-[200], вікно підтвердження — до z-[210], тости — до z-[220]."
-                    ]
-                }
-            ]
-        },
-        {
-            version: "1.4.1",
-            date: "04.09.2026",
-            isCurrent: false,
-            sections: [
-                {
-                    title: "🎯 Оптимізація Drag-and-Drop та неонові індикатори",
-                    items: [
-                        "<b>Неонові індикатори точки вставки (Drop Indicators)</b>: При наведенні на ліву чи праву половину картки з'являється чітка індиго-лінія (border-l-4 або border-r-4), що показує точку вставки перед або після цілі.",
-                        "<b>Повнорозмірний прев'ю-фантом</b>: Під час перетягування позиції браузер тягне повноцінну напівпрозору мініатюру картки з бійцями замість обрізаної смужки.",
-                        "<b>Математично точна черговість у сітці</b>: Виправлено алгоритм розрахунку індексу в 2D-сітці (Grid) без відскоків і зависань позицій.",
-                        "<b>Режим вибору цілі (Target Mode)</b>: Швидке переміщення позиції в 1 клік з ізоляцією подій та скасуванням повторним кліком або через Esc."
-                    ]
-                }
-            ]
-        },
-        {
-            version: "1.3.2",
-            date: "02.09.2026",
-            isCurrent: false,
-            sections: [
-                {
-                    title: "📋 Швидке копіювання ПІБ та списків позицій",
-                    items: [
-                        "<b>Копіювання ПІБ в 1 клік</b>: Натискання на ПІБ бійця у картці на позиції або в таблиці списків миттєво копіює його в буфер обміну з підтвердженням у тості.",
-                        "<b>Контекстне меню бійця</b>: Додано швидкі пункти копіювання чистого ПІБ або повної картки бійця через меню правої кнопки миші.",
-                        "<b>Копіювання всієї позиції</b>: Кнопка 📋 у шапці картки позиції формує та копіює готовий нумерований список о/с позиції для оперативних доповідей."
-                    ]
-                }
-            ]
-        },
-        {
-            version: "1.3.0",
-            date: "18.08.2026",
-            isCurrent: false,
-            sections: [
-                {
-                    title: "🛡️ Tactical Dark редизайн та типографіка",
-                    items: [
-                        "<b>Темна тема за замовчуванням</b>: Впроваджено фірмову палітру <code>Slate-950/900/800</code> та коректно налаштовано перемикання тем зі збереженням у <code>localStorage</code>.",
-                        "<b>Типографіка</b>: Шрифти Inter для інтерфейсу та JetBrains Mono для кодів, таймерів, статусів і версій.",
-                        "<b>Тактичний бейдж та модал оновлень</b>: Додано бейдж <code>TAKT_ACCOUNT</code>, клікабельний <code>⚡ v1.3.2</code> та інтерактивне вікно перегляду історії оновлень."
-                    ]
-                }
-            ]
-        },
-        {
-            version: "1.2.0",
-            date: "15.08.2026",
-            isCurrent: false,
-            sections: [
-                {
-                    title: "🎯 Нові функції",
-                    items: [
-                        "Режим 'Вибір цілі': швидке переміщення бійців через клік на позицію без необхідності утримувати Drag-and-Drop.",
-                        "Опція переміщення додана в нове Контекстне меню (правий клік по бійцю)."
-                    ]
-                },
-                {
-                    title: "🔧 Оптимізація та виправлення",
-                    items: [
-                        "Виправлено помилку логування: тепер переміщення бійців мишкою та в режимі цілі коректно відображаються у Лозі 100 на головному дашборді."
-                    ]
-                }
-            ]
-        },
-        {
-            version: "1.1.0",
-            date: "08.08.2026",
-            isCurrent: false,
-            sections: [
-                {
-                    title: "🚀 Нові можливості",
-                    items: [
-                        "Додано функцію Drag-and-Drop: тепер бійців можна швидко перетягувати на позиції.",
-                        "Міні-Дашборди в заголовках категорій для зручного відображення статистики завдань.",
-                        "Нове Контекстне меню (правий клік по бійцю) для швидкої відправки на базу та зміни старшого."
-                    ]
-                },
-                {
-                    title: "🔧 Оптимізація та виправлення",
-                    items: [
-                        "Значно оптимізовано продуктивність Drag-and-Drop для усунення затримок на слабких ПК.",
-                        "Виправлено проблему з переносом довгих назв завдань, що ламали верстку карток.",
-                        "Виправлено структуру верстки карток (усунуто баг, що ламав їхнє відображення).",
-                        "Прибрано виведення бейджів спеціальностей (піхота, розвідка тощо) для тилових локацій.",
-                        "Оптимізовано ширину інтерфейсу (до 1600px) для кращого відображення на широких моніторах.",
-                        "Додано інтелектуальний автоскрол сторінки при підведенні курсору до країв екрану під час Drag-and-Drop."
-                    ]
-                }
-            ]
-        },
-        {
-            version: "1.0.0",
-            date: "02.08.2026",
-            isCurrent: false,
-            sections: [
-                {
-                    title: "🎨 Тактичний редизайн (Tactical Pro UI)",
-                    items: [
-                        "<b>Оновлено колірну палітру</b>: впроваджено єдиний Tactical Emerald стиль з гармонійними акцентами.",
-                        "<b>Quick Filter Chips (Кнопки-фільтри в 1 клік)</b>: додано швидкі фільтри статусів (🛡️ В строю, ⚔️ На бойових, 🏥 300, 🤒 Хворі, ✈️ Відрив) над таблицею особового складу.",
-                        "<b>Активний індикатор меню</b>: бічна панель отримала ефекти підсвічування вкладок та кнопку перегляду версії."
-                    ]
-                },
-                {
-                    title: "📋 Автономне версіонування",
-                    items: [
-                        "<b>Compact History Object</b>: додано модальне вікно оновлень з підтримкою 100% офлайн режиму."
-                    ]
-                }
-            ]
-        }
-    ];
-
-    function renderChangelogModal() {
-        const container = el('changelogModalList');
-        if (!container) return;
-        let html = '';
-        APP_CHANGELOG.forEach(item => {
-            const borderStyle = item.isCurrent ? 'border-left: 4px solid #10b981;' : 'border-left: 4px solid #334155; opacity: 0.85;';
-            const currentBadge = item.isCurrent 
-                ? `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[10px] px-2 py-0.5 rounded font-bold">Поточна</span>` 
-                : '';
-            html += `
-            <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3" style="${borderStyle}">
-                <div class="flex justify-between items-center border-b border-slate-800/80 pb-2">
-                    <h4 class="font-bold text-sm text-white flex items-center gap-2">
-                        <span>🚀 Версія ${item.version}</span>
-                        ${currentBadge}
-                    </h4>
-                    <span class="text-xs text-slate-400 font-mono">${item.date}</span>
-                </div>
-                <div class="space-y-3">
-            `;
-            item.sections.forEach(sec => {
-                html += `
-                    <div class="space-y-1">
-                        <div class="text-xs font-bold text-blue-400 uppercase tracking-wide">${sec.title}</div>
-                        <ul class="text-xs text-slate-300 space-y-1 list-disc pl-4">
-                            ${sec.items.map(it => `<li>${it}</li>`).join('')}
-                        </ul>
-                    </div>
-                `;
-            });
-            html += `</div></div>`;
-        });
-        container.innerHTML = html;
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-    }
-
-    function openChangelogModal() {
-        renderChangelogModal();
-        openModal('modal-changelog');
-    }
-
     // ─── INIT ТА СЛУХАЧІ КЛАВІШ ───────────────────────────────────────────────
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape')
@@ -518,11 +347,6 @@ const createPersonnelModule = () => {
     });
 
     // ─── ТЕМИ / SIDEBAR ───────────────────────────────────────────────────────
-    function toggleDarkMode()    { isDarkMode = !isDarkMode; if (window.SuiteRuntime?.setLocalItem) window.SuiteRuntime.setLocalItem('tactical_dark_mode', isDarkMode); else localStorage.setItem('tactical_dark_mode', isDarkMode); applyTheme(); }
-    function applyTheme()        { document.documentElement.classList.toggle('dark', isDarkMode); }
-    function toggleSidebar()     { isSidebarCollapsed = !isSidebarCollapsed; if (window.SuiteRuntime?.setLocalItem) window.SuiteRuntime.setLocalItem('tactical_sidebar_collapsed', isSidebarCollapsed); else localStorage.setItem('tactical_sidebar_collapsed', isSidebarCollapsed); applySidebarState(); }
-    function applySidebarState() { el('sidebar').classList.toggle('sidebar-collapsed', isSidebarCollapsed); }
-
     function toggleSortingLock() {
         isSortingLocked = !isSortingLocked;
         if (window.SuiteRuntime?.setLocalItem) window.SuiteRuntime.setLocalItem('tactical_sorting_locked', isSortingLocked); else localStorage.setItem('tactical_sorting_locked', isSortingLocked);
@@ -629,24 +453,24 @@ const createPersonnelModule = () => {
 
         if (status === 'synced') {
             diskServiceOnline = true;
-            dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50 shrink-0";
+            dot.className = "w-2 h-2 rounded-full bg-[#34a873] shrink-0";
             label.innerText = labelText || (lastDiskBackupTime ? `Диск: ${lastDiskBackupTime}` : 'Диск: Збережено');
-            btn.className = "w-full flex items-center space-x-2.5 px-3 py-2 bg-emerald-950/30 hover:bg-emerald-900/50 text-emerald-300 border border-emerald-800/40 hover:border-emerald-700/60 rounded-xl text-xs font-mono font-medium transition-all justify-center md:justify-start cursor-pointer shadow-sm";
+            btn.className = "w-full flex items-center space-x-2.5 px-3 py-2 bg-[rgba(52,168,115,0.12)] hover:bg-[rgba(52,168,115,0.20)] text-[#6ee7b7] border border-[rgba(52,168,115,0.38)] rounded-sm text-xs font-mono tabular-nums font-medium transition-colors justify-center md:justify-start cursor-pointer";
             btn.title = `Фізичний диск синхронізовано (${lastDiskBackupTime || 'ОК'}). Натисніть для перевірки.`;
         } else if (status === 'saving') {
-            dot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0";
+            dot.className = "w-2 h-2 rounded-full bg-[#d99b26] shrink-0";
             label.innerText = labelText || "Диск: Запис...";
-            btn.className = "w-full flex items-center space-x-2.5 px-3 py-2 bg-amber-950/30 hover:bg-amber-900/40 text-amber-300 border border-amber-800/40 rounded-xl text-xs font-mono font-medium transition-all justify-center md:justify-start cursor-pointer shadow-sm";
+            btn.className = "w-full flex items-center space-x-2.5 px-3 py-2 bg-[rgba(217,155,38,0.12)] hover:bg-[rgba(217,155,38,0.20)] text-[#fcd34d] border border-[rgba(217,155,38,0.40)] rounded-sm text-xs font-mono tabular-nums font-medium transition-colors justify-center md:justify-start cursor-pointer";
             btn.title = "Збереження копії на жорсткий диск...";
         } else if (status === 'checking') {
-            dot.className = "w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shrink-0";
+            dot.className = "w-2 h-2 rounded-full bg-[#4c8ed9] shrink-0";
             label.innerText = labelText || "Диск: Зв'язок...";
-            btn.className = "w-full flex items-center space-x-2.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-xl text-xs font-mono font-medium transition-all justify-center md:justify-start cursor-pointer shadow-sm";
+            btn.className = "w-full flex items-center space-x-2.5 px-3 py-2 bg-[#17181b] hover:bg-[#222429] text-[#b8bec8] border border-[#2e3138] rounded-sm text-xs font-mono tabular-nums font-medium transition-colors justify-center md:justify-start cursor-pointer";
         } else {
             diskServiceOnline = false;
-            dot.className = "w-2.5 h-2.5 rounded-full bg-slate-500 shrink-0";
+            dot.className = "w-2 h-2 rounded-full bg-[#989fa9] shrink-0";
             label.innerText = labelText || "Диск: Офлайн";
-            btn.className = "w-full flex items-center space-x-2.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 rounded-xl text-xs font-mono font-medium transition-all justify-center md:justify-start cursor-pointer shadow-sm opacity-80";
+            btn.className = "w-full flex items-center space-x-2.5 px-3 py-2 bg-[#17181b] hover:bg-[#222429] text-[#989fa9] border border-[#2e3138] rounded-sm text-xs font-mono tabular-nums font-medium transition-colors justify-center md:justify-start cursor-pointer";
             btn.title = "Диспетчер офлайн. Запустіть Запустити_Диспетчер.bat";
         }
         if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -735,7 +559,7 @@ const createPersonnelModule = () => {
             showToast("База особового складу порожня, немає що зберігати на диск");
             return;
         }
-        showToast("⏳ Збереження на фізичний диск...");
+        showToast("Збереження на фізичний диск...");
         saveToDiskBackup(true);
         setTimeout(() => {
             checkDiskBackupStatus(true);
@@ -743,7 +567,7 @@ const createPersonnelModule = () => {
     }
 
     async function restoreFromDiskBackup() {
-        showToast("⏳ Перевірка найсвіжішої копії на диску...");
+        showToast("Перевірка найсвіжішої копії на диску...");
         const data = await checkDiskBackupStatus(false);
         if (!data || !data.exists || !data.content) {
             alert("На диску ще немає збереженої копії бази Такт-Облік (або Диспетчер вимкнено).\n\nЗапустіть Диспетчер через «Запустити_Диспетчер.bat».");
@@ -796,7 +620,7 @@ const createPersonnelModule = () => {
                     runMigrations();
                     rebuildPersonnelMap();
                     saveState();
-                    showToast(`⚡ Дані автоматично відновлено з IndexedDB (${personnel.length} осіб)!`);
+                    showToast(`Дані автоматично відновлено з IndexedDB (${personnel.length} осіб)!`);
                     checkDiskBackupStatus(false);
                     return;
                 }
@@ -812,7 +636,7 @@ const createPersonnelModule = () => {
                     if (parsed && Array.isArray(parsed.personnel) && parsed.personnel.length > 0) {
                         console.log("[Auto-Hydrate] Авто-відновлення з диска Диспетчера:", parsed.personnel.length, "бійців");
                         loadDataFromJsonString(diskData.content);
-                        showToast(`⚡ Дані автоматично відновлено з диску Диспетчера (${parsed.personnel.length} осіб)!`);
+                        showToast(`Дані автоматично відновлено з диску Диспетчера (${parsed.personnel.length} осіб)!`);
                         return;
                     }
                 }
@@ -860,7 +684,7 @@ const createPersonnelModule = () => {
             }
         } catch (err) {
             console.error('Помилка запису в LocalStorage (переповнення квоти):', err);
-            showToast("⚠️ УВАГА: Пам'ять сховища переповнена! Зробіть терміновий бекап.");
+            showToast("УВАГА: Пам'ять сховища переповнена! Зробіть терміновий бекап.");
         }
 
         // Рівень 2: Збереження в IndexedDB (без обмеження 5МБ, стійке до закриття сесій)
@@ -900,7 +724,7 @@ const createPersonnelModule = () => {
         
         isUndoing = false;
         updateUndoButton();
-        showToast('↩️ Дію скасовано (Ctrl+Z)');
+        showToast('Дію скасовано (Ctrl+Z)');
     }
 
     // ─── ЛОГИ / ТОСТ ──────────────────────────────────────────────────────────
@@ -925,7 +749,7 @@ const createPersonnelModule = () => {
     function copyToClipboard(text, customLabel = '') {
         if (!text) return;
         const notify = () => {
-            showToast(customLabel ? `📋 ${customLabel}` : `📋 Скопійовано: ${text}`);
+            showToast(customLabel ? customLabel : `Скопійовано: ${text}`);
         };
 
         if (navigator.clipboard && window.isSecureContext) {
@@ -947,7 +771,7 @@ const createPersonnelModule = () => {
             ta.select();
             document.execCommand('copy');
             document.body.removeChild(ta);
-            showToast(customLabel ? `📋 ${customLabel}` : `📋 Скопійовано: ${text}`);
+            showToast(customLabel ? customLabel : `Скопійовано: ${text}`);
         } catch (e) {
             showToast('Помилка копіювання в буфер');
         }
@@ -1235,16 +1059,16 @@ const createPersonnelModule = () => {
     function renderBackupTimesList() {
         const list = el('backup-times-list');
         if (!backupSchedule || backupSchedule.length === 0) {
-            list.innerHTML = '<li class="text-sm text-gray-500 text-center py-2">Нагадувань немає</li>';
+            list.innerHTML = '<li class="text-sm text-[#989fa9] text-center py-2">Нагадувань немає</li>';
             return;
         }
         
         backupSchedule.sort((a, b) => a.localeCompare(b));
         
         list.innerHTML = backupSchedule.map((time, idx) => `
-            <li class="flex justify-between items-center bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg border border-gray-200 dark:border-gray-600">
-                <span class="font-bold text-gray-800 dark:text-gray-200 text-lg ml-2"><i data-lucide="clock" class="w-4 h-4 inline mr-1 text-olive-500"></i>${time}</span>
-                <button onclick="removeBackupTime(${idx})" class="p-1.5 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            <li class="flex justify-between items-center bg-[#101113] p-2 rounded-sm border border-[#2e3138]">
+                <span class="font-bold font-mono tabular-nums text-[#f3f4f6] text-base ml-2"><i data-lucide="clock" class="w-4 h-4 inline mr-1.5 text-[#4c8ed9]"></i>${time}</span>
+                <button onclick="removeBackupTime(${idx})" class="p-1.5 text-[#fca5a5] hover:bg-[rgba(224,82,82,0.16)] rounded-sm cursor-pointer"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </li>
         `).join('');
         scheduleIcons();
@@ -1305,6 +1129,12 @@ const createPersonnelModule = () => {
         if (!ws['!ref']) return ws;
         const range = XLSX.utils.decode_range(ws['!ref']);
         const colWidths = [];
+        const thinBorder = {
+            top: { style: "thin", color: { rgb: "CBD5E1" } },
+            bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+            left: { style: "thin", color: { rgb: "CBD5E1" } },
+            right: { style: "thin", color: { rgb: "CBD5E1" } }
+        };
 
         for (let R = range.s.r; R <= range.e.r; ++R) {
             for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -1314,16 +1144,22 @@ const createPersonnelModule = () => {
 
                 if (!cell.s) cell.s = {};
                 if (!cell.s.font) cell.s.font = { name: "Times New Roman", sz: 12 };
+                cell.s.border = thinBorder;
 
                 // Заголовки (перший рядок + додаткові)
                 if (R === 0 || (opts.extraHeaderRows && opts.extraHeaderRows.includes(R))) {
                     cell.s.font.bold = true;
+                    cell.s.font.color = { rgb: "FFFFFF" };
+                    cell.s.fill = { fgColor: { rgb: "1E293B" } };
                     cell.s.alignment = { horizontal: "center", vertical: "center" };
                 } else {
                     // Кастомні налаштування для даних
                     if (opts.boldCols && opts.boldCols.includes(C)) cell.s.font.bold = true;
                     if (opts.centerCols && opts.centerCols.includes(C)) cell.s.alignment = { ...(cell.s.alignment || {}), horizontal: "center" };
-                    if (opts.commanderCells && opts.commanderCells.includes(cellRef)) cell.s.font.bold = true;
+                    if (opts.commanderCells && opts.commanderCells.includes(cellRef)) {
+                        cell.s.font.bold = true;
+                        cell.s.fill = { fgColor: { rgb: "FEF3C7" } };
+                    }
                 }
 
                 // Розрахунок оптимальної ширини колонки
@@ -1337,6 +1173,10 @@ const createPersonnelModule = () => {
         }
         
         ws['!cols'] = colWidths.map(w => ({ wch: w }));
+        ws['!views'] = [{ state: 'frozen', ySplit: 1 }];
+        if (!opts.noAutoFilter && range.e.r > 0) {
+            ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: 0, c: range.e.c } }) };
+        }
         return ws;
     }
 
@@ -1359,8 +1199,9 @@ const createPersonnelModule = () => {
                     return (a.fullName || '').localeCompare(b.fullName || '');
                 })
                 .map(s => {
-                    if (pos.commanderId === s.id) {
-                        commanderCells.push(`E${currentRowPers + 1}`); // E - це колонка "Позивний"
+                    const isCom = pos.commanderId === s.id;
+                    if (isCom) {
+                        commanderCells.push(`B${currentRowPers + 1}`, `E${currentRowPers + 1}`); // B - ПІБ, E - Позивний
                     }
                     currentRowPers++;
 
@@ -1369,6 +1210,7 @@ const createPersonnelModule = () => {
                     const task   = s.currentTask || 'піхота';
                     uC[unit] = (uC[unit] || 0) + 1;
                     tC[task]  = (tC[task]  || 0) + 1;
+                    const taskLabel = (s.status === '300' ? task + ' (300)' : task) + (isCom ? ' (Старший ⭐)' : '');
                     return {
                         "Звання":        s.rank || '',
                         "ПІБ":           s.fullName || '',
@@ -1376,7 +1218,7 @@ const createPersonnelModule = () => {
                         "Позиція":       pos.name,
                         "Позивний":      s.callsign || '',
                         "Підрозділ":     s.unit || '',
-                        "Завдання":      s.status === '300' ? task + ' (300)' : task,
+                        "Завдання":      taskLabel,
                         "На позиції з":  dSince
                     };
                 });
@@ -1408,7 +1250,7 @@ const createPersonnelModule = () => {
         XLSX.utils.book_append_sheet(wb, wsApp2, "Додаток 2");
         
         const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
-        applyStyles(wsSummary, { boldCols: [1], extraHeaderRows: [taskHeaderRowIndex] }); // Індекс 1 - це "К-ть"
+        applyStyles(wsSummary, { boldCols: [1], extraHeaderRows: [taskHeaderRowIndex], noAutoFilter: true }); // Індекс 1 - це "К-ть"
         XLSX.utils.book_append_sheet(wb, wsSummary, "Зведення");
 
         // --- ДОДАЄМО ЛОГ 100 ---
@@ -1444,15 +1286,14 @@ const createPersonnelModule = () => {
             const ia = !r.endTime;
             const displayStartTime = r.startTime; 
             const ms = (ia ? now : new Date(r.endTime)) - new Date(displayStartTime);
-            const ds = Math.floor(ms / 86400000);
-            const hs = Math.floor((ms % 86400000) / 3600000);
             const row = {
+                "Звання":           s.rank || '',
                 "Боєць / Позивний": sN,
                 "Підрозділ":        s.unit || '',
                 "Поточна позиція":  r.positionName || getPosName(r.positionId),
                 "Захід (Час)":      fmtDT(displayStartTime),
                 "Повернення":       ia ? 'НА ПОЗИЦІЇ' : fmtDT(r.endTime),
-                "Тривалість":       `${ds > 0 ? ds + 'д ' : ''}${hs}г`
+                "Тривалість":       formatDuration(ms)
             };
             ia ? active.push(row) : history.push(row);
         });
@@ -1474,8 +1315,8 @@ const createPersonnelModule = () => {
     // ─── TABS ─────────────────────────────────────────────────────────────────
     function switchTab(t) {
         activeTab = t;
-        const activeClasses = ['bg-emerald-500/10', 'text-emerald-400', 'border-emerald-500/30', 'shadow-[0_0_15px_rgba(16,185,129,0.1)]', 'font-semibold'];
-        const inactiveClasses = ['text-slate-400', 'hover:text-slate-200', 'hover:bg-slate-800/60', 'border-transparent', 'font-medium'];
+        const activeClasses = ['bg-[#162235]', 'text-[#eff6ff]', 'border-[#3b82f6]/65', 'font-semibold'];
+        const inactiveClasses = ['text-[#c2c7d0]', 'hover:text-[#ffffff]', 'hover:bg-[#222429]', 'border-transparent', 'font-medium'];
 
         ['dashboard','personnel','positions','journal','rotations'].forEach(id => {
             const elTab = el('tab-'+id);
@@ -1490,9 +1331,6 @@ const createPersonnelModule = () => {
         const activeEl = el('tab-'+t);
         if (activeEl) {
             activeEl.classList.remove('hidden');
-            activeEl.classList.remove('animate-fade-in');
-            void activeEl.offsetWidth;
-            activeEl.classList.add('animate-fade-in');
         }
         const activeBtn = el('nav-'+t);
         if (activeBtn) {
@@ -1527,7 +1365,7 @@ const createPersonnelModule = () => {
                     const u = p.unit || 'Без підрозділу';
                     const t = p.currentTask || 'піхота';
                     bu[u] = (bu[u] || 0) + 1;
-                    if (bt.hasOwnProperty(t)) bt[t]++;
+                    bt[t] = (bt[t] || 0) + 1;
                 }
             }
             else if (p.status === '300') wia++;
@@ -1540,57 +1378,62 @@ const createPersonnelModule = () => {
         el('stat-wia').innerText    = wia;
         el('stat-kia').innerText    = kia;
 
-        el('stat-positions-table').innerHTML = getOrderedPositions().filter(p => p.type === 'combat').map(pos =>
-            `<tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <td class="px-6 py-2 text-sm font-medium">${esc(pos.name)}</td>
-                <td class="px-6 py-2 text-sm text-gray-500">Бойова</td>
-                <td class="px-6 py-2 text-sm text-right font-bold">${pc[pos.id] || 0} чол.</td>
-            </tr>`
-        ).join('');
+        el('stat-positions-table').innerHTML = getOrderedPositions().filter(p => p.type === 'combat').map(pos => {
+            const cnt = pc[pos.id] || 0;
+            return `<tr class="hover:bg-[#222429] transition-colors">
+                <td class="px-4 py-2 text-sm font-medium text-[#f1f5f9]">${esc(pos.name)}</td>
+                <td class="px-4 py-2 text-[11px] uppercase tracking-wide text-[#989fa9]">Бойова</td>
+                <td class="px-4 py-2 text-sm text-right font-mono tabular-nums ${cnt > 0 ? 'font-bold text-[#93c5fd]' : 'text-[#989fa9]'}">${cnt} чол.</td>
+            </tr>`;
+        }).join('');
 
         el('log-list').innerHTML = logs.length === 0
-            ? '<li class="p-4 text-gray-500 text-center text-sm">Подій немає</li>'
+            ? '<li class="p-4 text-[#989fa9] text-center text-sm">Подій немає</li>'
             : logs.slice(0, 100).map(l => {
                 const isWarn = l.message.includes('⚠️ БЕЗ ЗАЯВКИ: ');
                 const isCheat = l.message.includes('🗑️ ВИДАЛЕНО ЗАЯВКУ: ') || l.message.includes('✅ ЗАВЕРШЕНО ЗАЯВКУ: ');
                 
-                let rowClass = 'hover:bg-gray-50 dark:hover:bg-gray-700/50';
-                let textClass = '';
+                let rowClass = 'hover:bg-[#222429]';
+                let textClass = 'text-[#f1f5f9]';
                 let badgeHtml = '';
 
                 if (isWarn) {
-                    rowClass = 'bg-red-50 dark:bg-red-900/10 border-l-2 border-red-500 hover:bg-red-100 dark:hover:bg-red-900/20';
-                    textClass = 'text-red-700 dark:text-red-400';
-                    badgeHtml = '<span class="ml-2 text-[9px] bg-red-600 text-white px-1.5 py-0.5 rounded uppercase font-bold tracking-wider shadow-sm">Без заявки</span>';
+                    rowClass = 'bg-[rgba(224,82,82,0.08)] hover:bg-[rgba(224,82,82,0.14)]';
+                    textClass = 'text-[#fca5a5]';
+                    badgeHtml = '<span class="ml-2 text-[9px] bg-[rgba(224,82,82,0.16)] text-[#fca5a5] border border-[rgba(224,82,82,0.45)] px-1.5 py-0.5 rounded-sm uppercase font-bold tracking-wider">Без заявки</span>';
                 } else if (isCheat) {
-                    rowClass = 'bg-yellow-50 dark:bg-yellow-900/10 border-l-2 border-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-900/20';
-                    textClass = 'text-yellow-700 dark:text-yellow-400';
+                    rowClass = 'bg-[rgba(217,155,38,0.08)] hover:bg-[rgba(217,155,38,0.14)]';
+                    textClass = 'text-[#fcd34d]';
                     const isDel = l.message.includes('🗑️');
-                    badgeHtml = `<span class="ml-2 text-[9px] ${isDel ? 'bg-orange-500' : 'bg-green-600'} text-white px-1.5 py-0.5 rounded uppercase font-bold tracking-wider shadow-sm">${isDel ? 'Скасовано' : 'Завершено'}</span>`;
+                    badgeHtml = isDel
+                        ? '<span class="ml-2 text-[9px] bg-[rgba(234,88,12,0.16)] text-[#fdba74] border border-[rgba(234,88,12,0.42)] px-1.5 py-0.5 rounded-sm uppercase font-bold tracking-wider">Скасовано</span>'
+                        : '<span class="ml-2 text-[9px] bg-[rgba(52,168,115,0.16)] text-[#6ee7b7] border border-[rgba(52,168,115,0.40)] px-1.5 py-0.5 rounded-sm uppercase font-bold tracking-wider">Завершено</span>';
                 }
 
                 const msg = l.message.replace('⚠️ БЕЗ ЗАЯВКИ: ', '').replace('🗑️ ВИДАЛЕНО ЗАЯВКУ: ', '').replace('✅ ЗАВЕРШЕНО ЗАЯВКУ: ', '');
                 
                 return `<li class="px-4 py-2 flex justify-between items-start transition-colors ${rowClass}">
-                    <div><span class="font-bold text-sm ${textClass}">${esc(l.callsign)}</span>${badgeHtml}<p class="text-xs text-gray-500 mt-0.5">${esc(msg)}</p></div>
-                    <span class="text-[10px] text-gray-400 ml-2 shrink-0">${fmtDT(l.timestamp)}</span>
+                    <div><span class="font-bold text-sm ${textClass}">${esc(l.callsign)}</span>${badgeHtml}<p class="text-xs text-[#c2cedc] mt-0.5">${esc(msg)}</p></div>
+                    <span class="text-[11px] text-[#989fa9] font-mono tabular-nums ml-2 shrink-0">${fmtDT(l.timestamp)}</span>
                 </li>`;
               }).join('');
 
         const tot = Object.values(bu).reduce((a, b) => a + b, 0);
         el('stat-units-table').innerHTML = tot === 0
-            ? '<tr><td colspan="2" class="px-6 py-4 text-center text-gray-500">Порожньо</td></tr>'
+            ? '<tr><td colspan="2" class="px-6 py-4 text-center text-[#989fa9] text-sm">Порожньо</td></tr>'
             : Object.keys(bu).sort().map(u =>
-                `<tr><td class="px-6 py-2 text-sm font-bold">${esc(u)}</td><td class="px-6 py-2 text-sm text-right text-indigo-600 font-bold">${bu[u]}</td></tr>`
+                `<tr class="hover:bg-[#222429] transition-colors"><td class="px-4 py-2 text-sm font-semibold text-[#f1f5f9]">${esc(u)}</td><td class="px-4 py-2 text-sm text-right text-[#93c5fd] font-mono tabular-nums font-bold">${bu[u]}</td></tr>`
               ).join('')
-              + `<tr class="bg-indigo-50 dark:bg-indigo-900/30 border-t"><td class="px-6 py-2 font-black uppercase">Разом</td><td class="px-6 py-2 text-right font-black">${tot}</td></tr>`;
+              + `<tr class="bg-[#222429] border-t border-[#2e3138]"><td class="px-4 py-2 text-xs font-bold uppercase text-[#f1f5f9]">Разом</td><td class="px-4 py-2 text-right font-bold font-mono tabular-nums text-[#f1f5f9]">${tot}</td></tr>`;
 
-        const tt = TASKS.reduce((s, t) => s + bt[t], 0);
+        const allDashboardTasks = [...new Set([...TASKS, ...Object.keys(bt)])];
+        const tt = allDashboardTasks.reduce((s, t) => s + (bt[t] || 0), 0);
         el('stat-tasks-table').innerHTML =
-            TASKS.map(t =>
-                `<tr class="${bt[t] > 0 ? '' : 'opacity-50'}"><td class="px-6 py-1.5 text-sm capitalize">${esc(t)}</td><td class="px-6 py-1.5 text-sm text-right font-bold">${bt[t]}</td></tr>`
-            ).join('')
-            + `<tr class="bg-blue-50 dark:bg-blue-900/30 border-t sticky bottom-0"><td class="px-6 py-2 font-black uppercase">РАЗОМ:</td><td class="px-6 py-2 text-right font-black">${tt}</td></tr>`;
+            allDashboardTasks.map(t => {
+                const cnt = bt[t] || 0;
+                return `<tr class="hover:bg-[#222429] transition-colors"><td class="px-4 py-1.5 text-sm capitalize ${cnt > 0 ? 'text-[#f1f5f9] font-semibold' : 'text-[#b8bec8]'}">${esc(t)}</td><td class="px-4 py-1.5 text-sm text-right font-mono tabular-nums ${cnt > 0 ? 'font-bold text-[#93c5fd]' : 'text-[#989fa9]'}">${cnt}</td></tr>`;
+            }).join('')
+            + `<tr class="bg-[#222429] border-t border-[#2e3138] sticky bottom-0"><td class="px-4 py-2 text-xs font-bold uppercase text-[#f1f5f9]">РАЗОМ:</td><td class="px-4 py-2 text-right font-bold font-mono tabular-nums text-[#f1f5f9]">${tt}</td></tr>`;
 
         // ОПТИМІЗАЦІЯ: Прибрали подвійний виклик scheduleIcons()
         renderRotationsWidget();
@@ -1598,16 +1441,38 @@ const createPersonnelModule = () => {
 
     // ─── PERSONNEL ────────────────────────────────────────────────────────────
     function handleSearch()       { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { currentPage = 1; renderPersonnel(); }, 300); }
-    function resetPageAndRender() { currentPage = 1; renderPersonnel(); }
+    function resetPageAndRender() {
+        const fP = val('filter-pos'), fS = val('filter-status');
+        if (fP === 'combat_only' && fS === 'all') currentQuickStatus = 'combat';
+        else if (fP === 'all' && fS !== 'all') currentQuickStatus = fS;
+        else if (fP === 'all' && fS === 'all') currentQuickStatus = 'all';
+        currentPage = 1;
+        renderPersonnel();
+    }
     function changePerPage()      { itemsPerPage = val('per-page') === 'all' ? 999999 : parseInt(val('per-page')); currentPage = 1; renderPersonnel(); }
     function prevPage()           { if (currentPage > 1) { currentPage--; renderPersonnel(); } }
 
+    function getFilteredPersonnel() {
+        const q  = normSearchText(val('search-input'));
+        const fU = val('filter-unit'), fP = val('filter-pos'), fS = val('filter-status');
+        const combatPosIds = fP === 'combat_only' ? new Set(positions.filter(pos => pos.type === 'combat').map(pos => pos.id)) : null;
+
+        return personnel.filter(p => {
+            const matchesUnit = (fU === 'all' || p.unit === fU);
+            if (!matchesUnit) return false;
+            const matchesStatus = (fS === 'all' || p.status === fS);
+            if (!matchesStatus) return false;
+            const matchesPos = fP === 'combat_only' ? combatPosIds.has(p.positionId) : (fP === 'all' || p.positionId === fP);
+            if (!matchesPos) return false;
+            if (!q) return true;
+            const posName = getPosName(p.positionId);
+            const hay = normSearchText(`${p.fullName || ''} ${p.callsign || ''} ${p.unit || ''} ${posName} ${p.currentTask || ''}`);
+            return hay.includes(q);
+        });
+    }
+
     function nextPage() {
-        const q    = val('search-input').toLowerCase();
-        const filt = personnel.filter(p =>
-            (p.fullName  || '').toLowerCase().includes(q) ||
-            (p.callsign  || '').toLowerCase().includes(q)
-        );
+        const filt = getFilteredPersonnel();
         const maxPage = Math.ceil(filt.length / itemsPerPage) || 1;
         if (currentPage < maxPage) { currentPage++; renderPersonnel(); }
     }
@@ -1617,24 +1482,7 @@ const createPersonnelModule = () => {
         updateChipCounts();
         updateChipActiveState();
 
-        const q  = val('search-input').toLowerCase();
-        const fU = val('filter-unit'), fP = val('filter-pos'), fS = val('filter-status');
-
-        let filt = personnel.filter(p => {
-            const matchesQuery = (p.fullName || '').toLowerCase().includes(q) || (p.callsign || '').toLowerCase().includes(q);
-            const matchesUnit = (fU === 'all' || p.unit === fU);
-            const matchesStatus = (fS === 'all' || p.status === fS);
-            
-            let matchesPos = true;
-            if (fP === 'combat_only') {
-                const combatPosIds = new Set(positions.filter(pos => pos.type === 'combat').map(pos => pos.id));
-                matchesPos = combatPosIds.has(p.positionId);
-            } else {
-                matchesPos = (fP === 'all' || p.positionId === fP);
-            }
-            
-            return matchesQuery && matchesUnit && matchesPos && matchesStatus;
-        });
+        const filt = getFilteredPersonnel();
 
         filt.sort((a, b) => {
             if (a.status === 'ok' && b.status !== 'ok') return -1;
@@ -1651,30 +1499,30 @@ const createPersonnelModule = () => {
             ? `${start + 1}-${Math.min(start + itemsPerPage, filt.length)} з ${filt.length}` : '0 з 0';
 
         if (items.length === 0) {
-            el('personnel-tbody').innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-gray-500">Не знайдено.</td></tr>';
+            el('personnel-tbody').innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-[#989fa9]">Не знайдено.</td></tr>';
             return;
         }
         
         const activeRotMap = getActiveRotationMap();
 
         el('personnel-tbody').innerHTML = items.map(s => {
-            const st = STATUSES[s.status];
+            const st = STATUSES[s.status] || STATUSES.ok;
             const rotDir = activeRotMap.get(s.id);
-            const inRot = rotDir ? `<span class="inline-flex relative h-2.5 w-2.5 ml-2 shrink-0" title="В ротації"><span class="animate-ping absolute inline-flex h-full w-full rounded-full ${rotDir==='in'?'bg-orange-400':'bg-indigo-400'} opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 ${rotDir==='in'?'bg-orange-500':'bg-indigo-500'}"></span></span>` : '';
+            const inRot = rotDir ? `<span class="inline-flex h-2 w-2 ml-2 shrink-0 rounded-full ${rotDir==='in'?'bg-[#d99b26]':'bg-[#4c8ed9]'}" title="В ротації"></span>` : '';
             
-            const noteIcon = s.note ? `<button type="button" onclick="event.stopPropagation(); viewNote('${s.id}')" class="ml-2 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 shrink-0 bg-blue-50 dark:bg-blue-900/30 p-1 rounded-full border border-blue-200 dark:border-blue-800 transition-colors" title="Переглянути примітку"><i data-lucide="info" class="w-3.5 h-3.5"></i></button>` : '';
+            const noteIcon = s.note ? `<button type="button" onclick="event.stopPropagation(); viewNote('${s.id}')" class="ml-2 text-[#93c5fd] hover:text-[#f3f4f6] shrink-0 bg-[rgba(76,142,217,0.12)] p-1 rounded-sm border border-[rgba(76,142,217,0.35)] transition-colors cursor-pointer" title="Переглянути примітку"><i data-lucide="info" class="w-3.5 h-3.5"></i></button>` : '';
 
-            return `<tr draggable="true" ondragstart="handleDragStart(event, '${s.id}')" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-context-menu" oncontextmenu="openSoldierContextMenu(event, '${s.id}')">
+            return `<tr draggable="true" ondragstart="handleDragStart(event, '${s.id}')" class="odd:bg-[#131417] even:bg-[#1a1c20] hover:bg-[#25272d] divide-x divide-[#262930] cursor-context-menu transition-colors" oncontextmenu="openSoldierContextMenu(event, '${s.id}')">
                 <td class="px-6 py-3 whitespace-nowrap">
-                    <div class="font-bold text-sm flex items-center"><span onclick="event.stopPropagation(); copySoldierPib('${s.id}')" class="hover:text-emerald-500 hover:underline cursor-pointer transition-colors" title="Клік — скопіювати ПІБ">${esc(s.fullName) || 'Не вказано'}</span> ${inRot} ${noteIcon}</div>
-                    <div class="text-xs text-gray-500">${esc(s.rank)}${s.callsign ? ` • <span class="text-indigo-500 font-bold">"${esc(s.callsign)}"</span>` : ''}</div>
+                    <div class="font-semibold text-sm text-[#f9fafb] flex items-center"><span onclick="event.stopPropagation(); copySoldierPib('${s.id}')" class="hover:text-[#38bdf8] hover:underline cursor-pointer transition-colors" title="Клік — скопіювати ПІБ">${esc(s.fullName) || 'Не вказано'}</span> ${inRot} ${noteIcon}</div>
+                    <div class="text-xs text-[#9ca3af] mt-0.5 flex items-center gap-1.5 flex-wrap"><span>${esc(s.rank)}</span>${s.callsign ? `<span class="text-[#525866]">·</span><span class="text-[#fbbf24] font-mono font-bold text-xs">«${esc(s.callsign)}»</span>` : ''}</div>
                 </td>
-                <td class="px-6 py-3 text-sm">${esc(s.unit) || '—'}</td>
-                <td class="px-6 py-3 text-sm"><div class="flex items-center"><i data-lucide="map-pin" class="w-3.5 h-3.5 mr-1 text-gray-400"></i>${esc(getPosName(s.positionId))}</div></td>
-                <td class="px-6 py-3"><span class="px-2 py-1 text-[10px] font-bold rounded border ${st.color}">${st.label}</span></td>
+                <td class="px-6 py-3 text-sm font-medium text-[#a5b4fc]">${esc(s.unit) || '—'}</td>
+                <td class="px-6 py-3 text-sm text-[#38bdf8] font-medium"><div class="flex items-center"><i data-lucide="map-pin" class="w-3.5 h-3.5 mr-1.5 text-[#38bdf8]/80"></i>${esc(getPosName(s.positionId))}</div></td>
+                <td class="px-6 py-3"><span class="px-2 py-1 text-[10px] font-bold rounded-sm border ${st.color}">${st.label}</span></td>
                 <td class="px-6 py-3 text-right">
-                    <button onclick="openMoveModal('${s.id}')"    class="p-1.5 text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 rounded mr-1"><i data-lucide="arrow-right-left" class="w-4 h-4"></i></button>
-                    <button onclick="openSoldierModal('${s.id}')" class="p-1.5 text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                    <button onclick="openMoveModal('${s.id}')"    class="p-1.5 text-[#93c5fd] bg-[#222429] hover:bg-[#2e3138] border border-[#2e3138] rounded-sm mr-1 cursor-pointer"><i data-lucide="arrow-right-left" class="w-4 h-4"></i></button>
+                    <button onclick="openSoldierModal('${s.id}')" class="p-1.5 text-[#93c5fd] bg-[#222429] hover:bg-[#2e3138] border border-[#2e3138] rounded-sm cursor-pointer"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
                 </td>
             </tr>`;
         }).join('');
@@ -1726,11 +1574,11 @@ const createPersonnelModule = () => {
 
     function viewEquipment(pId) {
         const p = positions.find(x => x.id === pId); if (!p) return;
-        el('eq-view-title').innerHTML = `<i data-lucide="package" class="w-5 h-5 mr-2"></i> ОВТ: ${esc(p.name)}`;
+        el('eq-view-title').innerHTML = `<i data-lucide="package" class="w-4 h-4 mr-2 text-[#4c8ed9]"></i> ОВТ: ${esc(p.name)}`;
         el('eq-view-list').innerHTML  = (!p.equipment || p.equipment.length === 0)
-            ? '<p class="text-gray-500 py-4 text-center">ОВТ відсутнє.</p>'
+            ? '<p class="text-[#989fa9] py-4 text-center text-sm">ОВТ відсутнє.</p>'
             : p.equipment.map(e =>
-                `<li class="flex justify-between py-2 border-b dark:border-gray-700"><span>${esc(e.name)}</span><b class="text-blue-600 bg-blue-50 px-2 rounded">${esc(e.quantity)}</b></li>`
+                `<li class="flex justify-between py-2 border-b border-[#2e3138] text-sm"><span class="text-[#f3f4f6]">${esc(e.name)}</span><b class="text-[#93c5fd] bg-[rgba(76,142,217,0.12)] border border-[rgba(76,142,217,0.35)] px-2 rounded-sm font-mono tabular-nums">${esc(e.quantity)}</b></li>`
               ).join('');
         openModal('modal-equipment-view'); scheduleIcons();
     }
@@ -1748,51 +1596,51 @@ const createPersonnelModule = () => {
 
     function getTaskChipColor(task) {
         const t = (task || '').toLowerCase().trim();
-        if (!t) return 'bg-slate-800 text-slate-300 border-slate-700';
+        if (!t) return 'bg-[#222429] text-[#b8bec8] border-[#3c404a]';
 
         // 1. Піхота / Стрільці
         if (t === 'піхота' || t.includes('стріл') || t.includes('піхот')) 
-            return 'bg-teal-950/50 text-teal-300 border-teal-800/60';
+            return 'bg-[rgba(20,184,166,0.12)] text-[#5eead4] border-[rgba(20,184,166,0.38)]';
 
         // 2. Медицина / Медевак
         if (t.includes('мед') || t.includes('евак') || t.includes('госп')) 
-            return 'bg-emerald-950/50 text-emerald-300 border-emerald-800/60';
+            return 'bg-[rgba(52,168,115,0.12)] text-[#6ee7b7] border-[rgba(52,168,115,0.38)]';
 
         // 3. БПЛА / Аеро / Дрони / Рекон / Розвідка / РЕР
         if (t.includes('бпла') || t.includes('дрон') || t.includes('рекон') || t.includes('розвід') || t.includes('рер') || t.includes('аеро')) 
-            return 'bg-sky-950/50 text-sky-300 border-sky-800/60';
+            return 'bg-[rgba(76,142,217,0.14)] text-[#93c5fd] border-[rgba(76,142,217,0.40)]';
 
         // 4. Облаштування / Інженер / ІСВ / Сапери / Фортифікація
         if (t.includes('облаштування') || t.includes('інженер') || t.includes('ісв') || t.includes('сапер') || t.includes('фортифік')) 
-            return 'bg-orange-950/50 text-orange-300 border-orange-800/60';
+            return 'bg-[rgba(234,88,12,0.14)] text-[#fdba74] border-[rgba(234,88,12,0.42)]';
 
         // 5. Зв'язок / РЕБ / Радіо / IT
         if (t.includes('зв') || t.includes('реб') || t.includes('радіо') || t.includes('it')) 
-            return 'bg-indigo-950/50 text-indigo-300 border-indigo-800/60';
+            return 'bg-[rgba(99,102,241,0.14)] text-[#a5b4fc] border-[rgba(99,102,241,0.40)]';
 
         // 6. Вогнева підтримка / МБ / Міномет / ТСП / Арта / ППО / ПТРК / Гранатомет / Кулемет / Вогн
         if (t.includes('вогн') || t.includes('мб') || t.includes('тсп') || t.includes('ппо') || t.includes('міномет') || t.includes('арт') || t.includes('птрк') || t.includes('кулемет') || t.includes('гранат') || t.includes('штурм')) 
-            return 'bg-rose-950/50 text-rose-300 border-rose-800/60';
+            return 'bg-[rgba(224,82,82,0.12)] text-[#fca5a5] border-[rgba(224,82,82,0.45)]';
 
         // 7. Бронегрупа / Танк / БМП / БТР / Мехвод / Водій
         if (t.includes('брон') || t.includes('танк') || t.includes('бмп') || t.includes('бтр') || t.includes('водій') || t.includes('мехвод')) 
-            return 'bg-amber-950/50 text-amber-300 border-amber-800/60';
+            return 'bg-[rgba(217,155,38,0.12)] text-[#fcd34d] border-[rgba(217,155,38,0.40)]';
 
         // 8. Логістика / Постачання / Склад / Забезпечення
         if (t.includes('лог') || t.includes('постач') || t.includes('склад') || t.includes('забезп') || t.includes('кухар')) 
-            return 'bg-blue-950/50 text-blue-300 border-blue-800/60';
+            return 'bg-[rgba(76,142,217,0.12)] text-[#93c5fd] border-[rgba(76,142,217,0.35)]';
 
         // 9. Резерв / Охорона / Черговий
         if (t.includes('резерв') || t.includes('охорон') || t.includes('чергов')) 
-            return 'bg-purple-950/50 text-purple-300 border-purple-800/60';
+            return 'bg-[rgba(168,85,247,0.12)] text-[#d8b4fe] border-[rgba(168,85,247,0.38)]';
 
-        // 10. Детермінований тактичний колір для інших завдань
+        // 10. Детермінований колір для інших завдань
         const colors = [
-            'bg-cyan-950/50 text-cyan-300 border-cyan-800/60',
-            'bg-violet-950/50 text-violet-300 border-violet-800/60',
-            'bg-fuchsia-950/50 text-fuchsia-300 border-fuchsia-800/60',
-            'bg-lime-950/50 text-lime-300 border-lime-800/60',
-            'bg-pink-950/50 text-pink-300 border-pink-800/60'
+            'bg-[rgba(76,142,217,0.12)] text-[#93c5fd] border-[rgba(76,142,217,0.35)]',
+            'bg-[rgba(139,92,246,0.12)] text-[#c4b5fd] border-[rgba(139,92,246,0.38)]',
+            'bg-[rgba(52,168,115,0.12)] text-[#6ee7b7] border-[rgba(52,168,115,0.38)]',
+            'bg-[rgba(217,155,38,0.12)] text-[#fcd34d] border-[rgba(217,155,38,0.40)]',
+            'bg-[#222429] text-[#f3f4f6] border-[#3c404a]'
         ];
         let hash = 0;
         for (let i = 0; i < t.length; i++) hash = (hash * 31 + t.charCodeAt(i)) >>> 0;
@@ -1804,20 +1652,20 @@ const createPersonnelModule = () => {
         if (s.deploymentStartTime && isCom) {
             const d = Math.floor((Date.now() - new Date(s.deploymentStartTime)) / 86400000);
             if (d > 0) {
-                let col = 'bg-emerald-950/70 text-emerald-300 border-emerald-800/80';
-                if (d > 30) col = 'bg-rose-950/80 text-rose-300 border-rose-800/90 font-black animate-pulse shadow-sm';
-                else if (d > 20) col = 'bg-amber-950/80 text-amber-300 border-amber-800/80';
-                else if (d > 10) col = 'bg-yellow-950/70 text-yellow-300 border-yellow-800/70';
+                let col = 'bg-[rgba(52,168,115,0.12)] text-[#6ee7b7] border-[rgba(52,168,115,0.38)]';
+                if (d > 30) col = 'bg-[rgba(224,82,82,0.16)] text-[#fca5a5] border-[rgba(224,82,82,0.50)] font-bold';
+                else if (d > 20) col = 'bg-[rgba(217,155,38,0.16)] text-[#fcd34d] border-[rgba(217,155,38,0.45)]';
+                else if (d > 10) col = 'bg-[rgba(217,155,38,0.10)] text-[#fde68a] border-[rgba(217,155,38,0.35)]';
                 
-                tB = `<span class="text-[11px] font-mono font-bold px-2 py-0.5 rounded-lg border flex items-center shadow-sm shrink-0 ${col}" title="Днів на позиції: ${d}"><i data-lucide="clock" class="w-3 h-3 mr-1"></i>${d}д</span>`;
+                tB = `<span class="text-[11px] font-mono tabular-nums font-bold px-1.5 py-0.5 rounded-sm border flex items-center shrink-0 ${col}" title="Днів на позиції: ${d}"><i data-lucide="clock" class="w-3 h-3 mr-1"></i>${d}д</span>`;
             }
         }
         
         const taskShort = (s.currentTask && s.currentTask !== 'піхота') ? formatTaskShortLabel(s.currentTask) : '';
-        const tH = taskShort ? `<span class="uppercase font-mono font-bold ${getTaskChipColor(s.currentTask)} px-1.5 py-0.5 rounded-md text-[10px] whitespace-nowrap shadow-sm border" title="${esc(s.currentTask)}">${esc(taskShort)}</span>` : '';
+        const tH = taskShort ? `<span class="uppercase font-mono font-bold ${getTaskChipColor(s.currentTask)} px-1.5 py-0.5 rounded-sm text-[10px] whitespace-nowrap border" title="${esc(s.currentTask)}">${esc(taskShort)}</span>` : '';
         const rotDir = activeRotMap.get(s.id);
-        const inRot = rotDir ? `<span class="inline-flex relative h-2.5 w-2.5 ml-1 shrink-0" title="В ротації"><span class="animate-ping absolute inline-flex h-full w-full rounded-full ${rotDir==='in'?'bg-amber-400':'bg-blue-400'} opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 ${rotDir==='in'?'bg-amber-500':'bg-blue-500'}"></span></span>` : '';
-        const noteIcon = s.note ? `<button type="button" onclick="event.stopPropagation(); viewNote('${s.id}')" class="text-blue-400 hover:text-blue-300 shrink-0 bg-blue-950/50 p-0.5 rounded-md border border-blue-800/50 transition-colors cursor-pointer" title="Примітка: ${esc(s.note ? (s.note.text || s.note) : '')}"><i data-lucide="info" class="w-3 h-3"></i></button>` : '';
+        const inRot = rotDir ? `<span class="inline-flex h-2 w-2 ml-1 shrink-0 rounded-full ${rotDir==='in'?'bg-[#d99b26]':'bg-[#4c8ed9]'}" title="В ротації"></span>` : '';
+        const noteIcon = s.note ? `<button type="button" onclick="event.stopPropagation(); viewNote('${s.id}')" class="text-[#93c5fd] hover:text-[#f3f4f6] shrink-0 bg-[rgba(76,142,217,0.12)] p-0.5 rounded-sm border border-[rgba(76,142,217,0.35)] transition-colors cursor-pointer" title="Примітка: ${esc(s.note ? (s.note.text || s.note) : '')}"><i data-lucide="info" class="w-3 h-3"></i></button>` : '';
 
         const isPosCom = pos.commanderId === s.id;
         const hasCallsign = !!s.callsign?.trim();
@@ -1826,21 +1674,19 @@ const createPersonnelModule = () => {
         
         const mainTitle = hasCallsign ? displayCallsign : displayFullName;
         const titleClass = hasCallsign
-            ? (isPosCom ? 'font-mono font-extrabold text-[14px] text-amber-300' : 'font-mono font-extrabold text-[14px] text-emerald-400')
-            : (isPosCom ? 'font-sans font-bold text-[13.5px] text-amber-300' : 'font-sans font-bold text-[13.5px] text-slate-100');
+            ? (isPosCom ? 'font-mono font-bold text-[14px] text-[#fde047] tracking-wide' : 'font-mono font-bold text-[13.5px] text-[#fbbf24] tracking-wide')
+            : (isPosCom ? 'font-sans font-bold text-[13.5px] text-[#fde047]' : 'font-sans font-bold text-[13.5px] text-[#f9fafb]');
 
-        const mainTitleHtml = hasCallsign 
-            ? `<span class="${titleClass} truncate">${mainTitle}</span>` 
-            : `<span onclick="event.stopPropagation(); copySoldierPib('${s.id}')" class="${titleClass} truncate hover:text-emerald-400 hover:underline cursor-pointer transition-colors" title="Клік — скопіювати ПІБ">${mainTitle}</span>`;
+        const mainTitleHtml = `<span onclick="event.stopPropagation(); copySoldierPib('${s.id}')" class="${titleClass} max-w-full truncate hover:underline cursor-pointer transition-colors" title="Клік — скопіювати ПІБ">${mainTitle}</span>`;
 
         const subText = hasCallsign && s.fullName 
-            ? `<span onclick="event.stopPropagation(); copySoldierPib('${s.id}')" class="text-slate-300 font-medium hover:text-emerald-400 hover:underline cursor-pointer transition-colors" title="Клік — скопіювати ПІБ">${displayFullName}</span>` 
+            ? `<span onclick="event.stopPropagation(); copySoldierPib('${s.id}')" class="text-[#e5e7eb] font-normal hover:text-[#ffffff] hover:underline cursor-pointer transition-colors truncate" title="Клік — скопіювати ПІБ">${displayFullName}</span>` 
             : '';
-        const unitText = s.unit ? `<span class="text-slate-400">${hasCallsign && s.fullName ? ' · ' : ''}${esc(s.unit)}</span>` : '';
+        const unitText = s.unit ? `<span class="text-[#a5b4fc] text-[11px] font-sans font-medium shrink-0 ml-1.5">· ${esc(s.unit)}</span>` : '';
         
-        return `<li draggable="true" ondragstart="handleDragStart(event, '${s.id}')" class="group/row flex justify-between items-center py-2 px-2.5 hover:bg-slate-900/90 rounded-xl border border-transparent hover:border-slate-800 text-xs leading-tight gap-2 cursor-context-menu transition-all" oncontextmenu="openSoldierContextMenu(event, '${s.id}')">
+        return `<li draggable="true" ondragstart="handleDragStart(event, '${s.id}')" class="group/row flex justify-between items-center py-2 px-2.5 hover:bg-[#25272d] rounded-sm border border-transparent hover:border-[#3c404a] text-xs leading-tight gap-2 cursor-context-menu transition-colors" oncontextmenu="openSoldierContextMenu(event, '${s.id}')">
             <div class="flex items-start flex-1 min-w-0 pr-1 gap-1.5">
-                <button onclick="toggleCommander('${pos.id}','${s.id}')" class="p-1 shrink-0 mt-0.5 hover:scale-110 transition-transform cursor-pointer" title="${isPosCom ? 'Старший позиції' : 'Призначити старшим'}"><i data-lucide="star" class="w-3.5 h-3.5 ${isPosCom ? 'text-amber-400 fill-amber-400 drop-shadow-sm' : 'text-slate-600 hover:text-amber-300'}"></i></button>
+                <button onclick="toggleCommander('${pos.id}','${s.id}')" class="p-1 shrink-0 mt-0.5 cursor-pointer" title="${isPosCom ? 'Старший позиції' : 'Призначити старшим'}"><i data-lucide="star" class="w-3.5 h-3.5 ${isPosCom ? 'text-[#fcd34d] fill-[#fcd34d]' : 'text-[#989fa9] hover:text-[#fcd34d]'}"></i></button>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-1.5 flex-wrap leading-snug">
                         ${mainTitleHtml}
@@ -1848,13 +1694,13 @@ const createPersonnelModule = () => {
                         ${noteIcon}
                         ${tH}
                     </div>
-                    ${(subText || unitText) ? `<div class="flex items-center text-[11.5px] text-slate-400 mt-0.5 truncate font-sans">${subText}${unitText}</div>` : ''}
+                    ${(subText || unitText) ? `<div class="flex items-center text-[11.5px] mt-1 font-sans min-w-0">${subText}${unitText}</div>` : ''}
                 </div>
             </div>
             <div class="flex items-center gap-1.5 shrink-0">
                 ${tB}
-                ${s.status !== 'ok' ? `<span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-rose-950/80 text-rose-300 border border-rose-800/80 shrink-0">${esc(s.status)}</span>` : ''}
-                <button onclick="openMoveModal('${s.id}')" class="text-slate-500 hover:text-white hover:bg-slate-800 border border-transparent hover:border-slate-700 p-1.5 rounded-lg shrink-0 transition-all opacity-40 group-hover/row:opacity-100 cursor-pointer" title="Перемістити бійця"><i data-lucide="arrow-right-left" class="w-3.5 h-3.5"></i></button>
+                ${s.status !== 'ok' ? `<span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-sm bg-[rgba(224,82,82,0.14)] text-[#fca5a5] border border-[rgba(224,82,82,0.45)] shrink-0">${esc(s.status)}</span>` : ''}
+                <button onclick="openMoveModal('${s.id}')" class="text-[#b8bec8] hover:text-[#f3f4f6] hover:bg-[#2e3138] border border-transparent hover:border-[#3c404a] p-1.5 rounded-sm shrink-0 transition-colors opacity-40 group-hover/row:opacity-100 cursor-pointer" title="Перемістити бійця"><i data-lucide="arrow-right-left" class="w-3.5 h-3.5"></i></button>
             </div>
         </li>`;
     }
@@ -1866,8 +1712,8 @@ const createPersonnelModule = () => {
                 ? '<i data-lucide="lock" class="w-4 h-4 mr-2"></i><span>Закріплено</span>' 
                 : '<i data-lucide="unlock" class="w-4 h-4 mr-2"></i><span>Ред. порядок</span>';
             lockBtn.className = isSortingLocked 
-                ? 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-2 rounded-xl flex items-center text-sm font-medium transition-all flex-1 sm:flex-none justify-center'
-                : 'bg-amber-950/40 text-amber-300 border border-amber-800/60 px-3.5 py-2 rounded-xl flex items-center text-sm font-bold transition-all flex-1 sm:flex-none justify-center';
+                ? 'bg-[#222429] hover:bg-[#2e3138] text-[#f3f4f6] border border-[#2e3138] hover:border-[#3c404a] px-3.5 py-2 rounded-sm flex items-center text-xs font-medium transition-colors flex-1 sm:flex-none justify-center cursor-pointer'
+                : 'bg-[rgba(217,155,38,0.14)] text-[#fcd34d] border border-[rgba(217,155,38,0.45)] px-3.5 py-2 rounded-sm flex items-center text-xs font-bold transition-colors flex-1 sm:flex-none justify-center cursor-pointer';
         }
 
         // ОПТИМІЗАЦІЯ: Використовуємо готовий кеш замість перебудови
@@ -1918,7 +1764,7 @@ const createPersonnelModule = () => {
                 if (Object.keys(groupTaskCounts).length > 0) {
                     const ribbonContent = Object.keys(groupTaskCounts).sort((a,b) => groupTaskCounts[b] - groupTaskCounts[a]).map(t => {
                         const chipClass = getTaskChipColor(t);
-                        return `<span class="flex items-center text-[9px] font-mono font-bold border px-1.5 py-0.5 rounded shadow-sm shrink-0 uppercase tracking-wide cursor-default transition-colors ${chipClass}">${esc(t)} <span class="ml-1 text-[11px] font-black opacity-90">${groupTaskCounts[t]}</span></span>`;
+                        return `<span class="flex items-center text-[9px] font-mono font-bold border px-1.5 py-0.5 rounded-sm shrink-0 uppercase tracking-wide cursor-default transition-colors ${chipClass}">${esc(t)} <span class="ml-1 text-[11px] font-bold tabular-nums opacity-90">${groupTaskCounts[t]}</span></span>`;
                     }).join('');
                     groupRibbon = `<div class="ml-4 flex gap-1.5 overflow-x-auto custom-scrollbar pb-1">${ribbonContent}</div>`;
                 }
@@ -1935,79 +1781,79 @@ const createPersonnelModule = () => {
                 let sh = '';
                 if (!collapsedPositions[pos.id]) {
                     if (sol.length === 0) {
-                        sh = '<div class="p-3 text-center text-xs text-slate-500 italic font-mono">── Порожня ──</div>';
+                        sh = '<div class="p-3 text-center text-xs text-[#989fa9] italic font-mono">── Порожня ──</div>';
                     } else {
                         const lis = sol.map(s => buildPosSoldierRowHtml(s, pos, isCom, activeRotMap)).join('');
-                        sh = `<div class="p-2 overflow-y-auto max-h-80 custom-scrollbar"><ul class="space-y-0.5 divide-y divide-slate-800/60">${lis}</ul></div>`;
+                        sh = `<div class="p-2 overflow-y-auto max-h-80 custom-scrollbar"><ul class="space-y-0.5 divide-y divide-[#2e3847]">${lis}</ul></div>`;
                     }
                 }
 
                 const eqBtn = (pos.equipment || []).length > 0
-                    ? `<button onclick="viewEquipment('${pos.id}')" class="text-[10px] font-mono font-bold text-blue-400 bg-blue-950/40 px-1.5 py-0.5 rounded border border-blue-800/40 flex items-center shrink-0" title="ОВТ"><i data-lucide="package" class="w-3 h-3 mr-1 text-blue-400"></i>${pos.equipment.length}</button>` : '';
+                    ? `<button onclick="viewEquipment('${pos.id}')" class="text-[10px] font-mono font-bold tabular-nums text-[#93c5fd] bg-[rgba(76,142,217,0.12)] px-1.5 py-0.5 rounded-sm border border-[rgba(76,142,217,0.35)] flex items-center shrink-0 cursor-pointer" title="ОВТ"><i data-lucide="package" class="w-3 h-3 mr-1 text-[#4c8ed9]"></i>${pos.equipment.length}</button>` : '';
 
                 const copyPosBtn = sol.length > 0
-                    ? `<button onclick="copyPositionPersonnel('${pos.id}')" class="text-slate-300 bg-slate-800 hover:bg-slate-700 hover:text-emerald-300 border border-slate-700 p-1 rounded-md transition-colors shadow-sm hidden group-hover:inline-flex" title="Скопіювати список о/с позиції (${sol.length} чол.)"><i data-lucide="copy" class="w-3 h-3"></i></button>` : '';
+                    ? `<button onclick="copyPositionPersonnel('${pos.id}')" class="text-[#c2c7d0] bg-[#101113] hover:bg-[#2a3444] hover:text-[#6ee7b7] border border-[#3a475c] p-1 rounded-sm transition-colors hidden group-hover:inline-flex cursor-pointer" title="Скопіювати список о/с позиції (${sol.length} чол.)"><i data-lucide="copy" class="w-3 h-3"></i></button>` : '';
 
                 const hasRot = sol.some(s => activeRotMap.has(s.id));
-                const rotBadge = hasRot ? `<span class="absolute -top-1 -right-1 flex h-3 w-3" title="Є активна ротація!"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-amber-500 border border-slate-900"></span></span>` : '';
+                const rotBadge = hasRot ? `<span class="absolute -top-1 -right-1 flex h-2.5 w-2.5 rounded-full bg-[#d99b26] border border-[#17181b]" title="Є активна ротація!"></span>` : '';
 
                 const isMovingThis = window.isMovingPosId === pos.id;
                 const cardClasses = isMovingThis
-                    ? 'bg-slate-950/95 border-2 border-indigo-500 ring-2 ring-indigo-500/50 shadow-indigo-500/20 shadow-xl transition-all rounded-2xl'
-                    : 'bg-slate-950/95 border border-slate-800/90 hover:border-slate-700 shadow-lg transition-all rounded-2xl';
+                    ? 'bg-[#17181b] border-2 border-[#4c8ed9] transition-colors rounded-sm'
+                    : 'bg-[#17181b] border border-[#3a3e47] hover:border-[#464b57] transition-colors rounded-sm';
                 
-                const headerClasses = isCom ? 'bg-slate-900/95 border-b border-slate-800/90' : 'bg-slate-900/80 border-b border-slate-800/80';
+                const headerClasses = isCom ? 'bg-[#25272d] border-b border-[#3b495e]' : 'bg-[#25272d] border-b border-[#3b495e]';
 
                 const targetBtnClasses = isMovingThis
-                    ? 'text-white bg-indigo-600 hover:bg-indigo-500 ring-2 ring-indigo-400 border border-indigo-400 p-1 rounded-md transition-all shadow-md inline-flex'
-                    : 'text-slate-300 bg-slate-800 hover:bg-slate-700 hover:text-indigo-400 border border-slate-700 p-1 rounded-md transition-colors shadow-sm hidden group-hover:inline-flex';
+                    ? 'text-white bg-[#2b67ab] hover:bg-[#4c8ed9] border border-[#4c8ed9] p-1 rounded-sm transition-colors inline-flex cursor-pointer'
+                    : 'text-[#c2c7d0] bg-[#101113] hover:bg-[#2a3444] hover:text-[#93c5fd] border border-[#3a475c] p-1 rounded-sm transition-colors hidden group-hover:inline-flex cursor-pointer';
 
-                return `<div data-pos-id="${pos.id}" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, '${pos.id}')" onclick="if(window.isMovingSoldierId) handleTargetModeDrop('${pos.id}'); else if(window.isMovingPosId) handlePosTargetModeDrop('${pos.id}');" class="rounded-2xl border flex flex-col relative tactical-card group transition-all duration-200 ${cardClasses}">
+                return `<div data-pos-id="${pos.id}" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, '${pos.id}')" onclick="if(window.isMovingSoldierId) handleTargetModeDrop('${pos.id}'); else if(window.isMovingPosId) handlePosTargetModeDrop('${pos.id}');" class="rounded-sm border flex flex-col relative tactical-card group transition-colors ${cardClasses}">
                     ${rotBadge}
-                    <div class="px-3 py-2 flex items-center justify-between ${headerClasses} rounded-t-2xl gap-2 min-h-[42px] select-none">
+                    <div class="px-3 py-2 flex items-center justify-between ${headerClasses} rounded-t-sm gap-2 min-h-[42px] select-none">
                         <div class="flex items-center gap-2 min-w-0 flex-1 cursor-grab active:cursor-grabbing hover:opacity-90" draggable="true" ondragstart="handlePosDragStart(event, '${pos.id}')" title="Перетягнути позицію (Drag-and-Drop)">
-                            <i data-lucide="grip-vertical" class="w-3.5 h-3.5 text-slate-400 hover:text-white shrink-0"></i>
-                            <i data-lucide="${pos.icon || 'crosshair'}" class="w-4 h-4 ${isCom ? 'text-rose-400' : 'text-slate-400'} shrink-0"></i>
-                            <h3 class="font-extrabold text-sm text-white leading-tight truncate" title="${esc(pos.name)}">${esc(pos.name)}</h3>
-                            <span class="bg-slate-800 text-slate-300 border border-slate-700 px-1.5 py-0.5 rounded-md font-mono text-[10px] font-bold flex items-center shrink-0" title="Кількість бійців"><i data-lucide="users" class="w-2.5 h-2.5 mr-1 text-slate-400"></i>${sol.length}</span>
+                            <i data-lucide="grip-vertical" class="w-3.5 h-3.5 text-[#989fa9] hover:text-[#ffffff] shrink-0"></i>
+                            <i data-lucide="${pos.icon || 'crosshair'}" class="w-4 h-4 ${isCom ? 'text-[#e05252]' : 'text-[#b8bec8]'} shrink-0"></i>
+                            <h3 class="font-bold text-sm text-[#38bdf8] leading-tight truncate" title="${esc(pos.name)}">${esc(pos.name)}</h3>
+                            <span class="bg-[#101113] text-[#f1f5f9] border border-[#3c404a] px-1.5 py-0.5 rounded-sm font-mono tabular-nums text-[11px] font-bold flex items-center shrink-0" title="Кількість бійців"><i data-lucide="users" class="w-2.5 h-2.5 mr-1 text-[#b8bec8]"></i>${sol.length}</span>
                             ${eqBtn}
                         </div>
                         <div class="flex items-center gap-1 shrink-0" draggable="false" ondragstart="event.stopPropagation()" onclick="event.stopPropagation()">
                             ${copyPosBtn}
-                            <button onclick="event.stopPropagation(); openAddToPosModal('${pos.id}')" class="text-slate-300 bg-slate-800 hover:bg-slate-700 hover:text-white border border-slate-700 px-1.5 py-0.5 rounded-md text-[11px] font-medium transition-colors shadow-sm hidden group-hover:inline-flex items-center gap-0.5" title="Додати бійця"><i data-lucide="user-plus" class="w-3 h-3"></i><span>+ Боєць</span></button>
-                            <button onclick="event.stopPropagation(); startPosTargetMode('${pos.id}', event)" class="${targetBtnClasses}" title="${isMovingThis ? 'Скасувати вибір' : 'Перемістити позицію (кліком)'}"><i data-lucide="crosshair" class="w-3 h-3 ${isMovingThis ? 'text-white' : 'text-indigo-400'}"></i></button>
-                            <button onclick="event.stopPropagation(); openPositionModal('${pos.id}')" class="text-slate-300 bg-slate-800 hover:bg-slate-700 hover:text-white border border-slate-700 p-1 rounded-md transition-colors shadow-sm hidden group-hover:inline-flex" title="Налаштування"><i data-lucide="settings" class="w-3 h-3"></i></button>
+                            <button onclick="event.stopPropagation(); openAddToPosModal('${pos.id}')" class="text-[#c2c7d0] bg-[#101113] hover:bg-[#282b31] hover:text-[#ffffff] border border-[#3c404a] px-1.5 py-0.5 rounded-sm text-[11px] font-medium transition-colors hidden group-hover:inline-flex items-center gap-0.5 cursor-pointer" title="Додати бійця"><i data-lucide="user-plus" class="w-3 h-3"></i><span>+ Боєць</span></button>
+                            <button onclick="event.stopPropagation(); startPosTargetMode('${pos.id}', event)" class="${targetBtnClasses}" title="${isMovingThis ? 'Скасувати вибір' : 'Перемістити позицію (кліком)'}"><i data-lucide="crosshair" class="w-3 h-3 ${isMovingThis ? 'text-white' : 'text-[#4c8ed9]'}"></i></button>
+                            <button onclick="event.stopPropagation(); openPositionModal('${pos.id}')" class="text-[#c2c7d0] bg-[#101113] hover:bg-[#282b31] hover:text-[#ffffff] border border-[#3c404a] p-1 rounded-sm transition-colors hidden group-hover:inline-flex cursor-pointer" title="Налаштування"><i data-lucide="settings" class="w-3 h-3"></i></button>
                             ${!isSortingLocked ? `
-                            <button onclick="event.stopPropagation(); movePositionOrder('${pos.id}',-1)" class="${pi === 0 ? 'hidden' : ''} p-0.5 text-slate-400 hover:text-white rounded"><i data-lucide="arrow-up" class="w-3.5 h-3.5"></i></button>
-                            <button onclick="event.stopPropagation(); movePositionOrder('${pos.id}',1)" class="${pi === groupPositions.length-1 ? 'hidden' : ''} p-0.5 text-slate-400 hover:text-white rounded"><i data-lucide="arrow-down" class="w-3.5 h-3.5"></i></button>
+                            <button onclick="event.stopPropagation(); movePositionOrder('${pos.id}',-1)" class="${pi === 0 ? 'hidden' : ''} p-0.5 text-[#b8bec8] hover:text-[#f3f4f6] rounded-sm cursor-pointer"><i data-lucide="arrow-up" class="w-3.5 h-3.5"></i></button>
+                            <button onclick="event.stopPropagation(); movePositionOrder('${pos.id}',1)" class="${pi === groupPositions.length-1 ? 'hidden' : ''} p-0.5 text-[#b8bec8] hover:text-[#f3f4f6] rounded-sm cursor-pointer"><i data-lucide="arrow-down" class="w-3.5 h-3.5"></i></button>
                             ` : ''}
-                            <button onclick="event.stopPropagation(); togglePos('${pos.id}')" class="p-0.5 text-slate-400 hover:text-white rounded ml-0.5"><i data-lucide="${collapsedPositions[pos.id] ? 'chevron-down' : 'chevron-up'}" class="w-4 h-4"></i></button>
+                            <button onclick="event.stopPropagation(); togglePos('${pos.id}')" class="p-0.5 text-[#b8bec8] hover:text-[#f3f4f6] rounded-sm ml-0.5 cursor-pointer"><i data-lucide="${collapsedPositions[pos.id] ? 'chevron-down' : 'chevron-up'}" class="w-4 h-4"></i></button>
                         </div>
                     </div>${sh}
                 </div>`;
             }).join('');
 
-            return `<div class="bg-slate-900/40 backdrop-blur-sm p-4 md:p-5 rounded-2xl border border-slate-800/80 mb-6 shadow-sm">
+            return `<div class="bg-[#141518] p-4 rounded-sm border border-[#3a3e47] mb-6">
                 <div class="flex justify-between items-center mb-4">
                     <div class="flex items-center min-w-0 flex-1">
-                        <h3 class="text-base font-extrabold text-white flex items-center cursor-pointer hover:text-emerald-400 transition-colors overflow-hidden" onclick="if(window.isMovingPosId) handlePosTargetModeDropGroup(${jsEsc(gName)}); else toggleGroup(${jsEsc(gName)});">
-                            <i data-lucide="${isC ? 'folder-closed' : 'folder-open'}" class="w-5 h-5 mr-2 text-emerald-400 shrink-0"></i>
+                        <h3 class="text-base font-bold text-[#f3f4f6] flex items-center cursor-pointer hover:text-[#4c8ed9] transition-colors overflow-hidden" onclick="if(window.isMovingPosId) handlePosTargetModeDropGroup(${jsEsc(gName)}); else toggleGroup(${jsEsc(gName)});">
+                            <i data-lucide="${isC ? 'folder-closed' : 'folder-open'}" class="w-4 h-4 mr-2 text-[#4c8ed9] shrink-0"></i>
                             <span class="shrink-0">${esc(gName)}</span> 
-                            <span class="ml-3 text-[11px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded-lg shrink-0">${activeGroupPosCount} поз.</span>
-                            <span class="ml-2 text-[11px] font-mono font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-800/50 px-2 py-0.5 rounded-lg shrink-0">${gCount} чол.</span>
+                            <span class="ml-3 text-[11px] font-mono tabular-nums font-bold bg-[#222429] text-[#f3f4f6] border border-[#2e3138] px-2 py-0.5 rounded-sm shrink-0">${activeGroupPosCount} поз.</span>
+                            <span class="ml-2 text-[11px] font-mono tabular-nums font-bold text-[#6ee7b7] bg-[rgba(52,168,115,0.12)] border border-[rgba(52,168,115,0.38)] px-2 py-0.5 rounded-sm shrink-0">${gCount} чол.</span>
                             ${groupRibbon}
                         </h3>
-                        <button onclick="openGroupModal(${jsEsc(gName)})" class="ml-3 text-slate-400 hover:text-white p-1 rounded-lg border border-slate-800 bg-slate-900 transition-colors" title="Налаштування групи"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
-                        <button onclick="toggleAllInGroup(${jsEsc(gName)})" class="ml-1.5 text-slate-400 hover:text-white p-1 rounded-lg border border-slate-800 bg-slate-900 transition-colors" title="Згорнути/Розгорнути всі позиції"><i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="openGroupModal(${jsEsc(gName)})" class="ml-3 text-[#b8bec8] hover:text-[#f3f4f6] p-1 rounded-sm border border-[#2e3138] bg-[#17181b] hover:bg-[#222429] transition-colors cursor-pointer" title="Налаштування групи"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="toggleAllInGroup(${jsEsc(gName)})" class="ml-1.5 text-[#b8bec8] hover:text-[#f3f4f6] p-1 rounded-sm border border-[#2e3138] bg-[#17181b] hover:bg-[#222429] transition-colors cursor-pointer" title="Згорнути/Розгорнути всі позиції"><i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i></button>
                     </div>
                     <div class="flex items-center gap-1 shrink-0">
                         ${!isSortingLocked ? `
-                        <button onclick="moveGroupOrder(${jsEsc(gName)},-1)" class="${gi === 0 ? 'hidden' : ''} p-1 text-slate-400 hover:text-white rounded"><i data-lucide="arrow-up" class="w-4 h-4"></i></button>
-                        <button onclick="moveGroupOrder(${jsEsc(gName)},1)"  class="${gi === gl - 1 ? 'hidden' : ''} p-1 text-slate-400 hover:text-white rounded"><i data-lucide="arrow-down" class="w-4 h-4"></i></button>
+                        <button onclick="moveGroupOrder(${jsEsc(gName)},-1)" class="${gi === 0 ? 'hidden' : ''} p-1 text-[#b8bec8] hover:text-[#f3f4f6] rounded-sm cursor-pointer"><i data-lucide="arrow-up" class="w-4 h-4"></i></button>
+                        <button onclick="moveGroupOrder(${jsEsc(gName)},1)"  class="${gi === gl - 1 ? 'hidden' : ''} p-1 text-[#b8bec8] hover:text-[#f3f4f6] rounded-sm cursor-pointer"><i data-lucide="arrow-down" class="w-4 h-4"></i></button>
                         ` : ''}
                     </div>
                 </div>
-                <div class="grid gap-4 ${isC ? 'hidden' : ''} rounded-xl p-1 transition-all" style="grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));" ondragover="handleGroupGridDragOver(event)" ondragleave="handleGroupGridDragLeave(event)" ondrop="handleGroupGridDrop(event, ${jsEsc(gName)})">${posCards}</div>
+                <div class="grid gap-3 ${isC ? 'hidden' : ''} rounded-sm p-1 transition-colors" style="grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));" ondragover="handleGroupGridDragOver(event)" ondragleave="handleGroupGridDragLeave(event)" ondrop="handleGroupGridDrop(event, ${jsEsc(gName)})">${posCards}</div>
             </div>`;
         }).join('');
 
@@ -2017,6 +1863,12 @@ const createPersonnelModule = () => {
     // ─── JOURNAL TRACKING ─────────────────────────────────────────────────────
     function handleJournalTracking(sId, fId, tId) {
         if (fId === tId) return;
+        if (fId) {
+            const oldPos = positions.find(p => p.id === fId);
+            if (oldPos && oldPos.commanderId === sId) {
+                oldPos.commanderId = null;
+            }
+        }
         const s  = getPersonById(sId);
         const tP = positions.find(p => p.id === tId);
 
@@ -2044,7 +1896,7 @@ const createPersonnelModule = () => {
     }
 
     function renderJournal() {
-        const q = val('journal-search').toLowerCase();
+        const q = normSearchText(val('journal-search'));
         const f = val('journal-filter');
 
         const filt = journal.filter(r => {
@@ -2053,7 +1905,9 @@ const createPersonnelModule = () => {
             if (f === 'history' &&  ia) return false;
             if (!q) return true;
             const s = getPersonById(r.soldierId) || {};
-            return (s.fullName || '').toLowerCase().includes(q) || (s.callsign || '').toLowerCase().includes(q);
+            const posName = r.positionName || getPosName(r.positionId);
+            const hay = normSearchText(`${s.fullName || ''} ${s.callsign || ''} ${s.unit || ''} ${posName}`);
+            return hay.includes(q);
         });
 
         filt.sort((a, b) => {
@@ -2063,7 +1917,7 @@ const createPersonnelModule = () => {
         });
 
         if (filt.length === 0) {
-            el('journal-tbody').innerHTML = '<tr><td colspan="5" class="px-6 py-6 text-center text-gray-500">Немає записів</td></tr>';
+            el('journal-tbody').innerHTML = '<tr><td colspan="5" class="px-6 py-6 text-center text-[#989fa9]">Немає записів</td></tr>';
             return;
         }
 
@@ -2077,18 +1931,16 @@ const createPersonnelModule = () => {
             
             const displayStartTime = r.startTime;
             const ms  = (ia ? now : new Date(r.endTime)) - new Date(displayStartTime);
-            const ds  = Math.floor(ms / 86400000);
-            const hs  = Math.floor((ms % 86400000) / 3600000);
-            const durStr = `${ds > 0 ? ds + 'д ' : ''}${hs}г`;
+            const durStr = formatDuration(ms);
             const dur = ia
-                ? `<span class="text-green-600 font-bold flex gap-1 justify-end"><i data-lucide="activity" class="w-3 h-3"></i> ${durStr}</span>`
-                : `<span class="text-gray-500">${durStr}</span>`;
-            return `<tr class="${ia ? 'bg-green-50/20' : ''} hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <td class="px-6 py-3"><div class="text-sm font-bold">${sN}</div><div class="text-xs text-gray-500">${esc(s.unit) || '—'}</div></td>
-                <td class="px-6 py-3 text-sm flex gap-1 items-center"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-gray-400"></i>${esc(r.positionName || getPosName(r.positionId))}</td>
-                <td class="px-6 py-3 text-sm">${fmtDT(displayStartTime)}</td>
-                <td class="px-6 py-3 text-sm">${ia ? '<span class="text-green-600 text-[10px] font-bold bg-green-100 px-2 rounded">НА ПОЗИЦІЇ</span>' : fmtDT(r.endTime)}</td>
-                <td class="px-6 py-3 text-right"><div class="flex justify-end gap-3 items-center">${dur}<button onclick="openJournalModal('${r.id}')" class="p-1 bg-gray-100 dark:bg-gray-700 rounded"><i data-lucide="edit-3" class="w-3 h-3 text-gray-500"></i></button><button onclick="deleteJournalEntry('${r.id}')" class="p-1 bg-red-50 dark:bg-red-900/30 rounded"><i data-lucide="trash-2" class="w-3 h-3 text-red-500"></i></button></div></td>
+                ? `<span class="text-[#6ee7b7] font-mono tabular-nums font-bold flex gap-1 justify-end items-center"><i data-lucide="activity" class="w-3 h-3"></i> ${durStr}</span>`
+                : `<span class="text-[#b4c0d0] font-mono tabular-nums">${durStr}</span>`;
+            return `<tr class="${ia ? 'bg-[rgba(52,168,115,0.06)]' : ''} hover:bg-[#222429] transition-colors">
+                <td class="px-6 py-3"><div class="text-sm font-bold text-[#f1f5f9]">${sN}</div><div class="text-xs text-[#b4c0d0]">${esc(s.unit) || '—'}</div></td>
+                <td class="px-6 py-3 text-sm text-[#f3f4f6]"><div class="flex gap-1.5 items-center"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-[#989fa9]"></i>${esc(r.positionName || getPosName(r.positionId))}</div></td>
+                <td class="px-6 py-3 text-sm font-mono tabular-nums text-[#f3f4f6]">${fmtDT(displayStartTime)}</td>
+                <td class="px-6 py-3 text-sm font-mono tabular-nums text-[#f3f4f6]">${ia ? '<span class="text-[#6ee7b7] text-[10px] font-bold bg-[rgba(52,168,115,0.14)] border border-[rgba(52,168,115,0.40)] px-2 py-0.5 rounded-sm">НА ПОЗИЦІЇ</span>' : fmtDT(r.endTime)}</td>
+                <td class="px-6 py-3 text-right"><div class="flex justify-end gap-2 items-center">${dur}<button onclick="openJournalModal('${r.id}')" class="p-1.5 bg-[#222429] hover:bg-[#2e3138] border border-[#2e3138] rounded-sm cursor-pointer"><i data-lucide="edit-3" class="w-3.5 h-3.5 text-[#b8bec8]"></i></button><button onclick="deleteJournalEntry('${r.id}')" class="p-1.5 bg-[rgba(224,82,82,0.12)] hover:bg-[rgba(224,82,82,0.22)] border border-[rgba(224,82,82,0.40)] rounded-sm cursor-pointer"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-[#fca5a5]"></i></button></div></td>
             </tr>`;
         }).join('');
         scheduleIcons();
@@ -2165,7 +2017,7 @@ const createPersonnelModule = () => {
             if ([...x.options].some(o => o.value === cv)) x.value = cv;
         };
         restoreSelect('filter-unit',   `<option value="all">Всі підрозділи</option>${units.map(u => `<option value="${esc(u)}">${esc(u)}</option>`).join('')}`);
-        restoreSelect('filter-pos',    `<option value="all">Всі локації</option>${positions.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}`);
+        restoreSelect('filter-pos',    `<option value="all">Всі локації</option><option value="combat_only">Тільки бойові позиції</option>${positions.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}`);
         restoreSelect('filter-status', `<option value="all">Всі статуси</option>${STATUS_KEYS.map(k => `<option value="${k}">${STATUSES[k].label}</option>`).join('')}`);
 
         const sS = el('s-status');
@@ -2247,14 +2099,15 @@ const createPersonnelModule = () => {
         selectedMoveStatus = k;
         document.querySelectorAll('.status-btn').forEach(b => {
             const bk = b.dataset.status;
+            const bStyle = (STATUSES[bk] || STATUSES.ok).color;
             b.className = bk === k
-                ? `status-btn p-2 text-sm rounded-lg border flex items-center space-x-2 transition-all ${STATUSES[bk].color} ring-2 ring-offset-1 dark:ring-offset-gray-800`
-                : 'status-btn p-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 flex items-center space-x-2 transition-all bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50';
+                ? `status-btn p-2 text-xs font-semibold rounded-sm border flex items-center space-x-2 transition-colors ${bStyle} outline outline-1 outline-[#4c8ed9] cursor-pointer`
+                : 'status-btn p-2 text-xs font-medium rounded-sm border border-[#2e3138] flex items-center space-x-2 transition-colors bg-[#101113] text-[#b8bec8] hover:bg-[#222429] hover:text-[#f3f4f6] cursor-pointer';
         });
     }
 
     function setMoveToPPD() {
-        const ppd = positions.find(p => p.type === 'non_combat') || positions[0];
+        const ppd = findBasePpdPosition();
         if (ppd) { el('m-pos-input').value = ppd.name; }
     }
 
@@ -2270,10 +2123,10 @@ const createPersonnelModule = () => {
         
         el('m-task').value   = s.currentTask || 'піхота';
         el('move-status-grid').innerHTML = STATUS_KEYS.map(k =>
-            `<button type="button" data-status="${k}" onclick="setMoveStatus('${k}')" class="status-btn p-2 text-sm rounded-lg border flex items-center space-x-2"><i data-lucide="${STATUSES[k].icon}" class="w-4 h-4"></i><span class="truncate">${STATUSES[k].label}</span></button>`
+            `<button type="button" data-status="${k}" onclick="setMoveStatus('${k}')" class="status-btn p-2 text-xs rounded-sm border flex items-center space-x-2"><i data-lucide="${STATUSES[k].icon}" class="w-4 h-4"></i><span class="truncate">${STATUSES[k].label}</span></button>`
         ).join('');
         scheduleIcons();
-        setMoveStatus(s.status);
+        setMoveStatus(STATUSES[s.status] ? s.status : 'ok');
         openModal('modal-move');
     }
 
@@ -2392,26 +2245,26 @@ const createPersonnelModule = () => {
         const soldiersWithNotes = personnel.filter(p => p.note && p.note.text).sort((a,b) => new Date(b.note.timestamp) - new Date(a.note.timestamp));
         
         if (soldiersWithNotes.length === 0) {
-            list.innerHTML = '<li class="p-8 text-center text-gray-500 font-medium">Активних приміток немає</li>';
+            list.innerHTML = '<li class="p-8 text-center text-[#989fa9] font-medium">Активних приміток немає</li>';
             return;
         }
 
         list.innerHTML = soldiersWithNotes.map(s => {
             const pName = getPosName(s.positionId);
-            return `<li class="p-4 hover:bg-white dark:hover:bg-gray-800 transition-colors">
+            return `<li class="p-4 hover:bg-[#222429] transition-colors">
                 <div class="flex justify-between items-start gap-4">
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 mb-2 flex-wrap">
-                            <span class="font-bold text-sm text-gray-900 dark:text-gray-100">${esc(s.fullName || 'Невідомо')}</span>
-                            ${s.callsign ? `<span class="text-indigo-600 dark:text-indigo-400 font-bold text-sm">"${esc(s.callsign)}"</span>` : ''}
-                            <span class="text-[10px] px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded whitespace-nowrap"><i data-lucide="map-pin" class="w-3 h-3 inline pb-0.5"></i> ${esc(pName)}</span>
+                            <span class="font-bold text-sm text-[#f3f4f6]">${esc(s.fullName || 'Невідомо')}</span>
+                            ${s.callsign ? `<span class="text-[#93c5fd] font-bold text-sm">"${esc(s.callsign)}"</span>` : ''}
+                            <span class="text-[10px] px-1.5 py-0.5 bg-[#222429] border border-[#2e3138] text-[#b8bec8] rounded-sm whitespace-nowrap"><i data-lucide="map-pin" class="w-3 h-3 inline pb-0.5"></i> ${esc(pName)}</span>
                         </div>
-                        <p class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap bg-blue-50/50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-800/50 inline-block w-full">${esc(s.note.text)}</p>
-                        <div class="text-[10px] text-gray-500 mt-2 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> Додано: ${fmtDT(s.note.timestamp)}</div>
+                        <p class="text-sm text-[#f3f4f6] whitespace-pre-wrap bg-[#101113] p-3 rounded-sm border border-[#2e3138] inline-block w-full">${esc(s.note.text)}</p>
+                        <div class="text-[10px] text-[#989fa9] font-mono tabular-nums mt-2 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> Додано: ${fmtDT(s.note.timestamp)}</div>
                     </div>
-                    <div class="flex flex-col sm:flex-row gap-2 shrink-0 border-l dark:border-gray-700 pl-4 ml-2">
-                        <button onclick="openMoveModal('${s.id}'); closeModal('modal-all-notes')" class="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 rounded-lg transition-colors border border-transparent dark:border-indigo-800/50" title="Перемістити / Редагувати"><i data-lucide="arrow-right-left" class="w-4 h-4"></i></button>
-                        <button onclick="deleteNoteFromList('${s.id}')" class="p-2 text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded-lg transition-colors border border-transparent dark:border-red-800/50" title="Видалити примітку"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <div class="flex flex-col sm:flex-row gap-2 shrink-0 border-l border-[#2e3138] pl-4 ml-2">
+                        <button onclick="openMoveModal('${s.id}'); closeModal('modal-all-notes')" class="p-2 text-[#93c5fd] bg-[#222429] hover:bg-[#2e3138] rounded-sm transition-colors border border-[#2e3138] cursor-pointer" title="Перемістити / Редагувати"><i data-lucide="arrow-right-left" class="w-4 h-4"></i></button>
+                        <button onclick="deleteNoteFromList('${s.id}')" class="p-2 text-[#fca5a5] bg-[rgba(224,82,82,0.12)] hover:bg-[rgba(224,82,82,0.22)] rounded-sm transition-colors border border-[rgba(224,82,82,0.45)] cursor-pointer" title="Видалити примітку"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                     </div>
                 </div>
             </li>`;
@@ -2437,14 +2290,14 @@ const createPersonnelModule = () => {
         const ns = t.split('\n').map(n => n.trim()).filter(Boolean);
         let up = 0;
         const nf = [];
-        const nameMap = new Map(personnel.map(p => [(p.fullName || '').toLowerCase(), p]));
+        const nameMap = new Map(personnel.map(p => [normPersonName(p.fullName), p]));
         
         const hospPos = positions.find(p => p.id === 'pos_hosp') || positions.find(p => p.type === 'non_combat');
-        const ppdPos  = positions.find(p => p.id === 'pos_ppd')  || positions.find(p => p.type === 'non_combat');
+        const ppdPos  = findBasePpdPosition();
         const targetNonCombatPos = (st === '300' || st === 'sick') ? (hospPos || ppdPos) : ppdPos;
 
         ns.forEach(n => {
-            const s = nameMap.get(n.toLowerCase());
+            const s = nameMap.get(normPersonName(n));
             if (s) {
                 if (s.status !== st) {
                     addLog(`Мас.статус ➔ ${STATUSES[st].label}`, s.fullName);
@@ -2483,15 +2336,15 @@ const createPersonnelModule = () => {
         const ns = t.split('\n').map(n => n.trim()).filter(Boolean);
         let up = 0, added = 0;
         const now = Date.now();
-        const defaultPos = positions.find(p => p.type === 'non_combat')?.id || (positions[0]?.id || 'pos_ppd');
+        const defaultPos = findBasePpdPosition()?.id || 'pos_ppd';
         
         const nameMap = new Map();
         personnel.forEach(p => {
-            if (p.fullName) nameMap.set(p.fullName.toLowerCase(), p);
+            if (p.fullName) nameMap.set(normPersonName(p.fullName), p);
         });
 
         ns.forEach((n, i) => {
-            const s = nameMap.get(n.toLowerCase());
+            const s = nameMap.get(normPersonName(n));
             if (s) {
                 if (s.unit !== u) {
                     addLog(`Мас.підрозділ ➔ ${u}`, s.fullName);
@@ -2549,9 +2402,9 @@ const createPersonnelModule = () => {
     function renderIconGrid() {
         el('p-icon-grid').innerHTML = ICONS.map(i => {
             const a = currentPosIcon === i
-                ? 'bg-indigo-100 border-indigo-400 text-indigo-700'
-                : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100';
-            return `<button type="button" onclick="currentPosIcon='${i}'; renderIconGrid()" class="p-2 flex justify-center rounded-lg border ${a}"><i data-lucide="${i}" class="w-4 h-4"></i></button>`;
+                ? 'bg-[rgba(76,142,217,0.16)] border-[#4c8ed9] text-[#93c5fd]'
+                : 'bg-[#101113] border-[#2e3138] text-[#b8bec8] hover:bg-[#222429] hover:text-[#f3f4f6]';
+            return `<button type="button" onclick="currentPosIcon='${i}'; renderIconGrid()" class="p-2 flex justify-center rounded-sm border cursor-pointer ${a}"><i data-lucide="${i}" class="w-4 h-4"></i></button>`;
         }).join('');
         scheduleIcons();
     }
@@ -2561,13 +2414,13 @@ const createPersonnelModule = () => {
     function renderEquipmentList() {
         const l = el('p-equipment-list');
         if (tempEquipment.length === 0) {
-            l.innerHTML = '<div class="text-center py-4 text-xs text-gray-500">Порожньо</div>';
+            l.innerHTML = '<div class="text-center py-4 text-xs text-[#989fa9]">Порожньо</div>';
         } else {
             l.innerHTML = tempEquipment.map((eq, i) =>
-                `<div class="flex gap-2 items-center bg-gray-50 dark:bg-gray-800 p-2 rounded border dark:border-gray-700 mb-2">
-                    <input type="text" value="${esc(eq.name)}"     onchange="tempEquipment[${i}].name=this.value"     class="flex-1 p-1 border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded text-sm">
-                    <input type="text" value="${esc(eq.quantity)}" onchange="tempEquipment[${i}].quantity=this.value" class="w-16 p-1 border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded text-sm text-center">
-                    <button type="button" onclick="tempEquipment.splice(${i},1); renderEquipmentList();" class="p-1 text-red-500 hover:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                `<div class="flex gap-2 items-center bg-[#101113] p-2 rounded-sm border border-[#2e3138] mb-2">
+                    <input type="text" value="${esc(eq.name)}"     onchange="tempEquipment[${i}].name=this.value"     class="flex-1 p-1.5 border border-[#2e3138] bg-[#17181b] text-[#f3f4f6] rounded-sm text-sm focus:border-[#4c8ed9] outline-none">
+                    <input type="text" value="${esc(eq.quantity)}" onchange="tempEquipment[${i}].quantity=this.value" class="w-16 p-1.5 border border-[#2e3138] bg-[#17181b] text-[#f3f4f6] font-mono tabular-nums rounded-sm text-sm text-center focus:border-[#4c8ed9] outline-none">
+                    <button type="button" onclick="tempEquipment.splice(${i},1); renderEquipmentList();" class="p-1.5 text-[#fca5a5] hover:bg-[rgba(224,82,82,0.16)] rounded-sm cursor-pointer"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>`
             ).join('');
         }
@@ -2636,7 +2489,7 @@ const createPersonnelModule = () => {
         }
         const pg = f.slice(0, 40);
         if (pg.length === 0) {
-            r.innerHTML = '<li class="p-4 text-center text-sm text-gray-500 dark:text-gray-400">Не знайдено</li>';
+            r.innerHTML = '<li class="p-4 text-center text-sm text-[#989fa9]">Не знайдено</li>';
             return;
         }
         const activeRotMap = getActiveRotationMap();
@@ -2645,15 +2498,15 @@ const createPersonnelModule = () => {
             const ct = s.currentTask || 'піхота';
             const toSel = to.replace(`value="${ct}"`, `value="${ct}" selected`);
             const rotDir = activeRotMap.get(s.id);
-            const inRot = rotDir ? `<span class="inline-flex relative h-2 w-2 ml-2 shrink-0" title="В ротації"><span class="animate-ping absolute inline-flex h-full w-full rounded-full ${rotDir==='in'?'bg-orange-400':'bg-indigo-400'} opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 ${rotDir==='in'?'bg-orange-500':'bg-indigo-500'}"></span></span>` : '';
-            return `<li class="flex justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 border-b dark:border-gray-700 gap-2">
+            const inRot = rotDir ? `<span class="inline-flex h-2 w-2 ml-2 shrink-0 rounded-full ${rotDir==='in'?'bg-[#d99b26]':'bg-[#4c8ed9]'}" title="В ротації"></span>` : '';
+            return `<li class="flex justify-between p-2 hover:bg-[#222429] border-b border-[#2e3138] gap-2 transition-colors">
                 <div class="truncate">
-                    <p class="font-bold text-sm truncate dark:text-gray-200 flex items-center">${esc(s.fullName || 'Невідомо')}${s.callsign ? ` <span class="text-indigo-500 dark:text-indigo-400 font-bold ml-1">"${esc(s.callsign)}"</span>` : ''} ${inRot}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">${esc(s.unit) || '—'} | <span class="text-indigo-500 dark:text-indigo-400">${esc(getPosName(s.positionId))}</span></p>
+                    <p class="font-bold text-sm truncate text-[#f3f4f6] flex items-center">${esc(s.fullName || 'Невідомо')}${s.callsign ? ` <span class="text-[#93c5fd] font-bold ml-1">"${esc(s.callsign)}"</span>` : ''} ${inRot}</p>
+                    <p class="text-xs text-[#b8bec8] truncate">${esc(s.unit) || '—'} | <span class="text-[#93c5fd]">${esc(getPosName(s.positionId))}</span></p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <select id="qt-${s.id}" class="p-1 border dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white rounded text-xs w-20">${toSel}</select>
-                    <button onclick="confirmAddToPos('${s.id}')" class="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded text-xs font-bold">Додати</button>
+                    <select id="qt-${s.id}" class="p-1 border border-[#2e3138] bg-[#101113] text-[#f3f4f6] rounded-sm text-xs w-20 focus:border-[#4c8ed9] outline-none">${toSel}</select>
+                    <button onclick="confirmAddToPos('${s.id}')" class="px-2.5 py-1 bg-[#2b67ab] hover:bg-[#4c8ed9] text-white border border-[#4c8ed9] rounded-sm text-xs font-semibold cursor-pointer">Додати</button>
                 </div>
             </li>`;
         }).join('');
@@ -2932,44 +2785,44 @@ const createPersonnelModule = () => {
                 const lastName = fullNameStr.trim().split(/\s+/)[0]; 
                 
                 const icon = m.dir === 'in' 
-                    ? `<i data-lucide="arrow-right-circle" class="w-4 h-4 text-orange-500"></i>` 
-                    : `<i data-lucide="arrow-left-circle" class="w-4 h-4 text-blue-500"></i>`;
+                    ? `<i data-lucide="arrow-right-circle" class="w-4 h-4 text-[#fdba74]"></i>` 
+                    : `<i data-lucide="arrow-left-circle" class="w-4 h-4 text-[#4c8ed9]"></i>`;
                 
                 const statusColor = done 
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 border-green-200' 
-                    : (isLate ? 'bg-red-100 dark:bg-red-900/30 text-red-700 border-red-200 animate-pulse' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 border-gray-200');
+                    ? 'bg-[rgba(52,168,115,0.14)] text-[#6ee7b7] border-[rgba(52,168,115,0.40)]' 
+                    : (isLate ? 'bg-[rgba(224,82,82,0.14)] text-[#fca5a5] border-[rgba(224,82,82,0.45)]' : 'bg-[#222429] text-[#b8bec8] border-[#2e3138]');
                 
                 const statusIcon = done ? '<i data-lucide="check" class="w-3 h-3"></i>' : (isLate ? '<i data-lucide="alert-circle" class="w-3 h-3"></i>' : '<i data-lucide="clock" class="w-3 h-3"></i>');
 
                 const currPosName = s.positionId ? getPosName(s.positionId) : 'Невідомо';
                 const targetPosName = m.targetPosId ? getPosName(m.targetPosId) : null;
                 
-                let currPosColor = 'text-gray-700 dark:text-gray-300';
+                let currPosColor = 'text-[#f3f4f6]';
                 if (m.dir === 'in' && m.targetPosId) {
                     currPosColor = (s.positionId === m.targetPosId) 
-                        ? 'text-olive-600 dark:text-olive-400' 
-                        : 'text-orange-600 dark:text-orange-400';
+                        ? 'text-[#6ee7b7]' 
+                        : 'text-[#fdba74]';
                 }
                 
                 let routeInfo = `Зараз: <b class="${currPosColor}">${esc(currPosName)}</b>`;
                 if (targetPosName && m.dir === 'in') {
-                    routeInfo += ` <span class="text-gray-400 mx-1">➔</span> План: <b class="text-indigo-600 dark:text-indigo-400">${esc(targetPosName)}</b>`;
+                    routeInfo += ` <span class="text-[#989fa9] mx-1">→</span> План: <b class="text-[#93c5fd]">${esc(targetPosName)}</b>`;
                 }
 
-                return `<li class="py-1.5 border-b dark:border-gray-700/50 last:border-0">
+                return `<li class="py-1.5 border-b border-[#2e3138] last:border-0">
                     <div class="flex justify-between items-start gap-2 w-full">
                         <div class="flex items-start gap-1.5 min-w-0 flex-1">
                             <div class="mt-0.5 shrink-0">${icon}</div>
                             <div class="min-w-0 flex-1">
-                                <div class="font-bold text-[13px] text-gray-800 dark:text-gray-200 leading-none truncate" title="${esc(fullNameStr)}">
-                                    ${esc(lastName)}${s.callsign ? ` <span class="text-indigo-500 ml-1">"${esc(s.callsign)}"</span>` : ''}
+                                <div class="font-bold text-[13px] text-[#f3f4f6] leading-none truncate" title="${esc(fullNameStr)}">
+                                    ${esc(lastName)}${s.callsign ? ` <span class="text-[#93c5fd] ml-1">"${esc(s.callsign)}"</span>` : ''}
                                 </div>
-                                <div class="text-[10px] text-gray-500 mt-1 truncate leading-none">
+                                <div class="text-[10px] text-[#b8bec8] mt-1 truncate leading-none">
                                     ${routeInfo}
                                 </div>
                             </div>
                         </div>
-                        <div class="px-1.5 py-0.5 rounded border text-[9px] font-bold flex items-center gap-1 shrink-0 ${statusColor} self-center">
+                        <div class="px-1.5 py-0.5 rounded-sm border text-[9px] font-bold flex items-center gap-1 shrink-0 ${statusColor} self-center">
                             ${statusIcon} 
                             <span class="hidden sm:inline">${done ? 'ВИКОНАНО' : (m.dir === 'in' ? 'ЩЕ НА ППД' : 'ЩЕ НА ПОЗИЦІЇ')}</span>
                             <span class="sm:hidden">${done ? 'ОК' : 'ЧЕКАЄ'}</span>
@@ -2980,24 +2833,24 @@ const createPersonnelModule = () => {
 
             if (isLate && !allDone) lateCount++;
 
-            const headerColor = allDone ? 'bg-green-50 dark:bg-green-900/20' : (isLate ? 'bg-red-50 dark:bg-red-900/20' : 'bg-gray-50 dark:bg-gray-800/80');
-            const borderColor = allDone ? 'border-green-200' : (isLate ? 'border-red-300' : 'border-gray-200 dark:border-gray-700');
+            const headerColor = allDone ? 'bg-[rgba(52,168,115,0.10)]' : (isLate ? 'bg-[rgba(224,82,82,0.10)]' : 'bg-[#222429]');
+            const borderColor = allDone ? 'border-[rgba(52,168,115,0.45)]' : (isLate ? 'border-[rgba(224,82,82,0.50)]' : 'border-[#2e3138]');
 
-            return `<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border ${borderColor} overflow-hidden flex flex-col relative">
+            return `<div class="bg-[#17181b] rounded-sm border ${borderColor} overflow-hidden flex flex-col relative">
                 <div class="px-4 py-3 border-b ${borderColor} ${headerColor} flex justify-between items-start">
                     <div>
-                        <h3 class="font-bold text-sm leading-tight">${esc(rot.name)}</h3>
-                        <p class="text-[11px] text-gray-500 flex items-center mt-1"><i data-lucide="clock" class="w-3 h-3 mr-1"></i>План: ${fmtDT(rot.plannedTime)}</p>
+                        <h3 class="font-bold text-sm leading-tight text-[#f3f4f6]">${esc(rot.name)}</h3>
+                        <p class="text-[11px] text-[#b8bec8] font-mono tabular-nums flex items-center mt-1"><i data-lucide="clock" class="w-3 h-3 mr-1"></i>План: ${fmtDT(rot.plannedTime)}</p>
                     </div>
                     <div class="flex gap-1 z-10">
-                        <button onclick="openRotationModal(${rIdx})" class="text-gray-400 hover:text-blue-500 bg-white dark:bg-gray-800 p-1 rounded"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                        <button onclick="deleteRotation(${rIdx})" class="text-gray-400 hover:text-red-500 bg-white dark:bg-gray-800 p-1 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        <button onclick="openRotationModal(${rIdx})" class="text-[#b8bec8] hover:text-[#93c5fd] bg-[#17181b] border border-[#2e3138] p-1 rounded-sm cursor-pointer"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                        <button onclick="deleteRotation(${rIdx})" class="text-[#b8bec8] hover:text-[#fca5a5] bg-[#17181b] border border-[#2e3138] p-1 rounded-sm cursor-pointer"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                     </div>
                 </div>
                 <div class="p-3">
                     <ul class="space-y-1">${membersHtml}</ul>
                 </div>
-                ${allDone ? `<div class="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50"><button onclick="completeRotation(${rIdx})" class="w-full bg-slate-600 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-olive-50 dark:text-olive-400 px-4 py-2 rounded-lg font-bold shadow-sm transition-colors text-sm border border-slate-500 dark:border-slate-600">Всі на місцях. Завершити!</button></div>` : ''}
+                ${allDone ? `<div class="p-3 border-t border-[#2e3138] bg-[#222429]"><button onclick="completeRotation(${rIdx})" class="w-full bg-[#2b67ab] hover:bg-[#4c8ed9] text-white px-4 py-2 rounded-sm font-semibold transition-colors text-xs border border-[#4c8ed9] cursor-pointer">Всі на місцях. Завершити!</button></div>` : ''}
             </div>`;
         }).join('');
 
@@ -3025,14 +2878,14 @@ const createPersonnelModule = () => {
             let allDone = true;
             rot.members.forEach(m => { if(!isMemberDone(m)) allDone = false; });
 
-            const border = allDone ? 'border-green-300' : (isLate ? 'border-red-400' : 'border-indigo-200');
-            const bg = allDone ? 'bg-green-50 dark:bg-green-900/10' : (isLate ? 'bg-red-50 dark:bg-red-900/10' : 'bg-indigo-50 dark:bg-indigo-900/10');
-            const icon = allDone ? '<i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>' : (isLate ? '<i data-lucide="alert-triangle" class="w-4 h-4 text-red-600"></i>' : '<i data-lucide="clock" class="w-4 h-4 text-indigo-600"></i>');
+            const border = allDone ? 'border-[rgba(52,168,115,0.45)]' : (isLate ? 'border-[rgba(224,82,82,0.50)]' : 'border-[rgba(76,142,217,0.40)]');
+            const bg = allDone ? 'bg-[rgba(52,168,115,0.08)]' : (isLate ? 'bg-[rgba(224,82,82,0.08)]' : 'bg-[rgba(76,142,217,0.08)]');
+            const icon = allDone ? '<i data-lucide="check-circle" class="w-4 h-4 text-[#34a873]"></i>' : (isLate ? '<i data-lucide="alert-triangle" class="w-4 h-4 text-[#e05252]"></i>' : '<i data-lucide="clock" class="w-4 h-4 text-[#4c8ed9]"></i>');
 
-            return `<div class="p-3 rounded-lg border ${border} ${bg} flex justify-between items-center cursor-pointer hover:shadow-md transition-shadow" onclick="switchTab('rotations')">
+            return `<div class="p-3 rounded-sm border ${border} ${bg} flex justify-between items-center cursor-pointer hover:bg-[#222429] transition-colors" onclick="switchTab('rotations')">
                 <div>
-                    <p class="font-bold text-sm text-gray-800 dark:text-gray-200 truncate max-w-[150px]">${esc(rot.name)}</p>
-                    <p class="text-[10px] text-gray-500">${fmtDT(rot.plannedTime)} • ${rot.members.length} чол.</p>
+                    <p class="font-bold text-sm text-[#f3f4f6] truncate max-w-[150px]">${esc(rot.name)}</p>
+                    <p class="text-[10px] text-[#b8bec8] font-mono tabular-nums">${fmtDT(rot.plannedTime)} • ${rot.members.length} чол.</p>
                 </div>
                 ${icon}
             </div>`;
@@ -3073,12 +2926,12 @@ const createPersonnelModule = () => {
             (p.callsign || '').toLowerCase().includes(q)
         ).slice(0, 5);
 
-        if (f.length === 0) { r.innerHTML = '<li class="p-2 text-xs text-gray-500">Не знайдено</li>'; return; }
+        if (f.length === 0) { r.innerHTML = '<li class="p-2 text-xs text-[#989fa9]">Не знайдено</li>'; return; }
 
         r.innerHTML = f.map(s => `
-            <li class="flex justify-between items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" onclick="addMemberToRot('${s.id}')">
-                <div class="truncate"><span class="font-bold text-sm">${esc(s.fullName || 'Невідомо')}</span>${s.callsign ? ` <span class="text-indigo-500 font-bold text-sm ml-1">"${esc(s.callsign)}"</span>` : ''} <span class="text-xs text-gray-500 ml-1 truncate">(${esc(getPosName(s.positionId))})</span></div>
-                <i data-lucide="plus-circle" class="w-4 h-4 text-indigo-500 shrink-0"></i>
+            <li class="flex justify-between items-center p-2 hover:bg-[#222429] cursor-pointer transition-colors" onclick="addMemberToRot('${s.id}')">
+                <div class="truncate"><span class="font-bold text-sm text-[#f3f4f6]">${esc(s.fullName || 'Невідомо')}</span>${s.callsign ? ` <span class="text-[#93c5fd] font-bold text-sm ml-1">"${esc(s.callsign)}"</span>` : ''} <span class="text-xs text-[#b8bec8] ml-1 truncate">(${esc(getPosName(s.positionId))})</span></div>
+                <i data-lucide="plus-circle" class="w-4 h-4 text-[#4c8ed9] shrink-0"></i>
             </li>
         `).join('');
         scheduleIcons();
@@ -3107,26 +2960,26 @@ const createPersonnelModule = () => {
     function renderTempRotMembers() {
         const list = el('rot-members-list');
         if (tempRotMembers.length === 0) {
-            list.innerHTML = '<li class="text-xs text-gray-500 text-center py-2">Додайте бійців через пошук вище</li>';
+            list.innerHTML = '<li class="text-xs text-[#989fa9] text-center py-2">Додайте бійців через пошук вище</li>';
             return;
         }
 
         list.innerHTML = tempRotMembers.map((m, i) => {
             const s = getPersonById(m.soldierId);
             const dirHtml = m.dir === 'in' 
-                ? '<span class="bg-orange-100 text-orange-800 text-[10px] px-2 py-0.5 rounded font-bold shrink-0">ЗАХОДИТЬ ➔</span>' 
-                : '<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-bold shrink-0">⬅ ВИХОДИТЬ</span>';
+                ? '<span class="bg-[rgba(234,88,12,0.14)] text-[#fdba74] border border-[rgba(234,88,12,0.42)] text-[10px] px-2 py-0.5 rounded-sm font-bold shrink-0">ЗАХОДИТЬ →</span>' 
+                : '<span class="bg-[rgba(76,142,217,0.14)] text-[#93c5fd] border border-[rgba(76,142,217,0.40)] text-[10px] px-2 py-0.5 rounded-sm font-bold shrink-0">← ВИХОДИТЬ</span>';
             
             const currPosName = m.targetPosId ? getPosName(m.targetPosId) : '';
-            const searchInput = `<input type="text" list="pos-datalist" placeholder="Пошук позиції..." value="${esc(currPosName)}" onchange="updateTempRotPosByName(${i}, this.value)" class="text-[11px] p-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 w-[140px] outline-none focus:ring-1 focus:ring-indigo-500">`;
+            const searchInput = `<input type="text" list="pos-datalist" placeholder="Пошук позиції..." value="${esc(currPosName)}" onchange="updateTempRotPosByName(${i}, this.value)" class="text-[11px] p-1.5 rounded-sm border border-[#2e3138] bg-[#17181b] text-[#f3f4f6] placeholder-[#989fa9] w-[140px] outline-none focus:border-[#4c8ed9]">`;
 
-            return `<li class="flex justify-between items-center bg-white dark:bg-gray-700 p-2 rounded border dark:border-gray-600 gap-2">
+            return `<li class="flex justify-between items-center bg-[#101113] p-2 rounded-sm border border-[#2e3138] gap-2">
                 <div class="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
                     ${dirHtml}
-                    <span class="font-bold text-sm truncate">${esc(s.fullName || 'Невідомо')}${s.callsign ? ` <span class="text-indigo-500 font-bold ml-1">"${esc(s.callsign)}"</span>` : ''}</span>
+                    <span class="font-bold text-sm text-[#f3f4f6] truncate">${esc(s.fullName || 'Невідомо')}${s.callsign ? ` <span class="text-[#93c5fd] font-bold ml-1">"${esc(s.callsign)}"</span>` : ''}</span>
                     ${m.dir === 'in' ? searchInput : ''}
                 </div>
-                <button onclick="removeMemberFromRot(${i})" class="text-red-500 hover:text-red-700 p-1 shrink-0 bg-red-50 dark:bg-red-900/30 rounded"><i data-lucide="x" class="w-4 h-4"></i></button>
+                <button onclick="removeMemberFromRot(${i})" class="text-[#fca5a5] hover:bg-[rgba(224,82,82,0.22)] p-1 shrink-0 bg-[rgba(224,82,82,0.12)] border border-[rgba(224,82,82,0.45)] rounded-sm cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
             </li>`;
         }).join('');
         scheduleIcons();
@@ -3246,14 +3099,14 @@ const createPersonnelModule = () => {
             const pos = positions.find(p => p.id === s.positionId);
             if (pos) { pos.commanderId = s.id; saveState(); showToast('Призначено старшим'); }
         } else if (action === 'ppd') {
-            // Find base position named 'ППД (База)' or similar
-            const basePos = positions.find(p => p.name === 'ППД (База)') || positions.find(p => p.type === 'baze');
+            const basePos = findBasePpdPosition();
             if (basePos) {
                 const oldPosId = s.positionId;
+                handleJournalTracking(s.id, oldPosId, basePos.id);
                 s.positionId = basePos.id;
                 s.currentTask = 'ППД';
                 s.deploymentStartTime = null;
-                handleJournalTracking(s.id, oldPosId, basePos.id);
+                addLog(`[${getPosName(oldPosId)}] ➔ [${basePos.name}]`, s.fullName || s.callsign);
                 saveState(); showToast('Переміщено на ППД');
             } else {
                 showToast('Позицію ППД не знайдено!');
@@ -3482,7 +3335,7 @@ const createPersonnelModule = () => {
             if (e.dataTransfer.setDragImage) {
                 e.dataTransfer.setDragImage(card, 50, 25);
             }
-            setTimeout(() => card.classList.add('opacity-40', 'scale-[0.98]'), 0);
+            setTimeout(() => card.classList.add('opacity-40'), 0);
         }
     }
 
@@ -3492,9 +3345,8 @@ const createPersonnelModule = () => {
     function cleanCardHoverIndicators() {
         if (lastHoveredCard) {
             lastHoveredCard.classList.remove(
-                'border-green-500', 'dark:border-green-500', 'ring-2', 'ring-green-500/50',
-                'border-indigo-500', 'dark:border-indigo-400', 'ring-indigo-500/40', 'bg-indigo-950/20',
-                'border-r-4', '!border-r-indigo-500', 'border-l-4', '!border-l-indigo-500'
+                'border-[#34a873]', 'border-[#4c8ed9]', 'bg-[#222429]',
+                'border-r-2', '!border-r-[#4c8ed9]', 'border-l-2', '!border-l-[#4c8ed9]'
             );
             lastHoveredCard = null;
         }
@@ -3512,7 +3364,7 @@ const createPersonnelModule = () => {
         if (draggedSoldierId) {
             if (card !== lastHoveredCard) {
                 cleanCardHoverIndicators();
-                card.classList.add('border-green-500', 'dark:border-green-500', 'ring-2', 'ring-green-500/50');
+                card.classList.add('border-[#34a873]', 'bg-[#222429]');
                 lastHoveredCard = card;
             }
             return;
@@ -3534,9 +3386,9 @@ const createPersonnelModule = () => {
                 cleanCardHoverIndicators();
                 
                 if (isAfter) {
-                    card.classList.add('border-r-4', '!border-r-indigo-500', 'ring-2', 'ring-indigo-500/40', 'bg-indigo-950/20');
+                    card.classList.add('border-r-2', '!border-r-[#4c8ed9]', 'bg-[#222429]');
                 } else {
-                    card.classList.add('border-l-4', '!border-l-indigo-500', 'ring-2', 'ring-indigo-500/40', 'bg-indigo-950/20');
+                    card.classList.add('border-l-2', '!border-l-[#4c8ed9]', 'bg-[#222429]');
                 }
                 lastHoveredCard = card;
                 lastDropSide = side;
@@ -3567,7 +3419,7 @@ const createPersonnelModule = () => {
                 s.positionId = targetPosId;
                 
                 const targetPos = positions.find(p => p.id === targetPosId);
-                if (targetPos && targetPos.type === 'baze') {
+                if (targetPos && targetPos.type === 'non_combat') {
                     s.currentTask = 'ППД';
                     s.deploymentStartTime = null;
                 }
@@ -3622,15 +3474,15 @@ const createPersonnelModule = () => {
         e.stopPropagation();
         e.dataTransfer.dropEffect = 'move';
         const grid = e.currentTarget;
-        if (grid && !grid.classList.contains('ring-2')) {
-            grid.classList.add('ring-2', 'ring-indigo-500/60', 'bg-indigo-950/15');
+        if (grid && !grid.classList.contains('border-[#4c8ed9]')) {
+            grid.classList.add('border', 'border-[#4c8ed9]', 'bg-[#17181b]');
         }
     }
 
     function handleGroupGridDragLeave(e) {
         const grid = e.currentTarget;
         if (grid && !grid.contains(e.relatedTarget)) {
-            grid.classList.remove('ring-2', 'ring-indigo-500/60', 'bg-indigo-950/15');
+            grid.classList.remove('border', 'border-[#4c8ed9]', 'bg-[#17181b]');
         }
     }
 
@@ -3640,7 +3492,7 @@ const createPersonnelModule = () => {
         e.stopPropagation();
         const grid = e.currentTarget;
         if (grid) {
-            grid.classList.remove('ring-2', 'ring-indigo-500/60', 'bg-indigo-950/15');
+            grid.classList.remove('border', 'border-[#4c8ed9]', 'bg-[#17181b]');
         }
         cleanCardHoverIndicators();
         const srcPosId = draggedPosId;
@@ -3672,14 +3524,13 @@ const createPersonnelModule = () => {
         cleanCardHoverIndicators();
         document.querySelectorAll('.tactical-card').forEach(c => {
             c.classList.remove(
-                'opacity-40', 'opacity-50', 'scale-[0.98]',
-                'border-green-500', 'dark:border-green-500', 'ring-2', 'ring-green-500/50',
-                'border-indigo-500', 'dark:border-indigo-400', 'ring-indigo-500/50', 'bg-indigo-950/20',
-                'border-r-4', '!border-r-indigo-500', 'border-l-4', '!border-l-indigo-500'
+                'opacity-40', 'opacity-50',
+                'border-[#34a873]', 'border-[#4c8ed9]', 'bg-[#222429]',
+                'border-r-2', '!border-r-[#4c8ed9]', 'border-l-2', '!border-l-[#4c8ed9]'
             );
         });
         document.querySelectorAll('.grid').forEach(g => {
-            g.classList.remove('ring-2', 'ring-indigo-500/50', 'ring-indigo-500/60', 'bg-indigo-950/10', 'bg-indigo-950/15');
+            g.classList.remove('border', 'border-[#4c8ed9]', 'bg-[#17181b]');
         });
     });
 
@@ -3702,7 +3553,7 @@ const createPersonnelModule = () => {
                 handlePosDragStart, handlePosTargetModeDrop, handlePosTargetModeDropGroup,
                 handleRotSearch, handleSearch, handleTargetModeDrop, handleUndo,
                 moveGroupOrder, movePositionOrder, nextPage, openAddToPosModal,
-                openAllNotesModal, openBackupSettingsModal, openChangelogModal,
+                openAllNotesModal, openBackupSettingsModal,
                 openExportModal, openGroupModal, openJournalModal, openModal,
                 openMoveModal, openPositionModal, openRotationModal, openSoldierContextMenu,
                 openSoldierModal, prevPage, removeBackupTime, removeMemberFromRot,
