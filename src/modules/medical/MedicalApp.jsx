@@ -764,15 +764,31 @@ const MedicalApp = (function() {
                                 </div>
 
                                 <div className="min-w-0 flex items-center">
-                                    <div className="w-fit max-w-full flex items-center gap-1.5 bg-amber-950/20 border border-amber-900/40 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
-                                        <Icon name="map-pin" className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                        <span className="text-amber-400/80 text-[10px] uppercase font-semibold tracking-wider shrink-0">Факт:</span>
-                                        <span className="text-amber-200 font-medium truncate" title={episode.actualLoc}>{episode.actualLoc || "-"}</span>
-                                    </div>
+                                    {isAwol(episode.lossType) ? (
+                                        episode.actualLoc ? (
+                                            <div className="w-fit max-w-full flex items-center gap-1.5 bg-amber-950/20 border border-amber-900/40 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
+                                                <Icon name="map-pin" className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                                <span className="text-amber-400/80 text-[10px] uppercase font-semibold tracking-wider shrink-0">Локація:</span>
+                                                <span className="text-amber-200 font-medium truncate" title={episode.actualLoc}>{episode.actualLoc}</span>
+                                            </div>
+                                        ) : null
+                                    ) : (
+                                        <div className="w-fit max-w-full flex items-center gap-1.5 bg-amber-950/20 border border-amber-900/40 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
+                                            <Icon name="map-pin" className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                            <span className="text-amber-400/80 text-[10px] uppercase font-semibold tracking-wider shrink-0">Факт:</span>
+                                            <span className="text-amber-200 font-medium truncate" title={episode.actualLoc}>{episode.actualLoc || "-"}</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="min-w-0 flex items-center">
-                                    {episode.docLoc ? (
+                                    {isAwol(episode.lossType) && isReturnedAwol && evacFormattedDate ? (
+                                        <div className="w-fit max-w-full flex items-center gap-1.5 bg-emerald-950/30 border border-emerald-800/50 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
+                                            <Icon name="calendar" className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                            <span className="text-emerald-400/90 text-[10px] uppercase font-semibold tracking-wider shrink-0">Повернення:</span>
+                                            <span className="text-emerald-200 font-mono font-bold truncate">{evacFormattedDate}</span>
+                                        </div>
+                                    ) : episode.docLoc ? (
                                         <div className="w-fit max-w-full flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
                                             <Icon name="file-text" className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                             <span className="text-slate-400 text-[10px] uppercase font-semibold tracking-wider shrink-0">Док:</span>
@@ -922,12 +938,28 @@ const MedicalApp = (function() {
                                 <span className="text-slate-400 text-[10px] uppercase font-semibold tracking-wider shrink-0">{isAwol(episode.lossType) ? "Звідки:" : "Причина:"}</span>
                                 <span className="font-medium text-white truncate" title={episode.cause}>{episode.cause}</span>
                             </div>
-                            <div className="flex items-center gap-1.5 bg-amber-950/20 border border-amber-900/40 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
-                                <Icon name="map-pin" className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                <span className="text-amber-400/80 text-[10px] uppercase font-semibold tracking-wider shrink-0">Факт:</span>
-                                <span className="text-amber-200 font-medium truncate" title={episode.actualLoc}>{episode.actualLoc || "-"}</span>
-                            </div>
-                            {episode.docLoc ? (
+                            {isAwol(episode.lossType) ? (
+                                episode.actualLoc ? (
+                                    <div className="flex items-center gap-1.5 bg-amber-950/20 border border-amber-900/40 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
+                                        <Icon name="map-pin" className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                        <span className="text-amber-400/80 text-[10px] uppercase font-semibold tracking-wider shrink-0">Локація:</span>
+                                        <span className="text-amber-200 font-medium truncate" title={episode.actualLoc}>{episode.actualLoc}</span>
+                                    </div>
+                                ) : <div />
+                            ) : (
+                                <div className="flex items-center gap-1.5 bg-amber-950/20 border border-amber-900/40 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
+                                    <Icon name="map-pin" className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                    <span className="text-amber-400/80 text-[10px] uppercase font-semibold tracking-wider shrink-0">Факт:</span>
+                                    <span className="text-amber-200 font-medium truncate" title={episode.actualLoc}>{episode.actualLoc || "-"}</span>
+                                </div>
+                            )}
+                            {isAwol(episode.lossType) && isReturnedAwol && evacFormattedDate ? (
+                                <div className="flex items-center gap-1.5 bg-emerald-950/30 border border-emerald-800/50 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
+                                    <Icon name="calendar" className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                    <span className="text-emerald-400/90 text-[10px] uppercase font-semibold tracking-wider shrink-0">Повернення:</span>
+                                    <span className="text-emerald-200 font-mono font-bold truncate">{evacFormattedDate}</span>
+                                </div>
+                            ) : episode.docLoc ? (
                                 <div className="flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 px-2.5 py-1 rounded-xl text-xs shadow-inner min-w-0">
                                     <Icon name="file-text" className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                     <span className="text-slate-400 text-[10px] uppercase font-semibold tracking-wider shrink-0">Док:</span>
@@ -1401,6 +1433,25 @@ const MedicalApp = (function() {
                 window.SuiteRuntime.setLocalItem('med_view_mode', mode);
             };
 
+            const [feedCutoffEnabled, setFeedCutoffEnabled] = useState(() => {
+                const saved = localStorage.getItem('med_feed_cutoff_enabled');
+                return saved !== null ? saved === 'true' : true;
+            });
+            const [feedCutoffDate, setFeedCutoffDate] = useState(() => {
+                return localStorage.getItem('med_feed_cutoff_date') || '2026-11-11';
+            });
+            const [showOlderArchive, setShowOlderArchive] = useState(false);
+
+            const handleToggleFeedCutoff = (checked) => {
+                setFeedCutoffEnabled(checked);
+                window.SuiteRuntime.setLocalItem('med_feed_cutoff_enabled', String(checked));
+            };
+
+            const handleChangeFeedCutoffDate = (val) => {
+                setFeedCutoffDate(val);
+                window.SuiteRuntime.setLocalItem('med_feed_cutoff_date', val);
+            };
+
             const [datePreset, setDatePreset] = useState('all'); // 'all', '1', '3', '7', 'custom'
 
             const applyDatePreset = (preset) => {
@@ -1466,6 +1517,10 @@ const MedicalApp = (function() {
             const [isBackupOpen, setIsBackupOpen] = useState(false);
             const [isEditOpen, setIsEditOpen] = useState(false);
             const [isClearDbConfirmOpen, setIsClearDbConfirmOpen] = useState(false);
+            const [clearKeepAwol, setClearKeepAwol] = useState(false);
+            const [clearKeepUnevac200, setClearKeepUnevac200] = useState(false);
+            const [clearKeepEpisodeIds, setClearKeepEpisodeIds] = useState([]);
+            const [clearSearchTerm, setClearSearchTerm] = useState("");
             const [isChangelogOpen, setIsChangelogOpen] = useState(false);
             const [currentEpisode, setCurrentEpisode] = useState(null);
             const [confirmDelete, setConfirmDelete] = useState(false);
@@ -3505,15 +3560,38 @@ const MedicalApp = (function() {
                 });
             }, [activeDataSource, soldiersMap, searchTerm, filterLossTypes, filterSeverities, filterEvacStatuses, filterCauses, filterUdp, filterWeapon, filterReport, filterInjuries, sortBy, activeTab]);
 
+            const isFeedCutoffActive = activeTab === "list" && feedCutoffEnabled && Boolean(feedCutoffDate) && !searchTerm.trim();
+
+            const { mainFilteredList, olderArchiveList } = useMemo(() => {
+                if (!isFeedCutoffActive) {
+                    return { mainFilteredList: filteredList, olderArchiveList: [] };
+                }
+                const cutoffMs = parseSafeDate(`${feedCutoffDate} 00:00:00`);
+                if (!cutoffMs) {
+                    return { mainFilteredList: filteredList, olderArchiveList: [] };
+                }
+                const recent = [];
+                const older = [];
+                for (let i = 0; i < filteredList.length; i++) {
+                    const ep = filteredList[i];
+                    if (parseSafeDate(ep.date) >= cutoffMs) {
+                        recent.push(ep);
+                    } else {
+                        older.push(ep);
+                    }
+                }
+                return { mainFilteredList: recent, olderArchiveList: older };
+            }, [filteredList, isFeedCutoffActive, feedCutoffDate]);
+
             // Видима порція списку карток (для максимальної швидкодії)
             const visibleList = useMemo(() => {
-                return filteredList.slice(0, displayLimit);
-            }, [filteredList, displayLimit]);
+                return mainFilteredList.slice(0, displayLimit);
+            }, [mainFilteredList, displayLimit]);
 
             // При зміні будь-яких фільтрів або сортування автоматично повертаємо ліміт до 50
             useEffect(() => {
                 setDisplayLimit(50);
-            }, [searchTerm, filterLossTypes, filterSeverities, filterEvacStatuses, filterCauses, filterUdp, filterWeapon, filterReport, filterInjuries, listDateFrom, listDateTo, datePreset, showOnlyLatest, sortBy]);
+            }, [searchTerm, filterLossTypes, filterSeverities, filterEvacStatuses, filterCauses, filterUdp, filterWeapon, filterReport, filterInjuries, listDateFrom, listDateTo, datePreset, showOnlyLatest, sortBy, feedCutoffEnabled, feedCutoffDate]);
 
             const filteredLogs = useMemo(() => {
                 return logs.filter(log => {
@@ -3813,12 +3891,29 @@ const MedicalApp = (function() {
                 triggerNotification("Запис видалено");
             };
 
-            const handleClearDatabase = () => {
+            const handleClearDatabase = async () => {
+                await createSafetySnapshot('Знімок перед очищенням бази');
                 saveHistory();
-                setSoldiers([]); setEpisodes([]);
-                setLogs([{ id: 'init', timestamp: new Date().toISOString(), action: 'Система', details: 'Базу повністю очищено користувачем' }]);
+                const keepIds = new Set(clearKeepEpisodeIds);
+                const keptEpisodes = episodes.filter(ep =>
+                    (clearKeepAwol && isAwol(ep.lossType)) ||
+                    (clearKeepUnevac200 && isAny200(ep.lossType) && ep.evacStatus === "Не евакуйований") ||
+                    keepIds.has(ep.id)
+                );
+                if (keptEpisodes.length === 0) {
+                    setSoldiers([]); setEpisodes([]);
+                    setLogs([{ id: 'init', timestamp: new Date().toISOString(), action: 'Система', details: 'Базу повністю очищено користувачем' }]);
+                    triggerNotification("Базу успішно очищено!", "success");
+                } else {
+                    const keptSoldierIds = new Set(keptEpisodes.map(ep => ep.soldierId).filter(Boolean));
+                    const keptSoldiers = soldiers.filter(s => keptSoldierIds.has(s.id));
+                    const removedEpCount = episodes.length - keptEpisodes.length;
+                    setSoldiers(keptSoldiers);
+                    setEpisodes(keptEpisodes);
+                    addLog("Очищення бази", `Вибіркове очищення: видалено ${removedEpCount} епізодів, залишено ${keptEpisodes.length} епізодів (${keptSoldiers.length} бійців)`);
+                    triggerNotification(`Вибіркове очищення виконано! Залишено епізодів: ${keptEpisodes.length}`, "success");
+                }
                 setIsClearDbConfirmOpen(false); setIsBackupOpen(false);
-                triggerNotification("Базу успішно очищено!", "success");
             };
 
             const handleExport = () => {
@@ -5279,12 +5374,41 @@ const MedicalApp = (function() {
                                     )}
 
                                     <div className="flex items-center gap-2 flex-wrap">
+                                        {activeTab === "list" && (
+                                            <div
+                                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-xs transition ${
+                                                    feedCutoffEnabled
+                                                        ? "bg-amber-950/25 border-amber-500/40 text-amber-200 shadow-inner"
+                                                        : "bg-slate-950 border-slate-800 text-slate-400"
+                                                }`}
+                                                title="Показувати в основній стрічці лише записи починаючи з обраної дати (старіші записи згортаються внизу в архів, але враховуються в усій статистиці та черзі евакуації)"
+                                            >
+                                                <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={feedCutoffEnabled}
+                                                        onChange={(e) => handleToggleFeedCutoff(e.target.checked)}
+                                                        className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
+                                                    />
+                                                    <span className="font-semibold text-[11px] whitespace-nowrap">Відлік з:</span>
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    value={feedCutoffDate}
+                                                    onChange={(e) => handleChangeFeedCutoffDate(e.target.value)}
+                                                    className="bg-slate-900/90 border border-slate-700/80 rounded-lg px-1.5 py-0.5 text-[11px] font-mono text-amber-300 focus:border-amber-400 outline-none cursor-pointer"
+                                                />
+                                            </div>
+                                        )}
+
                                         {(activeTab === "list" || activeTab === "awol") && (
                                             <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-800 text-xs text-slate-300 shadow-inner" title="Кількість відфільтрованих записів">
                                                 <Icon name="list-filter" className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                                                 <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">Записів:</span>
                                                 <span className="text-amber-400 font-mono font-bold text-xs">
-                                                    {filteredList.length > displayLimit ? `${visibleList.length} з ${filteredList.length}` : filteredList.length}
+                                                    {isFeedCutoffActive && olderArchiveList.length > 0
+                                                        ? `${mainFilteredList.length} (+${olderArchiveList.length} в архіві)`
+                                                        : (mainFilteredList.length > displayLimit ? `${visibleList.length} з ${mainFilteredList.length}` : mainFilteredList.length)}
                                                 </span>
                                             </div>
                                         )}
@@ -5317,22 +5441,28 @@ const MedicalApp = (function() {
                                     </div>
                                 ) : (
                                     <>
-                                        <div className="space-y-2.5">
-                                            {visibleList.map((episode) => (
-                                                <EpisodeCard 
-                                                    key={episode.id} 
-                                                    episode={episode} 
-                                                    soldier={soldiersMap.get(episode.soldierId)} 
-                                                    soldierEpisodes={episodesBySoldier.get(episode.soldierId) || []}
-                                                    onEdit={handleStartEdit}
-                                                    onNotify={triggerNotification}
-                                                    viewMode="list" onReview={() => openChronology(episode.soldierId)} clockTick={clockTick}
-                                                />
-                                            ))}
-                                        </div>
+                                        {mainFilteredList.length === 0 && olderArchiveList.length > 0 ? (
+                                            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 text-center text-slate-400 text-xs shadow-inner">
+                                                Нових записів з <span className="font-mono font-bold text-amber-300">{feedCutoffDate.split('-').reverse().join('.')}</span> немає. Попередні записи ({olderArchiveList.length}) збережено в обліку нижче.
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2.5">
+                                                {visibleList.map((episode) => (
+                                                    <EpisodeCard 
+                                                        key={episode.id} 
+                                                        episode={episode} 
+                                                        soldier={soldiersMap.get(episode.soldierId)} 
+                                                        soldierEpisodes={episodesBySoldier.get(episode.soldierId) || []}
+                                                        onEdit={handleStartEdit}
+                                                        onNotify={triggerNotification}
+                                                        viewMode="list" onReview={() => openChronology(episode.soldierId)} clockTick={clockTick}
+                                                    />
+                                                ))}
+                                            </div>
+                                        )}
 
                                         {/* Панель порційного підвантаження записів */}
-                                        {filteredList.length > displayLimit && (
+                                        {mainFilteredList.length > displayLimit && (
                                             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3 pb-2">
                                                 <button
                                                     type="button"
@@ -5340,15 +5470,59 @@ const MedicalApp = (function() {
                                                     className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500 text-slate-200 hover:text-amber-300 font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer active:scale-95"
                                                 >
                                                     <Icon name="chevron-down" className="w-4 h-4 text-amber-400" />
-                                                    <span>Показати ще 50 записів (залишилось {filteredList.length - displayLimit})</span>
+                                                    <span>Показати ще 50 записів (залишилось {mainFilteredList.length - displayLimit})</span>
                                                 </button>
                                                 <button
                                                     type="button"
-                                                    onClick={() => setDisplayLimit(filteredList.length)}
+                                                    onClick={() => setDisplayLimit(mainFilteredList.length)}
                                                     className="px-4 py-2.5 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 font-medium text-xs rounded-xl transition cursor-pointer"
                                                 >
-                                                    <span>Показати всі ({filteredList.length})</span>
+                                                    <span>Показати всі ({mainFilteredList.length})</span>
                                                 </button>
+                                            </div>
+                                        )}
+
+                                        {/* Згорнутий блок попередніх записів в обліку (до дати відліку) */}
+                                        {olderArchiveList.length > 0 && (
+                                            <div className="pt-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowOlderArchive(prev => !prev)}
+                                                    className="w-full py-2.5 px-4 bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800 hover:border-slate-700 rounded-xl flex items-center justify-between gap-3 text-xs text-slate-300 transition cursor-pointer shadow-md group"
+                                                >
+                                                    <div className="flex items-center gap-2.5 flex-wrap text-left">
+                                                        <Icon name="folder" className="w-4 h-4 text-amber-400/80 shrink-0" />
+                                                        <span className="font-semibold text-slate-200">
+                                                            Раніше в обліку (до {feedCutoffDate.split('-').reverse().join('.')})
+                                                        </span>
+                                                        <span className="px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-amber-300 font-mono font-bold text-[11px]">
+                                                            {olderArchiveList.length} зап.
+                                                        </span>
+                                                        <span className="text-[11px] text-slate-500 hidden sm:inline">
+                                                            • враховуються в загальній статистиці та черзі евакуації
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 text-amber-400 group-hover:text-amber-300 font-semibold text-[11px] shrink-0">
+                                                        <span>{showOlderArchive ? "Сховати старі записи" : "Показати старі записи"}</span>
+                                                        <Icon name={showOlderArchive ? "chevron-up" : "chevron-down"} className="w-4 h-4" />
+                                                    </div>
+                                                </button>
+
+                                                {showOlderArchive && (
+                                                    <div className="mt-2.5 space-y-2.5 pl-2 sm:pl-3 border-l-2 border-slate-800/80">
+                                                        {olderArchiveList.map((episode) => (
+                                                            <EpisodeCard 
+                                                                key={episode.id} 
+                                                                episode={episode} 
+                                                                soldier={soldiersMap.get(episode.soldierId)} 
+                                                                soldierEpisodes={episodesBySoldier.get(episode.soldierId) || []}
+                                                                onEdit={handleStartEdit}
+                                                                onNotify={triggerNotification}
+                                                                viewMode="list" onReview={() => openChronology(episode.soldierId)} clockTick={clockTick}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </>
@@ -6183,10 +6357,14 @@ const MedicalApp = (function() {
                                         </div>
                                         <div>
                                             <h3 className="font-bold text-white text-base tracking-tight">
-                                                {isEditOpen ? 'Редагування та статус запису' : 'Створення нового запису'}
+                                                {isEditOpen
+                                                    ? (isAwol(lossType) ? 'Редагування запису СЗЧ / Повернення' : 'Редагування та статус запису')
+                                                    : (isAwol(lossType) ? 'Новий запис СЗЧ / Повернення' : 'Створення нового запису')}
                                             </h3>
                                             <p className="text-[11px] text-slate-400 font-mono">
-                                                {isEditOpen ? `ID епізоду: ${currentEpisode?.id || '—'}` : 'Внесення події/поранення військовослужбовця'}
+                                                {isEditOpen
+                                                    ? `ID епізоду: ${currentEpisode?.id || '—'}`
+                                                    : (isAwol(lossType) ? 'Облік СЗЧ, дезертирства та повернення військовослужбовців' : 'Внесення події/поранення військовослужбовця')}
                                             </p>
                                         </div>
                                     </div>
@@ -6407,37 +6585,39 @@ const MedicalApp = (function() {
 
                                     {/* 2. Середня колонка */}
                                     <div className={`${isAny300(lossType) ? 'lg:col-span-4' : 'lg:col-span-6'} space-y-4`}>
-                                        <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
-                                            <div>
-                                                <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Час події</label>
-                                                <input aria-label="Дата й час медичного запису" type="datetime-local" value={episodeDate} onChange={(e) => setEpisodeDate(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none transition" />
-                                            </div>
-                                            
-                                            <label className={`flex items-center gap-2.5 text-xs font-bold p-3 rounded-xl border cursor-pointer select-none transition ${inUdp ? 'bg-red-950/60 border-red-800/80 text-red-300 shadow-sm' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'}`}>
-                                                <input type="checkbox" checked={inUdp} onChange={(e) => setInUdp(e.target.checked)} className="rounded bg-slate-950 border-slate-700 text-red-500 focus:ring-0 w-4 h-4 cursor-pointer" />
-                                                <span className="flex items-center gap-1.5">
-                                                    <Icon name="zap" className="w-4 h-4 text-red-400" />
-                                                    <span>Отримано під час УПД</span>
-                                                </span>
-                                            </label>
+                                        {!isAwol(lossType) && (
+                                            <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
+                                                <div>
+                                                    <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Час події</label>
+                                                    <input aria-label="Дата й час медичного запису" type="datetime-local" value={episodeDate} onChange={(e) => setEpisodeDate(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none transition" />
+                                                </div>
+                                                
+                                                <label className={`flex items-center gap-2.5 text-xs font-bold p-3 rounded-xl border cursor-pointer select-none transition ${inUdp ? 'bg-red-950/60 border-red-800/80 text-red-300 shadow-sm' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'}`}>
+                                                    <input type="checkbox" checked={inUdp} onChange={(e) => setInUdp(e.target.checked)} className="rounded bg-slate-950 border-slate-700 text-red-500 focus:ring-0 w-4 h-4 cursor-pointer" />
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Icon name="zap" className="w-4 h-4 text-red-400" />
+                                                        <span>Отримано під час УПД</span>
+                                                    </span>
+                                                </label>
 
-                                            <div>
-                                                <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Фактичне місце отримання</label>
-                                                <input aria-label="Фактичне місце отримання" list="med-actual-locs" placeholder="Оберіть або введіть своє..." value={actualLoc} onChange={(e) => setActualLoc(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition font-sans" />
-                                                <datalist id="med-actual-locs">{dictionaryOptions('actualPlaces', episodes.map(episode => episode.actualLoc), actualLoc).map(name => <option key={name} value={name} />)}</datalist>
+                                                <div>
+                                                    <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Фактичне місце отримання</label>
+                                                    <input aria-label="Фактичне місце отримання" list="med-actual-locs" placeholder="Оберіть або введіть своє..." value={actualLoc} onChange={(e) => setActualLoc(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition font-sans" />
+                                                    <datalist id="med-actual-locs">{dictionaryOptions('actualPlaces', episodes.map(episode => episode.actualLoc), actualLoc).map(name => <option key={name} value={name} />)}</datalist>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Документальне місце</label>
+                                                    <input aria-label="Документальне місце" list="med-document-locs" placeholder="Оберіть або введіть своє..." value={docLoc} onChange={(e) => setDocLoc(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition font-sans" />
+                                                    <datalist id="med-document-locs">
+                                                        {dictionaryOptions('docPlaces', episodes.map(episode => episode.docLoc), docLoc).map(name => <option key={name} value={name} />)}
+                                                    </datalist>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Опис / Нотатки</label>
+                                                    <textarea rows="2" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Короткий опис обставин..." className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition font-sans resize-none"></textarea>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Документальне місце</label>
-                                                <input aria-label="Документальне місце" list="med-document-locs" placeholder="Оберіть або введіть своє..." value={docLoc} onChange={(e) => setDocLoc(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition font-sans" />
-                                                <datalist id="med-document-locs">
-                                                    {dictionaryOptions('docPlaces', episodes.map(episode => episode.docLoc), docLoc).map(name => <option key={name} value={name} />)}
-                                                </datalist>
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Опис / Нотатки</label>
-                                                <textarea rows="2" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Короткий опис обставин..." className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition font-sans resize-none"></textarea>
-                                            </div>
-                                        </div>
+                                        )}
 
                                         {!isAwol(lossType) && lossType !== "Зниклий безвісти (ЗБВ)" && (
                                             <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
@@ -6463,39 +6643,131 @@ const MedicalApp = (function() {
 
                                         {isAwol(lossType) && (() => {
                                             const isReturnedForm = lossType === "Повернення з СЗЧ" || awolStatus === "Повернувся";
+                                            const setAwolMode = (nextStatus) => {
+                                                setAwolStatus(nextStatus);
+                                                if (nextStatus === "Повернувся") {
+                                                    if (lossType === "СЗЧ") setLossType("Повернення з СЗЧ");
+                                                    if (!evacDate) setEvacDate(new Date().toLocaleDateString('en-CA'));
+                                                } else if (nextStatus === "В розшуку" && lossType === "Повернення з СЗЧ") {
+                                                    setLossType("СЗЧ");
+                                                }
+                                            };
                                             return (
-                                                <div className={`${isReturnedForm ? 'bg-emerald-950/30 border-emerald-800/40' : 'bg-fuchsia-950/30 border-fuchsia-800/40'} border rounded-2xl p-4 space-y-3 transition-colors`}>
+                                                <div className={`${isReturnedForm ? 'bg-emerald-950/25 border-emerald-800/50' : 'bg-fuchsia-950/25 border-fuchsia-800/50'} border rounded-2xl p-4 space-y-3.5 transition-colors`}>
+                                                    {/* 1. Наочний перемикач статусу: В розшуку vs Повернувся */}
                                                     <div>
-                                                        <label className={`text-[10px] ${isReturnedForm ? 'text-emerald-400' : 'text-fuchsia-400'} font-bold uppercase font-mono tracking-wider block mb-1.5`}>Статус {lossType}</label>
-                                                        <select value={awolStatus} onChange={(e) => {
-                                                            const nextStatus = e.target.value;
-                                                            setAwolStatus(nextStatus);
-                                                            if (nextStatus === "Повернувся" && lossType === "СЗЧ") {
-                                                                setLossType("Повернення з СЗЧ");
-                                                            } else if (nextStatus === "В розшуку" && lossType === "Повернення з СЗЧ") {
-                                                                setLossType("СЗЧ");
-                                                            }
-                                                        }} className={`w-full bg-slate-900 border border-slate-800 ${isReturnedForm ? 'focus:border-emerald-500/80' : 'focus:border-fuchsia-500/80'} rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer`}>
-                                                            <option value="В розшуку">В розшуку</option>
-                                                            <option value="Повернувся">Повернувся</option>
-                                                        </select>
+                                                        <label className={`text-[10px] ${isReturnedForm ? 'text-emerald-400' : 'text-fuchsia-400'} font-bold uppercase font-mono tracking-wider block mb-1.5`}>
+                                                            Статус обліку {lossType === "Дезертирство" ? "дезертирства" : "СЗЧ"}
+                                                        </label>
+                                                        <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950/90 border border-slate-800 rounded-xl">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setAwolMode("В розшуку")}
+                                                                className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                                                                    !isReturnedForm
+                                                                        ? 'bg-fuchsia-600/30 border border-fuchsia-500/60 text-fuchsia-200 shadow-sm'
+                                                                        : 'border border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                                                                }`}
+                                                            >
+                                                                <Icon name="user-x" className="w-3.5 h-3.5 text-fuchsia-400" />
+                                                                <span>В розшуку (СЗЧ)</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setAwolMode("Повернувся")}
+                                                                className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                                                                    isReturnedForm
+                                                                        ? 'bg-emerald-600/30 border border-emerald-500/60 text-emerald-200 shadow-sm'
+                                                                        : 'border border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                                                                }`}
+                                                            >
+                                                                <Icon name="check-circle" className="w-3.5 h-3.5 text-emerald-400" />
+                                                                <span>Повернувся в стрій</span>
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                    {isReturnedForm && (
+
+                                                    {/* 2. Дати в одному блоці пліч-о-пліч: Дата та час СЗЧ (вибуття) + Дата повернення */}
+                                                    <div className={`grid grid-cols-1 ${isReturnedForm ? 'sm:grid-cols-2' : ''} gap-3 bg-slate-950/60 border border-slate-800/80 rounded-xl p-3`}>
                                                         <div>
                                                             <div className="flex justify-between items-center mb-1.5">
-                                                                <label className="text-[10px] text-emerald-400 font-bold uppercase font-mono tracking-wider">Дата повернення</label>
-                                                                <span className="text-[9px] text-slate-500 font-mono">за замовч. сьогодні</span>
+                                                                <label className="text-[10px] text-fuchsia-300 font-bold uppercase font-mono tracking-wider flex items-center gap-1">
+                                                                    <Icon name="calendar" className="w-3 h-3 text-fuchsia-400" />
+                                                                    <span>Дата та час СЗЧ (вибуття)</span>
+                                                                </label>
                                                             </div>
-                                                            <input type="date" value={evacDate} onChange={(e) => setEvacDate(e.target.value)} className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500/80 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none transition" />
+                                                            <input
+                                                                aria-label="Дата й час медичного запису"
+                                                                type="datetime-local"
+                                                                value={episodeDate}
+                                                                onChange={(e) => setEpisodeDate(e.target.value)}
+                                                                className="w-full bg-slate-900 border border-slate-800 focus:border-fuchsia-500/80 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none transition"
+                                                            />
                                                         </div>
-                                                    )}
+
+                                                        {isReturnedForm && (
+                                                            <div>
+                                                                <div className="flex justify-between items-center mb-1.5">
+                                                                    <label className="text-[10px] text-emerald-300 font-bold uppercase font-mono tracking-wider flex items-center gap-1">
+                                                                        <Icon name="check-circle" className="w-3 h-3 text-emerald-400" />
+                                                                        <span>Дата повернення</span>
+                                                                    </label>
+                                                                    <span className="text-[9px] text-slate-500 font-mono">за замовч. сьогодні</span>
+                                                                </div>
+                                                                <input
+                                                                    type="date"
+                                                                    value={evacDate}
+                                                                    onChange={(e) => setEvacDate(e.target.value)}
+                                                                    className="w-full bg-slate-900 border border-emerald-800/70 focus:border-emerald-500/80 rounded-xl px-3 py-2 text-xs font-mono text-emerald-200 outline-none transition"
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* 3. Звідки вибув / Обставини СЗЧ */}
                                                     <div>
-                                                        <label className={`text-[10px] ${isReturnedForm ? 'text-emerald-400' : 'text-fuchsia-400'} font-bold uppercase font-mono tracking-wider block mb-1.5`}>Звідки вибув / Обставини {lossType === "Повернення з СЗЧ" ? "СЗЧ" : lossType}</label>
-                                                        <select aria-label="Звідки вибув / Обставини СЗЧ" value={cause} onChange={(e) => setCause(e.target.value)} className={`w-full bg-slate-900 border border-slate-800 ${isReturnedForm ? 'focus:border-emerald-500/80' : 'focus:border-fuchsia-500/80'} rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer`}>
+                                                        <label className={`text-[10px] ${isReturnedForm ? 'text-emerald-400' : 'text-fuchsia-400'} font-bold uppercase font-mono tracking-wider block mb-1.5`}>
+                                                            Звідки вибув / Обставини {lossType === "Повернення з СЗЧ" ? "СЗЧ" : lossType}
+                                                        </label>
+                                                        <select
+                                                            aria-label="Звідки вибув / Обставини СЗЧ"
+                                                            value={cause}
+                                                            onChange={(e) => setCause(e.target.value)}
+                                                            className={`w-full bg-slate-900 border border-slate-800 ${isReturnedForm ? 'focus:border-emerald-500/80' : 'focus:border-fuchsia-500/80'} rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer`}
+                                                        >
                                                             <option value="">-- Оберіть звідки вибув --</option>
                                                             {DEFAULT_AWOL_CAUSES.map(c => <option key={c} value={c}>{c}</option>)}
                                                             {cause && !DEFAULT_AWOL_CAUSES.includes(cause) && <option value={cause}>{cause}</option>}
                                                         </select>
+                                                    </div>
+
+                                                    {/* 4. Місце / локація вибуття (необов'язково) */}
+                                                    <div>
+                                                        <div className="flex justify-between items-center mb-1.5">
+                                                            <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider">Місце / локація вибуття</label>
+                                                            <span className="text-[9px] text-slate-500 font-mono">необов'язково</span>
+                                                        </div>
+                                                        <input
+                                                            aria-label="Фактичне місце отримання"
+                                                            list="med-actual-locs"
+                                                            placeholder="Напр.: н.п. Лиман, НЦ, маршрут переміщення..."
+                                                            value={actualLoc}
+                                                            onChange={(e) => setActualLoc(e.target.value)}
+                                                            className="w-full bg-slate-900 border border-slate-800 focus:border-fuchsia-500/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition font-sans"
+                                                        />
+                                                        <datalist id="med-actual-locs">{dictionaryOptions('actualPlaces', episodes.map(episode => episode.actualLoc), actualLoc).map(name => <option key={name} value={name} />)}</datalist>
+                                                    </div>
+
+                                                    {/* 5. Опис / Нотатки */}
+                                                    <div>
+                                                        <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5">Опис / Нотатки</label>
+                                                        <textarea
+                                                            rows="2"
+                                                            value={notes}
+                                                            onChange={(e) => setNotes(e.target.value)}
+                                                            placeholder="Додаткові деталі вибуття або обставини повернення..."
+                                                            className="w-full bg-slate-900 border border-slate-800 focus:border-fuchsia-500/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition font-sans resize-none"
+                                                        ></textarea>
                                                     </div>
                                                 </div>
                                             );
@@ -7670,11 +7942,17 @@ const MedicalApp = (function() {
                                                 <Icon name="alert-triangle" className="w-4 h-4 text-red-400" />
                                                 <span>Небезпечна зона</span>
                                             </div>
-                                            <p className="text-[11px] text-slate-400">Повне скидання бази даних (видалить бійців та епізоди)</p>
+                                            <p className="text-[11px] text-slate-400">Повне або вибіркове скидання бази даних (можна залишити СЗЧ та обрані записи)</p>
                                         </div>
                                         <button 
                                             type="button" 
-                                            onClick={() => setIsClearDbConfirmOpen(true)} 
+                                            onClick={() => {
+                                                setClearKeepAwol(false);
+                                                setClearKeepUnevac200(false);
+                                                setClearKeepEpisodeIds([]);
+                                                setClearSearchTerm("");
+                                                setIsClearDbConfirmOpen(true);
+                                            }} 
                                             className="px-4 py-2 bg-red-950/80 hover:bg-red-900 border border-red-800 text-red-300 hover:text-white font-bold rounded-xl text-xs transition cursor-pointer shrink-0 shadow-sm"
                                         >
                                             Очистити базу
@@ -7685,21 +7963,210 @@ const MedicalApp = (function() {
                         </div>
                     )}
 
-                    {isClearDbConfirmOpen && (
-                        <div onClick={(e) => { if (e.target === e.currentTarget) setIsClearDbConfirmOpen(false); }} className="fixed inset-0 z-[210] bg-black/90 flex items-center justify-center p-4">
-                            <div className="bg-red-950 border border-red-800 w-full max-w-sm rounded-xl overflow-hidden shadow-2xl p-5 text-center">
-                                <Icon name="alert-octagon" className="w-12 h-12 text-red-500 mx-auto mb-3" />
-                                <h3 className="font-bold text-white text-lg mb-2">УВАГА! Очищення бази</h3>
-                                <p className="text-xs text-red-200 mb-6">
-                                    Це безповоротно видалить всіх військовослужбовців, події та логи. Ви впевнені, що хочете продовжити?
-                                </p>
-                                <div className="flex gap-3 justify-center">
-                                    <button onClick={() => setIsClearDbConfirmOpen(false)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">Скасувати</button>
-                                    <button onClick={handleClearDatabase} className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-red-900 cursor-pointer">Так, очистити все</button>
+                    {isClearDbConfirmOpen && (() => {
+                        const awolEps = episodes.filter(ep => isAwol(ep.lossType));
+                        const unevac200Eps = episodes.filter(ep => isAny200(ep.lossType) && ep.evacStatus === "Не евакуйований");
+                        const nonAwolEps = [...episodes.filter(ep => !isAwol(ep.lossType))].sort((a, b) => parseSafeDate(b.date) - parseSafeDate(a.date));
+                        const latest300 = nonAwolEps.find(ep => isAny300(ep.lossType));
+                        const q = clearSearchTerm.trim().toLowerCase();
+                        const filteredNonAwol = q ? nonAwolEps.filter(ep => {
+                            const s = MedicalPersonnelDirectory.forEpisode(ep, soldiersMap.get(ep.soldierId));
+                            const hay = `${s?.name || ''} ${s?.callsign || ''} ${s?.unit || ep.unit || ''} ${ep.lossType || ''} ${ep.evacStatus || ''} ${ep.date || ''}`.toLowerCase();
+                            return hay.includes(q);
+                        }) : nonAwolEps;
+                        const keepIdsSet = new Set(clearKeepEpisodeIds);
+                        const actualKeptEps = episodes.filter(ep =>
+                            (clearKeepAwol && isAwol(ep.lossType)) ||
+                            (clearKeepUnevac200 && isAny200(ep.lossType) && ep.evacStatus === "Не евакуйований") ||
+                            keepIdsSet.has(ep.id)
+                        );
+                        const keptCount = actualKeptEps.length;
+                        const removedCount = Math.max(0, episodes.length - keptCount);
+
+                        return (
+                            <div onClick={(e) => { if (e.target === e.currentTarget) setIsClearDbConfirmOpen(false); }} className="fixed inset-0 z-[210] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+                                <div className="bg-slate-900 border border-red-800/80 w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+                                    <div className="px-5 py-4 bg-red-950/60 border-b border-red-900/60 flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2.5">
+                                            <Icon name="alert-octagon" className="w-6 h-6 text-red-400 shrink-0" />
+                                            <div className="text-left">
+                                                <h3 className="font-bold text-white text-sm sm:text-base">Очищення бази даних</h3>
+                                                <p className="text-[11px] text-red-200/80">Оберіть записи, які потрібно зберегти, або очистіть усе</p>
+                                            </div>
+                                        </div>
+                                        <button type="button" onClick={() => setIsClearDbConfirmOpen(false)} className="w-7 h-7 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center cursor-pointer">
+                                            <Icon name="x" className="w-4 h-4" />
+                                        </button>
+                                    </div>
+
+                                    <div className="p-4 sm:p-5 overflow-y-auto space-y-3 text-left flex-1">
+                                        {/* Швидкі пресети */}
+                                        <div className="flex flex-wrap gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setClearKeepAwol(true);
+                                                    setClearKeepUnevac200(true);
+                                                    setClearKeepEpisodeIds(latest300 ? [latest300.id] : []);
+                                                }}
+                                                className="px-3 py-1.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-700/70 text-emerald-200 text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                                            >
+                                                <Icon name="check-circle" className="w-3.5 h-3.5 text-emerald-400" />
+                                                <span>Залишити СЗЧ + неевак. 200 + 1 поранення</span>
+                                            </button>
+                                            {(clearKeepAwol || clearKeepUnevac200 || clearKeepEpisodeIds.length > 0) && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setClearKeepAwol(false);
+                                                        setClearKeepUnevac200(false);
+                                                        setClearKeepEpisodeIds([]);
+                                                    }}
+                                                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-semibold transition cursor-pointer"
+                                                >
+                                                    Скинути вибір (видалити все)
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Опція 1: Залишити СЗЧ */}
+                                        <label className={`flex items-center justify-between gap-3 p-3 rounded-xl border cursor-pointer transition select-none ${clearKeepAwol ? 'bg-purple-950/40 border-purple-500/60 text-purple-100' : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700'}`}>
+                                            <div className="flex items-center gap-2.5">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={clearKeepAwol}
+                                                    onChange={(e) => setClearKeepAwol(e.target.checked)}
+                                                    className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-purple-500 focus:ring-0 cursor-pointer"
+                                                />
+                                                <div>
+                                                    <div className="text-xs font-bold">Залишити всі записи обліку СЗЧ</div>
+                                                    <div className="text-[10px] text-slate-400">СЗЧ, Повернення з СЗЧ та Дезертирство</div>
+                                                </div>
+                                            </div>
+                                            <span className="px-2 py-0.5 rounded-md bg-purple-900/60 border border-purple-700/60 text-purple-200 font-mono text-xs font-bold shrink-0">
+                                                {awolEps.length} зап.
+                                            </span>
+                                        </label>
+
+                                        {/* Опція 2: Залишити неевакуйованих 200 */}
+                                        <label className={`flex items-center justify-between gap-3 p-3 rounded-xl border cursor-pointer transition select-none ${clearKeepUnevac200 ? 'bg-zinc-800/80 border-zinc-500/70 text-zinc-100' : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700'}`}>
+                                            <div className="flex items-center gap-2.5">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={clearKeepUnevac200}
+                                                    onChange={(e) => setClearKeepUnevac200(e.target.checked)}
+                                                    className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0 cursor-pointer"
+                                                />
+                                                <div>
+                                                    <div className="text-xs font-bold">Залишити всіх неевакуйованих 200</div>
+                                                    <div className="text-[10px] text-slate-400">Загибель (200), 200 (від ран), Небойова смерть (200) зі статусом «Не евакуйований»</div>
+                                                </div>
+                                            </div>
+                                            <span className="px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-700 text-zinc-200 font-mono text-xs font-bold shrink-0">
+                                                {unevac200Eps.length} зап.
+                                            </span>
+                                        </label>
+
+                                        {/* Опція 3: Вибір записів з Втрат о/с */}
+                                        <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 space-y-2.5">
+                                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                                                <span className="text-xs font-bold text-slate-200">
+                                                    Додатково залишити з «Втрат о/с» ({clearKeepEpisodeIds.length} обрано)
+                                                </span>
+                                                <div className="flex items-center gap-1.5">
+                                                    {latest300 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setClearKeepEpisodeIds([latest300.id])}
+                                                            className="px-2 py-0.5 rounded bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-[10px] font-mono font-bold cursor-pointer transition"
+                                                        >
+                                                            1 останній 300
+                                                        </button>
+                                                    )}
+                                                    {clearKeepEpisodeIds.length > 0 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setClearKeepEpisodeIds([])}
+                                                            className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-mono cursor-pointer transition"
+                                                        >
+                                                            Зняти
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {nonAwolEps.length > 0 ? (
+                                                <>
+                                                    <input
+                                                        type="text"
+                                                        value={clearSearchTerm}
+                                                        onChange={(e) => setClearSearchTerm(e.target.value)}
+                                                        placeholder="Пошук запису за ПІБ, позивним або типом..."
+                                                        className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500/70 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 outline-none"
+                                                    />
+                                                    <div className="max-h-40 overflow-y-auto space-y-1 pr-1">
+                                                        {filteredNonAwol.map(ep => {
+                                                            const s = MedicalPersonnelDirectory.forEpisode(ep, soldiersMap.get(ep.soldierId));
+                                                            const isAuto200 = clearKeepUnevac200 && isAny200(ep.lossType) && ep.evacStatus === "Не евакуйований";
+                                                            const checked = isAuto200 || clearKeepEpisodeIds.includes(ep.id);
+                                                            return (
+                                                                <label key={ep.id} className={`flex items-center justify-between gap-2 p-2 rounded-lg border text-xs cursor-pointer transition select-none ${checked ? 'bg-emerald-950/40 border-emerald-600/60 text-emerald-100' : 'bg-slate-900/70 border-slate-800/80 text-slate-300 hover:bg-slate-900'}`}>
+                                                                    <div className="flex items-center gap-2 min-w-0">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={checked}
+                                                                            disabled={isAuto200}
+                                                                            onChange={() => {
+                                                                                setClearKeepEpisodeIds(prev => prev.includes(ep.id) ? prev.filter(id => id !== ep.id) : [...prev, ep.id]);
+                                                                            }}
+                                                                            className="w-3.5 h-3.5 rounded bg-slate-950 border-slate-700 text-emerald-500 focus:ring-0 cursor-pointer shrink-0 disabled:opacity-60"
+                                                                        />
+                                                                        <div className="truncate">
+                                                                            <span className="font-bold text-white">{s?.name || 'Невідомий'}</span>
+                                                                            {s?.callsign && <span className="text-amber-400 font-mono ml-1">«{formatCallsignUI(s.callsign)}»</span>}
+                                                                            <span className="text-[10px] text-slate-400 font-mono ml-1.5">({s?.unit || ep.unit || '—'})</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="text-right shrink-0 font-mono text-[10px]">
+                                                                        <div className={isAny300(ep.lossType) ? 'text-amber-300 font-bold' : 'text-slate-300'}>{ep.lossType}{ep.severity ? ` · ${ep.severity}` : ''}</div>
+                                                                        <div className="text-slate-500">{formatEpisodeDateUI(ep.date)} · <span className={ep.evacStatus === 'Не евакуйований' ? 'text-red-400' : 'text-emerald-400'}>{ep.evacStatus}</span></div>
+                                                                    </div>
+                                                                </label>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <p className="text-[11px] text-slate-500 italic">Записів у «Втратах о/с» немає.</p>
+                                            )}
+                                        </div>
+
+                                        {/* Підсумок перед дією */}
+                                        <div className={`p-3 rounded-xl border text-xs ${keptCount > 0 ? 'bg-amber-950/30 border-amber-700/50 text-amber-200' : 'bg-red-950/50 border-red-800/70 text-red-200'}`}>
+                                            {keptCount > 0 ? (
+                                                <div className="space-y-1">
+                                                    <div><strong>Залишиться в базі:</strong> {keptCount} епізод(ів) (СЗЧ: {clearKeepAwol ? awolEps.length : 0}, Неевак. 200: {clearKeepUnevac200 ? unevac200Eps.length : 0}, Інші обрані: {clearKeepEpisodeIds.filter(id => !(clearKeepUnevac200 && unevac200Eps.some(e => e.id === id))).length}).</div>
+                                                    <div><strong>Буде видалено:</strong> {removedCount} епізод(ів) та анкети бійців без збережених подій.</div>
+                                                    <div className="text-[10px] text-slate-400 pt-0.5">Перед очищенням автоматично створюється аварійний знімок (можна скасувати через Ctrl+Z або «Відновити з останнього знімка»).</div>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    Це видалить <strong>усіх військовослужбовців ({soldiers.length}) та всі події ({episodes.length})</strong>. Автоматичний аварійний знімок буде збережено перед очищенням.
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="px-5 py-3.5 bg-slate-950/80 border-t border-slate-800 flex gap-3 justify-end">
+                                        <button type="button" onClick={() => setIsClearDbConfirmOpen(false)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">Скасувати</button>
+                                        <button type="button" onClick={handleClearDatabase} className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-red-900/60 cursor-pointer">
+                                            {keptCount > 0 ? `Очистити інше (залишити ${keptCount})` : 'Так, очистити все'}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        );
+                    })()}
 
                     {isChangelogOpen && (
                         <div onClick={(e) => { if (e.target === e.currentTarget) setIsChangelogOpen(false); }} className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
