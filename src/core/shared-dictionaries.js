@@ -131,6 +131,11 @@ function visit(root, parts, callback, path = [], parent = null, field = null) {
 function eachSource(snapshot, callback) {
     for (const [storage, key, module, fields] of definitions) {
         if (!Object.hasOwn(snapshot[storage], key)) continue;
+        // Once localforage holds current medical stores (even cleared `[]`), ignore superseded legacy localStorage copies.
+        if (storage === 'localstorage' && /^med_(soldiers|episodes)_v[23]$/.test(key)) {
+            const lfKey = key.replace(/_v[23]$/, '_v3');
+            if (snapshot.localforage?.[lfKey] != null) continue;
+        }
         let value = snapshot[storage][key];
         if (storage === 'localstorage') {
             try { value = JSON.parse(value); } catch { throw new Error('Не вдалося прочитати ' + key + '. Дані не змінено.'); }

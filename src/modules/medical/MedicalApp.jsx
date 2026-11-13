@@ -4581,61 +4581,36 @@ const MedicalApp = (function() {
                     </div>}
                     
                     {/* Командний заголовок */}
-                    <header className="bg-[#17181b] border border-[#2e3138] rounded-sm p-3 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
+                    <header className="bg-[#17181b] border border-[#2e3138] rounded-sm p-2.5 sm:p-3 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
                         
-                        {/* 1. Ліва частина: HUB + Логотип + Бренд + Версія */}
+                        {/* 1. Ліва частина: Логотип + Назва */}
                         <div className="flex items-center gap-2.5 shrink-0">
-                            <a 
-                                href="index.html" 
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    window.dispatchEvent(new CustomEvent('suite-switch-tab', { detail: 'enemy' }));
-                                }}
-                                className="px-2.5 py-1.5 bg-[#101113] hover:bg-[#222429] text-[#b8bec8] hover:text-[#f3f4f6] border border-[#2e3138] hover:border-[#4c8ed9] rounded-sm transition-colors text-xs font-medium flex items-center gap-1.5 shrink-0" 
-                                title="Повернутися до Єдиного Центру Управління (HUB)"
-                            >
-                                <Icon name="home" className="w-3.5 h-3.5 text-[#4c8ed9]" />
-                                <span>HUB</span>
-                            </a>
-                            <div className="w-9 h-9 rounded-sm bg-[#122624] border border-[#14b8a6]/55 flex items-center justify-center text-[#2dd4bf] shrink-0">
-                                <Icon name="shield-alert" className="w-5 h-5" />
+                            <div className="w-8 h-8 rounded-sm bg-[#122624] border border-[#14b8a6]/55 flex items-center justify-center text-[#2dd4bf] shrink-0">
+                                <Icon name="shield-alert" className="w-4 h-4" />
                             </div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <h1 className="text-lg font-semibold text-[#f3f4f6] tracking-tight">MedTactical</h1>
-                                <span className="text-[10px] bg-[#122624] text-[#5eead4] border border-[#14b8a6]/45 px-2 py-0.5 rounded-sm font-mono font-semibold tracking-wider">
-                                    COMBAT_MED
-                                </span>
-                                <button
-                                    onClick={() => setIsBackupOpen(true)}
-                                    className={`text-[11px] font-mono font-semibold px-2 py-0.5 rounded-sm border transition-colors cursor-pointer flex items-center gap-1.5 tabular-nums ${
-                                        diskServiceOnline 
-                                            ? 'bg-[#3da372]/15 hover:bg-[#3da372]/25 text-[#3da372] border-[#3da372]/50' 
-                                            : 'bg-[#101113] hover:bg-[#222429] text-[#b8bec8] border-[#2e3138]'
-                                    }`}
-                                    title={diskServiceOnline ? `Служба бекапу активна на диску (_backups). ${lastDiskSaveTime ? 'Збережено: ' + lastDiskSaveTime : 'Готова'}` : 'Служба бекапу недоступна'}
-                                >
-                                    <span className={`w-1.5 h-1.5 rounded-full ${diskServiceOnline ? 'bg-[#3da372]' : 'bg-[#989fa9]'}`}></span>
-                                    <span>{diskServiceOnline ? (lastDiskSaveTime ? `Диск: ${lastDiskSaveTime}` : 'Диск: OK') : 'Диск: Офлайн'}</span>
-                                </button>
-                            </div>
+                            <h1 className="text-sm sm:text-base font-bold text-[#f3f4f6] tracking-tight whitespace-nowrap">MedTactical</h1>
                         </div>
 
-                        {/* 2. Центральна частина: Сегментована панель вкладок */}
+                        {/* 2. Центральна частина: Сегментована панель вкладок (32px) */}
                         <div className="flex items-center gap-1 bg-[#101113] border border-[#2e3138] p-1 rounded-sm shrink-0 self-start xl:self-center flex-wrap">
                             {/* Вкладка: Втрати о/с */}
                             <button 
                                 onClick={() => handleTabSwitch("list")} 
                                 aria-label={`Журнал ${stats.lossesCount}`}
                                 title="Журнал втрат особового складу (300, 200, ЗБВ)"
-                                className={`px-3 py-1.5 rounded-sm border transition-colors flex items-center gap-2 text-xs font-medium cursor-pointer select-none ${
+                                className={`h-8 px-3 rounded-sm border transition-colors inline-flex items-center gap-2 text-xs font-medium cursor-pointer select-none leading-none shrink-0 ${
                                     activeTab === "list" 
                                         ? "bg-[#122624] text-[#f0fdfa] border-[#14b8a6]/65 font-semibold" 
-                                        : "border-transparent text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429]"
+                                        : "border-transparent text-[#9aa6b8] hover:text-[#e6edf5] hover:bg-[#20262f]"
                                 }`}
                             >
-                                <Icon name="activity" className={`w-4 h-4 ${activeTab === "list" ? "text-[#2dd4bf]" : "text-[#b8bec8]"}`} />
+                                <Icon name="activity" className={`w-3.5 h-3.5 shrink-0 ${activeTab === "list" ? "text-[#2dd4bf]" : "text-[#9aa6b8]"}`} />
                                 <span>Втрати о/с</span>
-                                <span className={`px-1.5 py-0.5 rounded-sm text-[10px] font-mono font-semibold tabular-nums ${activeTab === "list" ? "bg-[#0d1c1a] text-[#5eead4] border border-[#14b8a6]/45" : "bg-[#17181b] border border-[#2e3138] text-[#b8bec8]"}`}>
+                                <span className={`h-[20px] px-1.5 rounded-sm border inline-flex items-center justify-center text-[10.5px] font-mono font-bold tabular-nums leading-none shrink-0 ${
+                                    activeTab === "list" 
+                                        ? "bg-[#0d1c1a] border-[#14b8a6]/45 text-[#5eead4]" 
+                                        : "bg-[#14171c] border-[#2b3340] text-[#9aa6b8]"
+                                }`}>
                                     {stats.lossesCount}
                                 </span>
                             </button>
@@ -4645,20 +4620,18 @@ const MedicalApp = (function() {
                                 onClick={() => handleTabSwitch("awol")} 
                                 aria-label={`Облік СЗЧ ${stats.awolFilteredCount}`}
                                 title="Облік військовослужбовців СЗЧ та дезертирства"
-                                className={`px-3 py-1.5 rounded-sm border transition-colors flex items-center gap-2 text-xs font-medium cursor-pointer select-none ${
+                                className={`h-8 px-3 rounded-sm border transition-colors inline-flex items-center gap-2 text-xs font-medium cursor-pointer select-none leading-none shrink-0 ${
                                     activeTab === "awol" 
                                         ? "bg-[#122624] text-[#f0fdfa] border-[#14b8a6]/65 font-semibold" 
-                                        : "border-transparent text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429]"
+                                        : "border-transparent text-[#9aa6b8] hover:text-[#e6edf5] hover:bg-[#20262f]"
                                 }`}
                             >
-                                <Icon name="user-x" className={`w-4 h-4 ${activeTab === "awol" ? "text-[#2dd4bf]" : "text-[#b8bec8]"}`} />
+                                <Icon name="user-x" className={`w-3.5 h-3.5 shrink-0 ${activeTab === "awol" ? "text-[#2dd4bf]" : "text-[#9aa6b8]"}`} />
                                 <span>Облік СЗЧ</span>
-                                <span className={`px-1.5 py-0.5 rounded-sm text-[10px] font-mono font-semibold border tabular-nums ${
+                                <span className={`h-[20px] px-1.5 rounded-sm border inline-flex items-center justify-center text-[10.5px] font-mono font-bold tabular-nums leading-none shrink-0 ${
                                     activeTab === "awol"
                                         ? "bg-[#0d1c1a] border-[#14b8a6]/45 text-[#5eead4]"
-                                        : stats.awolFilteredCount > 0 
-                                            ? "bg-[#8f5fb8]/20 border-[#8f5fb8]/50 text-[#c084fc]" 
-                                            : "bg-[#17181b] border-[#2e3138] text-[#b8bec8]"
+                                        : "bg-[#14171c] border-[#2b3340] text-[#9aa6b8]"
                                 }`}>
                                     {stats.awolFilteredCount}
                                 </span>
@@ -4667,97 +4640,78 @@ const MedicalApp = (function() {
                             {/* Вкладка: Черга евакуації */}
                             <button 
                                 onClick={() => handleTabSwitch("triage")} 
-                                className={`px-3 py-1.5 rounded-sm border transition-colors flex items-center gap-2 text-xs font-medium cursor-pointer select-none ${
+                                className={`h-8 px-3 rounded-sm border transition-colors inline-flex items-center gap-2 text-xs font-medium cursor-pointer select-none leading-none shrink-0 ${
                                     activeTab === "triage" 
                                         ? "bg-[#122624] text-[#f0fdfa] border-[#14b8a6]/65 font-semibold" 
-                                        : "border-transparent text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429]"
+                                        : "border-transparent text-[#9aa6b8] hover:text-[#e6edf5] hover:bg-[#20262f]"
                                 }`}
                             >
-                                <Icon name="clock-3" className={`w-4 h-4 ${activeTab === "triage" ? "text-[#2dd4bf]" : "text-[#b8bec8]"}`} />
+                                <Icon name="clock-3" className={`w-3.5 h-3.5 shrink-0 ${activeTab === "triage" ? "text-[#2dd4bf]" : "text-[#9aa6b8]"}`} />
                                 <span>Евакуація</span>
-                                <div className="flex items-center gap-1 font-mono text-[10px] tabular-nums">
-                                    {(triageCounts.crit + triageCounts.heavy + triageCounts.med + triageCounts.light) > 0 && (
-                                        <span className="bg-[#d99b26]/20 text-[#d99b26] border border-[#d99b26]/50 px-1.5 py-0.5 rounded-sm font-semibold flex items-center gap-1">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-[#d99b26]"></span>
-                                            {triageCounts.crit + triageCounts.heavy + triageCounts.med + triageCounts.light} 300
-                                        </span>
-                                    )}
-                                    {triageCounts.dead > 0 && (
-                                        <span className="bg-[#17181b] text-[#f3f4f6] border border-[#2e3138] px-1.5 py-0.5 rounded-sm font-semibold">
-                                            {triageCounts.dead} 200
-                                        </span>
-                                    )}
-                                    {triageCounts.mia > 0 && (
-                                        <span className="bg-[#4c8ed9]/20 text-[#6fa8e6] border border-[#4c8ed9]/50 px-1.5 py-0.5 rounded-sm font-semibold">
-                                            {triageCounts.mia} ЗБВ
-                                        </span>
-                                    )}
-                                    {triageEpisodes.length === 0 && <span className={activeTab === "triage" ? "text-[#5eead4] text-[10px]" : "text-[#989fa9] text-[10px]"}>0</span>}
-                                </div>
+                                <span className={`h-[20px] px-1.5 rounded-sm border inline-flex items-center justify-center text-[10.5px] font-mono font-bold tabular-nums leading-none shrink-0 ${
+                                    activeTab === "triage"
+                                        ? "bg-[#0d1c1a] border-[#14b8a6]/45 text-[#5eead4]"
+                                        : triageEpisodes.length > 0
+                                            ? "bg-[rgba(217,155,38,0.14)] border-[rgba(217,155,38,0.45)] text-[#fcd34d]"
+                                            : "bg-[#14171c] border-[#2b3340] text-[#9aa6b8]"
+                                }`}>
+                                    {triageEpisodes.length}
+                                </span>
                             </button>
 
                             {/* Вкладка: Аналітика */}
                             <button 
                                 onClick={() => handleTabSwitch("analytics")} 
-                                className={`px-3 py-1.5 rounded-sm border transition-colors flex items-center gap-2 text-xs font-medium cursor-pointer select-none ${
+                                className={`h-8 px-3 rounded-sm border transition-colors inline-flex items-center gap-2 text-xs font-medium cursor-pointer select-none leading-none shrink-0 ${
                                     activeTab === "analytics" 
                                         ? "bg-[#122624] text-[#f0fdfa] border-[#14b8a6]/65 font-semibold" 
-                                        : "border-transparent text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429]"
+                                        : "border-transparent text-[#9aa6b8] hover:text-[#e6edf5] hover:bg-[#20262f]"
                                 }`}
                             >
-                                <Icon name="bar-chart-3" className={`w-4 h-4 ${activeTab === "analytics" ? "text-[#2dd4bf]" : "text-[#b8bec8]"}`} />
+                                <Icon name="bar-chart-3" className={`w-3.5 h-3.5 shrink-0 ${activeTab === "analytics" ? "text-[#2dd4bf]" : "text-[#9aa6b8]"}`} />
                                 <span>Аналітика</span>
                             </button>
 
                             {/* Вкладка: Лог */}
                             <button 
                                 onClick={() => handleTabSwitch("logs")} 
-                                className={`px-3 py-1.5 rounded-sm border transition-colors flex items-center gap-2 text-xs font-medium cursor-pointer select-none ${
+                                className={`h-8 px-3 rounded-sm border transition-colors inline-flex items-center gap-2 text-xs font-medium cursor-pointer select-none leading-none shrink-0 ${
                                     activeTab === "logs" 
                                         ? "bg-[#122624] text-[#f0fdfa] border-[#14b8a6]/65 font-semibold" 
-                                        : "border-transparent text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429]"
+                                        : "border-transparent text-[#9aa6b8] hover:text-[#e6edf5] hover:bg-[#20262f]"
                                 }`}
                             >
-                                <Icon name="history" className={`w-4 h-4 ${activeTab === "logs" ? "text-[#2dd4bf]" : "text-[#b8bec8]"}`} />
+                                <Icon name="history" className={`w-3.5 h-3.5 shrink-0 ${activeTab === "logs" ? "text-[#2dd4bf]" : "text-[#9aa6b8]"}`} />
                                 <span>Лог змін</span>
                             </button>
                         </div>
 
-                        {/* 3. Права частина: Кнопки дій */}
-                        <div className="flex items-center gap-2 flex-wrap">
+                        {/* 3. Права частина: Кнопки дій (32px) */}
+                        <div className="flex items-center gap-2 flex-wrap shrink-0">
                             <button 
                                 onClick={() => handleOpenAddWounded(null)} 
-                                className="px-3.5 py-1.5 bg-[#2b67ab] hover:bg-[#3577c2] text-white font-medium rounded-sm border border-[#4c8ed9]/60 transition-colors flex items-center gap-1.5 text-xs cursor-pointer"
+                                className="h-8 px-3.5 bg-[#2b67ab] hover:bg-[#3577c2] text-white font-semibold rounded-sm border border-[#4c8ed9]/60 transition-colors inline-flex items-center gap-1.5 text-xs cursor-pointer shrink-0 leading-none"
                             >
-                                <Icon name="plus" className="w-4 h-4" /> 
+                                <Icon name="plus" className="w-3.5 h-3.5 shrink-0" /> 
                                 <span>Створити запис</span>
                             </button>
 
                             <button 
                                 onClick={() => { setBatchCategory("sectors"); setIsBatchReplaceOpen(true); }} 
-                                className="px-3 py-1.5 bg-[#222429] hover:bg-[#2e3138] text-[#f3f4f6] border border-[#2e3138] hover:border-[#4c8ed9] rounded-sm transition-colors text-xs font-medium flex items-center gap-1.5 cursor-pointer" 
+                                className="h-8 px-3 bg-[#20262f] hover:bg-[#2b3340] text-[#e6edf5] border border-[#2b3340] hover:border-[#4c8ed9] rounded-sm transition-colors text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer shrink-0 leading-none" 
                                 title="Масова заміна та перейменування позицій / підрозділів у всій базі"
                             >
-                                <Icon name="repeat" className="w-3.5 h-3.5 text-[#4c8ed9]" /> 
+                                <Icon name="repeat" className="w-3.5 h-3.5 text-[#4c8ed9] shrink-0" /> 
                                 <span>Масова заміна</span>
                             </button>
                             
                             <button 
                                 onClick={() => setIsSettingsOpen(true)} 
-                                className="px-3 py-1.5 bg-[#222429] hover:bg-[#2e3138] text-[#f3f4f6] border border-[#2e3138] hover:border-[#4c8ed9] rounded-sm transition-colors text-xs font-medium flex items-center gap-1.5 cursor-pointer" 
+                                className="h-8 px-3 bg-[#20262f] hover:bg-[#2e3138] text-[#e6edf5] border border-[#2e3138] hover:border-[#4c8ed9] rounded-sm transition-colors text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer shrink-0 leading-none" 
                                 title="Довідники (Причини, Звання, Підрозділи, Позиції)"
                             >
-                                <Icon name="settings" className="w-3.5 h-3.5 text-[#b8bec8]" /> 
+                                <Icon name="settings" className="w-3.5 h-3.5 text-[#9aa6b8] shrink-0" /> 
                                 <span>Довідники</span>
-                            </button>
-                            
-                            <button 
-                                onClick={() => setIsBackupOpen(true)} 
-                                className="px-3 py-1.5 bg-[#222429] hover:bg-[#2e3138] text-[#f3f4f6] border border-[#2e3138] hover:border-[#4c8ed9] rounded-sm transition-colors text-xs font-medium flex items-center gap-1.5 cursor-pointer" 
-                                title="Управління базою, шифрований бекап AES-256"
-                            >
-                                <Icon name="shield-check" className="w-3.5 h-3.5 text-[#4c8ed9]" /> 
-                                <span>База / Бекап</span>
                             </button>
                         </div>
                     </header>

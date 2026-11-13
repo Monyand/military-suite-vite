@@ -78,21 +78,7 @@ input[type="number"] {
     font-variant-numeric: tabular-nums;
 }
 
-#sidebar { transition: width 0.2s ease-out; }
-.sidebar-collapsed { width: 5rem !important; }
-.sidebar-collapsed .sidebar-text { display: none; }
-.sidebar-collapsed .justify-between { justify-content: center; }
-
-/* Стилі для бейджа ротацій у згорнутому стані меню */
-.sidebar-collapsed #nav-rotations { position: relative; }
-.sidebar-collapsed #rotations-badge {
-    position: absolute;
-    top: 6px;
-    right: 8px;
-    padding: 2px 5px;
-    font-size: 10px;
-    line-height: 1;
-}
+#sidebar { transition: none; }
 
 .modal-overlay {
     display: none;

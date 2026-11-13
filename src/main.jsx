@@ -15,6 +15,7 @@ import { RootApp } from './app/App.jsx';
 import { SharedDictionaries } from './core/dictionary-service.js';
 
 // No StrictMode while the legacy DOM journal has imperative startup effects.
+window.SharedDictionaries = SharedDictionaries;
 SharedDictionaries.initialize().then(() => loadModules()).then(modules => {
   createRoot(document.getElementById('root')).render(<RootApp {...modules} />);
 }).catch(error => {

@@ -31,11 +31,9 @@ const { chromium } = require('playwright');
             await page.locator('#tab-' + name).waitFor({ state: 'visible' });
             assert.deepEqual(errors, [], 'Journal navigation errors: ' + name);
         }
-        await page.getByTitle('Експорт зашифрованої копії', { exact: true }).click();
-        await page.locator('#modal-export-password').waitFor({ state: 'visible' });
-        await page.locator('#modal-export-password').getByRole('button', { name: /Скасувати/ }).click();
-        await page.locator('#modal-export-password').waitFor({ state: 'hidden' });
-        console.log('PASS: journal navigation and native backup modal');
+        assert.equal(await page.getByTitle('Експорт зашифрованої копії').count(), 0, 'Local tactical backup button should be removed');
+        assert.equal(await page.locator('#modal-tactical-backup').count(), 0, 'Local tactical backup modal should be removed');
+        console.log('PASS: journal navigation and local backup controls retired');
 
         const password = 'test-only-password-2026';
         await page.getByRole('button', { name: 'Створити Єдиний Бекап', exact: true }).click();

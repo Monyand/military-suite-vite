@@ -25,7 +25,7 @@
     </div>
 
     <!-- Обгортка основного додатку -->
-    <div id="app-wrapper" class="h-full flex flex-col md:flex-row bg-[#101113] text-[#f3f4f6]">
+    <div id="app-wrapper" class="h-full flex flex-col bg-[#101113] text-[#f3f4f6]">
         
         <div id="toast" class="fixed top-16 right-4 bg-[#222429] text-[#f3f4f6] border border-[#4c8ed9] px-4 py-3 rounded-sm hidden z-[220] transition-opacity items-center space-x-2">
             <i data-lucide="check" class="w-4 h-4 text-[#4c8ed9]"></i><span id="toast-msg" class="font-medium text-sm"></span>
@@ -52,82 +52,42 @@
             <button onclick="cancelTargetMode()" class="bg-[#222429] hover:bg-[#2e3138] px-3 py-1 rounded-sm text-xs transition-colors font-bold border border-[#3c404a] text-[#f3f4f6] cursor-pointer">Скасувати (Esc)</button>
         </div>
 
-        <div id="sidebar" class="w-full md:w-72 bg-[#17181b] text-[#b8bec8] flex flex-col z-10 shrink-0 h-auto md:h-full border-r border-[#2e3138]">
-            <div class="px-3.5 py-3 flex items-center justify-between bg-[#101113] min-h-[72px] border-b border-[#2e3138]">
-                <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                    <div class="w-9 h-9 rounded-sm bg-[#17181b] border border-[#2e3138] flex items-center justify-center shrink-0">
-                        <i data-lucide="shield-check" class="text-[#4c8ed9] w-5 h-5"></i>
+        <header id="sidebar" class="w-full bg-[#181c22] border-b border-[#2b3340] px-3 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2.5 shrink-0 z-20 select-none">
+            <div class="flex items-center gap-3 overflow-x-auto custom-scrollbar flex-1 min-w-0">
+                <div class="flex items-center gap-2 shrink-0">
+                    <div class="w-7 h-7 rounded-sm bg-[#111418] border border-[#2b3340] flex items-center justify-center shrink-0">
+                        <i data-lucide="shield-check" class="text-[#4c8ed9] w-4 h-4"></i>
                     </div>
-                    <div class="sidebar-text min-w-0 flex-1">
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            <h1 class="text-sm font-bold text-[#f3f4f6] leading-tight font-sans tracking-tight">ТАКТ-ОБЛІК</h1>
-                        </div>
-                        <div class="mt-0.5">
-                            <span class="text-[9px] text-[#93c5fd] uppercase tracking-wider font-mono font-semibold border border-[#2e3138] bg-[#17181b] px-1.5 py-0.5 rounded-sm inline-block">TAKT_ACCOUNT</span>
-                        </div>
-                    </div>
+                    <span class="text-sm font-bold text-[#e6edf5] tracking-tight font-sans whitespace-nowrap">Журнал О/С</span>
                 </div>
-                <button onclick="toggleSidebar()" class="text-[#b8bec8] hover:text-[#f3f4f6] hidden md:flex shrink-0 p-1.5 rounded-sm hover:bg-[#222429] border border-transparent hover:border-[#2e3138] transition-colors items-center justify-center ml-1 cursor-pointer" title="Згорнути/Розгорнути меню">
-                    <i data-lucide="menu" class="w-5 h-5"></i>
-                </button>
+                <div class="h-4 w-px bg-[#2b3340] shrink-0 mx-0.5 hidden sm:block"></div>
+                <nav class="flex items-center gap-1 shrink-0">
+                    <button id="nav-dashboard" onclick="switchTab('dashboard')" class="px-3 py-1.5 rounded-sm transition-colors border-b-2 bg-[#20262f] text-white border-[#4c8ed9] font-semibold text-xs cursor-pointer flex items-center gap-1.5 whitespace-nowrap" title="Зведення">
+                        <i data-lucide="activity" class="w-3.5 h-3.5 shrink-0"></i>
+                        <span>Зведення</span>
+                    </button>
+                    <button id="nav-personnel" onclick="switchTab('personnel')" class="px-3 py-1.5 rounded-sm transition-colors border-b-2 text-[#9aa6b8] hover:text-[#e6edf5] hover:bg-[#20262f] border-transparent font-medium text-xs cursor-pointer flex items-center gap-1.5 whitespace-nowrap" title="Списки">
+                        <i data-lucide="users" class="w-3.5 h-3.5 shrink-0"></i>
+                        <span>Списки</span>
+                    </button>
+                    <button id="nav-positions" onclick="switchTab('positions')" class="px-3 py-1.5 rounded-sm transition-colors border-b-2 text-[#9aa6b8] hover:text-[#e6edf5] hover:bg-[#20262f] border-transparent font-medium text-xs cursor-pointer flex items-center gap-1.5 whitespace-nowrap" title="Позиції">
+                        <i data-lucide="map" class="w-3.5 h-3.5 shrink-0"></i>
+                        <span>Позиції</span>
+                    </button>
+                    <button id="nav-rotations" onclick="switchTab('rotations')" class="px-3 py-1.5 rounded-sm transition-colors border-b-2 text-[#9aa6b8] hover:text-[#e6edf5] hover:bg-[#20262f] border-transparent font-medium text-xs cursor-pointer flex items-center gap-1.5 whitespace-nowrap" title="Планові ротації">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5 shrink-0"></i>
+                        <span>Ротації</span>
+                        <span id="rotations-badge" class="hidden bg-[#e05252] text-white text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-sm ml-0.5">0</span>
+                    </button>
+                    <button id="nav-journal" onclick="switchTab('journal')" class="px-3 py-1.5 rounded-sm transition-colors border-b-2 text-[#9aa6b8] hover:text-[#e6edf5] hover:bg-[#20262f] border-transparent font-medium text-xs cursor-pointer flex items-center gap-1.5 whitespace-nowrap" title="Журнал виходів">
+                        <i data-lucide="book-open" class="w-3.5 h-3.5 shrink-0"></i>
+                        <span>Журнал виходів</span>
+                    </button>
+                </nav>
             </div>
-            <nav class="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
-                <button id="nav-dashboard" onclick="switchTab('dashboard')" class="w-full flex items-center space-x-3 px-3 py-2 rounded-sm transition-colors border bg-[#162235] text-[#eff6ff] border-[#3b82f6]/65 font-semibold text-sm cursor-pointer" title="Зведення"><i data-lucide="activity" class="w-4 h-4 shrink-0"></i><span class="sidebar-text whitespace-nowrap">Зведення</span></button>
-                <button id="nav-personnel" onclick="switchTab('personnel')" class="w-full flex items-center space-x-3 px-3 py-2 rounded-sm transition-colors border text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429] border-transparent font-medium text-sm cursor-pointer" title="Списки"><i data-lucide="users" class="w-4 h-4 shrink-0"></i><span class="sidebar-text whitespace-nowrap">Списки</span></button>
-                <button id="nav-positions" onclick="switchTab('positions')" class="w-full flex items-center space-x-3 px-3 py-2 rounded-sm transition-colors border text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429] border-transparent font-medium text-sm cursor-pointer" title="Позиції"><i data-lucide="map" class="w-4 h-4 shrink-0"></i><span class="sidebar-text whitespace-nowrap">Позиції</span></button>
-                <button id="nav-rotations" onclick="switchTab('rotations')" class="w-full flex items-center justify-between px-3 py-2 rounded-sm transition-colors border text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429] border-transparent font-medium text-sm cursor-pointer" title="Планові ротації">
-                    <div class="flex items-center space-x-3"><i data-lucide="refresh-cw" class="w-4 h-4 shrink-0"></i><span class="sidebar-text whitespace-nowrap">Ротації</span></div>
-                    <span id="rotations-badge" class="hidden bg-[#e05252] text-white text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-sm">0</span>
-                </button>
-                <button id="nav-journal" onclick="switchTab('journal')" class="w-full flex items-center space-x-3 px-3 py-2 rounded-sm transition-colors border text-[#c2c7d0] hover:text-[#ffffff] hover:bg-[#222429] border-transparent font-medium text-sm cursor-pointer" title="Журнал виходів"><i data-lucide="book-open" class="w-4 h-4 shrink-0"></i><span class="sidebar-text whitespace-nowrap">Журнал виходів</span></button>
-            </nav>
-            <div class="p-3 bg-[#101113] mt-auto border-t border-[#2e3138] space-y-2">
-                <button onclick="toggleDarkMode()" class="w-full flex items-center space-x-3 px-3 py-2 bg-[#17181b] hover:bg-[#222429] text-[#f3f4f6] border border-[#2e3138] hover:border-[#3c404a] rounded-sm text-xs font-medium transition-colors justify-center md:justify-start cursor-pointer" title="Темна/Світла тема"><i data-lucide="moon" class="w-4 h-4 shrink-0 text-[#fcd34d]"></i><span class="sidebar-text whitespace-nowrap">Тема інтерфейсу</span></button>
-                
-                <!-- Диск / Диспетчер статус -->
-                <button id="diskSyncBtn" onclick="checkDiskBackupStatus(true)" class="w-full flex items-center space-x-2.5 px-3 py-2 bg-[#17181b] hover:bg-[#222429] text-[#b8bec8] hover:text-[#f3f4f6] border border-[#2e3138] hover:border-[#3c404a] rounded-sm text-xs font-mono tabular-nums font-medium transition-colors justify-center md:justify-start cursor-pointer" title="Синхронізація з жорстким диском (натисніть для перевірки/оновлення)">
-                    <span id="diskSyncDot" class="w-2 h-2 rounded-full bg-[#989fa9] shrink-0"></span>
-                    <span id="diskSyncLabel" class="sidebar-text truncate">Диск: Перевірка...</span>
-                </button>
-
-                <div class="flex items-center space-x-1.5">
-                    <button onclick="openExportModal()" class="flex-1 flex items-center space-x-2 px-3 py-2 bg-[rgba(52,168,115,0.12)] hover:bg-[rgba(52,168,115,0.22)] text-[#6ee7b7] rounded-sm text-xs font-medium transition-colors justify-center md:justify-start border border-[rgba(52,168,115,0.38)] cursor-pointer" title="Експорт зашифрованої копії">
-                        <i data-lucide="lock" class="w-3.5 h-3.5 shrink-0"></i><span class="sidebar-text whitespace-nowrap">Створити бекап</span>
-                    </button>
-                    <button onclick="openBackupSettingsModal()" class="p-2 bg-[#17181b] hover:bg-[#222429] text-[#b8bec8] hover:text-[#f3f4f6] rounded-sm border border-[#2e3138] hover:border-[#3c404a] transition-colors shrink-0 cursor-pointer" title="Розклад нагадувань">
-                        <i data-lucide="clock" class="w-4 h-4"></i>
-                    </button>
-                </div>
-
-                <div class="grid grid-cols-2 gap-1.5">
-                    <button onclick="forceSaveToDisk()" class="flex items-center space-x-1.5 px-2.5 py-1.5 bg-[#17181b] hover:bg-[#222429] text-[#6ee7b7] border border-[#2e3138] hover:border-[rgba(52,168,115,0.45)] rounded-sm text-xs font-medium transition-colors justify-center cursor-pointer" title="Зберегти на жорсткий диск">
-                        <i data-lucide="hard-drive" class="w-3.5 h-3.5 shrink-0"></i><span class="sidebar-text truncate">На диск</span>
-                    </button>
-                    <button onclick="restoreFromDiskBackup()" class="flex items-center space-x-1.5 px-2.5 py-1.5 bg-[#17181b] hover:bg-[#222429] text-[#93c5fd] border border-[#2e3138] hover:border-[#4c8ed9] rounded-sm text-xs font-medium transition-colors justify-center cursor-pointer" title="Відновити з диска (Диспетчер)">
-                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5 shrink-0"></i><span class="sidebar-text truncate">З диска</span>
-                    </button>
-                </div>
-
-                <label class="w-full flex items-center space-x-3 px-3 py-2 bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] hover:border-[#3c404a] text-[#f3f4f6] rounded-sm text-xs font-medium cursor-pointer transition-colors justify-center md:justify-start" title="Відновити дані з файлу">
-                    <i data-lucide="file-key-2" class="w-4 h-4 shrink-0 text-[#4c8ed9]"></i><span class="sidebar-text whitespace-nowrap">Відновити з файлу</span>
-                    <input type="file" accept=".enc,.json" onchange="handleFileSelect(event)" class="hidden"/>
-                </label>
-                <button onclick="wipeAllDataPrompt()" class="w-full flex items-center space-x-3 px-3 py-2 bg-[rgba(224,82,82,0.12)] hover:bg-[rgba(224,82,82,0.22)] text-[#fca5a5] rounded-sm text-xs font-medium transition-colors justify-center md:justify-start border border-[rgba(224,82,82,0.4)] mt-2 cursor-pointer" title="Повністю очистити всі дані з пристрою">
-                    <i data-lucide="bomb" class="w-4 h-4 shrink-0"></i><span class="sidebar-text whitespace-nowrap">Очистити базу</span>
-                </button>
-            </div>
-        </div>
+        </header>
 
         <div class="flex-1 flex flex-col w-full h-full relative overflow-hidden bg-[#101113]">
-            
-            <!-- БАНЕР НАГАДУВАННЯ ПРО БЕКАП -->
-            <div id="backup-reminder-banner" class="hidden bg-[rgba(224,82,82,0.14)] text-[#fca5a5] border-b border-[rgba(224,82,82,0.5)] px-4 py-2.5 z-40 shrink-0 flex-col sm:flex-row justify-between items-center gap-3">
-                <div class="flex items-center space-x-2 font-bold text-sm sm:text-base">
-                    <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0 text-[#e05252]"></i>
-                    <span>УВАГА! Настав час планового резервного копіювання бази!</span>
-                </div>
-                <button onclick="openExportModal()" class="bg-[#e05252] hover:bg-[#dc2626] text-white border border-[#e05252] px-3.5 py-1.5 rounded-sm text-xs font-bold w-full sm:w-auto transition-colors whitespace-nowrap cursor-pointer">Зробити бекап</button>
-            </div>
 
             <div class="p-4 md:p-6 overflow-y-auto custom-scrollbar flex-1 w-full">
                 <div class="w-full">
@@ -252,22 +212,22 @@
                     </div>
 
                     <!-- TAB: POSITIONS -->
-                    <div id="tab-positions" class="space-y-6 hidden">
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[#2e3138] pb-4 gap-4">
-                            <h2 class="text-xl font-bold text-[#f3f4f6] flex items-center gap-3 tracking-tight">
+                    <div id="tab-positions" class="space-y-5 hidden">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[#2b3340] pb-3 gap-3">
+                            <h2 class="text-lg font-bold text-[#e6edf5] flex items-center gap-2.5 tracking-tight">
                                 <span>Карта бойових позицій</span>
-                                <span class="bg-[rgba(224,82,82,0.12)] text-[#fca5a5] text-xs font-mono font-bold tabular-nums px-2 py-0.5 rounded-sm border border-[rgba(224,82,82,0.45)] flex items-center" title="Особового складу на бойових">
-                                    <i data-lucide="swords" class="w-3.5 h-3.5 mr-1.5"></i><span id="pos-combat-count-badge">0</span>
+                                <span class="bg-[rgba(224,82,82,0.12)] text-[#fca5a5] text-xs font-mono font-bold tabular-nums px-2 py-0.5 rounded-sm border border-[rgba(224,82,82,0.45)] inline-flex items-center gap-1.5" title="Особового складу на бойових">
+                                    <i data-lucide="swords" class="w-3.5 h-3.5"></i><span id="pos-combat-count-badge">0</span>
                                 </span>
                             </h2>
                             <div class="flex gap-2 w-full sm:w-auto">
-                                <button onclick="toggleSortingLock()" id="btn-lock-sort" class="bg-[#222429] hover:bg-[#2e3138] text-[#f3f4f6] border border-[#2e3138] hover:border-[#3c404a] px-3.5 py-2 rounded-sm flex items-center text-xs font-medium transition-colors flex-1 sm:flex-none justify-center cursor-pointer">
-                                    <i data-lucide="lock" class="w-4 h-4 mr-2"></i><span>Закріплено</span>
+                                <button onclick="toggleSortingLock()" id="btn-lock-sort" class="bg-[#20262f] hover:bg-[#2b3340] text-[#e6edf5] border border-[#2b3340] hover:border-[#384252] px-3.5 py-1.5 rounded-sm flex items-center text-xs font-medium transition-colors flex-1 sm:flex-none justify-center cursor-pointer">
+                                    <i data-lucide="lock" class="w-3.5 h-3.5 mr-1.5 text-[#9aa6b8]"></i><span>Закріплено</span>
                                 </button>
-                                <button onclick="openPositionModal()" class="bg-[#2b67ab] hover:bg-[#4c8ed9] text-white border border-[#4c8ed9] font-semibold px-4 py-2 rounded-sm flex items-center space-x-2 text-xs transition-colors flex-1 sm:flex-none justify-center cursor-pointer"><i data-lucide="plus" class="w-4 h-4"></i><span>Додати локацію</span></button>
+                                <button onclick="openPositionModal()" class="bg-[#2b67ab] hover:bg-[#4c8ed9] text-white border border-[#4c8ed9] font-semibold px-3.5 py-1.5 rounded-sm flex items-center space-x-1.5 text-xs transition-colors flex-1 sm:flex-none justify-center cursor-pointer"><i data-lucide="plus" class="w-3.5 h-3.5"></i><span>Додати позицію</span></button>
                             </div>
                         </div>
-                        <div id="positions-container" class="space-y-6"></div>
+                        <div id="positions-container" class="space-y-5"></div>
                     </div>
                     <!-- TAB: ROTATIONS -->
                     <div id="tab-rotations" class="space-y-4 hidden flex-col h-full">
@@ -319,11 +279,6 @@
     <datalist id="unit-datalist"></datalist>
 
     <!-- MODALS -->
-    <!-- Модалки для шифрування -->
-    <div id="modal-export-password" class="fixed inset-0 bg-black/75 modal-overlay p-4 z-[200] overscroll-contain"><div class="bg-[#17181b] rounded-sm w-full max-w-sm overflow-hidden border border-[#2e3138] text-[#f3f4f6]"><div class="px-6 py-4 border-b border-[#2e3138] flex justify-between items-center bg-[#222429]"><h3 class="font-bold text-base text-[#f3f4f6] flex items-center"><i data-lucide="lock" class="w-4 h-4 mr-2 text-[#4c8ed9]"></i>Пароль резервної копії</h3><button onclick="closeModal('modal-export-password')" class="text-[#b8bec8] hover:text-[#f3f4f6] cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button></div><form onsubmit="executeEncryptedExport(event)" class="p-6 space-y-4"><div class="bg-[rgba(217,155,38,0.12)] text-[#fcd34d] p-3 rounded-sm text-xs border border-[rgba(217,155,38,0.4)]">Придумайте пароль. Файл буде зашифровано алгоритмом AES-256. <b>Без цього пароля дані відновити неможливо!</b></div><div class="space-y-1"><label class="text-xs font-semibold text-[#b8bec8] uppercase">Пароль для файлу</label><input required type="password" id="export-pwd" class="w-full p-2 border border-[#2e3138] rounded-sm bg-[#101113] text-[#f3f4f6] font-mono focus:border-[#4c8ed9] outline-none"/></div><div class="pt-4 flex justify-end space-x-2"><button type="button" onclick="closeModal('modal-export-password')" class="px-4 py-2 text-[#f3f4f6] bg-[#222429] hover:bg-[#2e3138] border border-[#2e3138] rounded-sm text-sm cursor-pointer">Скасувати</button><button type="submit" class="px-4 py-2 bg-[#2b67ab] hover:bg-[#4c8ed9] border border-[#4c8ed9] text-white rounded-sm flex items-center text-sm font-semibold cursor-pointer"><i data-lucide="download" class="w-4 h-4 mr-2"></i>Завантажити</button></div></form></div></div>
-    <div id="modal-import-password" class="fixed inset-0 bg-black/75 modal-overlay p-4 z-[200] overscroll-contain"><div class="bg-[#17181b] rounded-sm w-full max-w-sm overflow-hidden border border-[#2e3138] text-[#f3f4f6]"><div class="px-6 py-4 border-b border-[#2e3138] flex justify-between items-center bg-[#222429]"><h3 class="font-bold text-base text-[#f3f4f6] flex items-center"><i data-lucide="key" class="w-4 h-4 mr-2 text-[#4c8ed9]"></i>Введіть пароль</h3><button onclick="closeImportPasswordModal()" class="text-[#b8bec8] hover:text-[#f3f4f6] cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button></div><form onsubmit="executeEncryptedImport(event)" class="p-6 space-y-4"><div class="space-y-1"><label class="text-xs font-semibold text-[#b8bec8] uppercase">Пароль розшифровки</label><input required type="password" id="import-pwd" class="w-full p-2 border border-[#2e3138] rounded-sm bg-[#101113] text-[#f3f4f6] font-mono focus:border-[#4c8ed9] outline-none"/></div><div class="pt-4 flex justify-end space-x-2"><button type="button" onclick="closeImportPasswordModal()" class="px-4 py-2 text-[#f3f4f6] bg-[#222429] hover:bg-[#2e3138] border border-[#2e3138] rounded-sm text-sm cursor-pointer">Скасувати</button><button type="submit" class="px-4 py-2 bg-[#2b67ab] hover:bg-[#4c8ed9] border border-[#4c8ed9] text-white rounded-sm flex items-center text-sm font-semibold cursor-pointer"><i data-lucide="unlock" class="w-4 h-4 mr-2"></i>Відновити</button></div></form></div></div>
-    
-    <!-- Існуючі модалки -->
     <div id="modal-bulk-status" class="fixed inset-0 bg-black/75 modal-overlay p-4 z-[200] overscroll-contain"><div class="bg-[#17181b] rounded-sm w-full max-w-lg overflow-hidden border border-[#2e3138] text-[#f3f4f6]"><div class="px-6 py-4 border-b border-[#2e3138] flex justify-between items-center bg-[#222429]"><h3 class="font-bold text-base text-[#f3f4f6] flex items-center space-x-2"><i data-lucide="users-2" class="w-5 h-5 text-[#4c8ed9]"></i><span>Масовий статус</span></h3><button onclick="closeModal('modal-bulk-status')" class="text-[#b8bec8] hover:text-[#f3f4f6] cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button></div><div class="p-6 space-y-4"><div class="bg-[rgba(76,142,217,0.12)] text-[#93c5fd] p-3 rounded-sm text-xs border border-[rgba(76,142,217,0.35)] mb-2"><p>Вставте список ПІБ (по одному на рядок), ПІБ має точно збігатися з базою.</p></div><div class="space-y-1"><label class="text-xs font-semibold text-[#b8bec8] uppercase">Новий статус</label><select id="bulk-status-select" class="w-full p-2 border border-[#2e3138] rounded-sm bg-[#101113] text-[#f3f4f6] focus:border-[#4c8ed9] outline-none"></select></div><div class="space-y-1"><label class="text-xs font-semibold text-[#b8bec8] uppercase">Список ПІБ</label><textarea id="bulk-names" class="w-full h-40 p-3 border border-[#2e3138] rounded-sm font-mono text-sm whitespace-pre bg-[#101113] text-[#f3f4f6] focus:border-[#4c8ed9] outline-none"></textarea></div></div><div class="px-6 py-4 border-t border-[#2e3138] flex justify-end space-x-2 bg-[#222429]"><button onclick="closeModal('modal-bulk-status')" class="px-4 py-2 text-[#f3f4f6] bg-[#17181b] hover:bg-[#2e3138] border border-[#2e3138] rounded-sm text-sm cursor-pointer">Скасувати</button><button onclick="submitBulkStatus()" class="px-4 py-2 bg-[#2b67ab] hover:bg-[#4c8ed9] border border-[#4c8ed9] text-white rounded-sm flex items-center text-sm font-semibold cursor-pointer"><i data-lucide="check-circle-2" class="w-4 h-4 mr-2"></i>Застосувати</button></div></div></div>
     
     <div id="modal-bulk-unit" class="fixed inset-0 bg-black/75 modal-overlay p-4 z-[200] overscroll-contain"><div class="bg-[#17181b] rounded-sm w-full max-w-lg overflow-hidden border border-[#2e3138] text-[#f3f4f6]"><div class="px-6 py-4 border-b border-[#2e3138] flex justify-between items-center bg-[#222429]"><h3 class="font-bold text-base text-[#f3f4f6] flex items-center space-x-2"><i data-lucide="building" class="w-5 h-5 text-[#4c8ed9]"></i><span>Масовий підрозділ</span></h3><button onclick="closeModal('modal-bulk-unit')" class="text-[#b8bec8] hover:text-[#f3f4f6] cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button></div><div class="p-6 space-y-4"><div class="bg-[rgba(76,142,217,0.12)] text-[#93c5fd] p-3 rounded-sm text-xs border border-[rgba(76,142,217,0.35)] mb-2"><p>Вставте список ПІБ. <b>Якщо бійця немає в базі, його буде створено автоматично</b>.</p></div><div class="space-y-1"><label class="text-xs font-semibold text-[#b8bec8] uppercase">Новий підрозділ</label><input type="text" id="bulk-unit-input" list="unit-datalist" class="w-full p-2 border border-[#2e3138] rounded-sm bg-[#101113] text-[#f3f4f6] placeholder-[#989fa9] focus:border-[#4c8ed9] outline-none" placeholder="Введіть назву або оберіть..."/></div><div class="space-y-1"><label class="text-xs font-semibold text-[#b8bec8] uppercase">Список ПІБ (по одному на рядок)</label><textarea id="bulk-unit-names" class="w-full h-40 p-3 border border-[#2e3138] rounded-sm font-mono text-sm whitespace-pre bg-[#101113] text-[#f3f4f6] placeholder-[#989fa9] focus:border-[#4c8ed9] outline-none" placeholder="Іванов Іван Іванович..."></textarea></div></div><div class="px-6 py-4 border-t border-[#2e3138] flex justify-end space-x-2 bg-[#222429]"><button onclick="closeModal('modal-bulk-unit')" class="px-4 py-2 text-[#f3f4f6] bg-[#17181b] hover:bg-[#2e3138] border border-[#2e3138] rounded-sm text-sm cursor-pointer">Скасувати</button><button onclick="submitBulkUnit()" class="px-4 py-2 bg-[#2b67ab] hover:bg-[#4c8ed9] border border-[#4c8ed9] text-white rounded-sm flex items-center text-sm font-semibold cursor-pointer"><i data-lucide="check-circle-2" class="w-4 h-4 mr-2"></i>Застосувати</button></div></div></div>
@@ -352,8 +307,6 @@
 
     <div id="modal-rotation" class="fixed inset-0 bg-black/75 modal-overlay p-4 z-[200] overscroll-contain"><div class="bg-[#17181b] rounded-sm w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] border border-[#2e3138] text-[#f3f4f6]"><div class="px-6 py-4 border-b border-[#2e3138] flex justify-between items-center bg-[#222429] shrink-0"><h3 class="font-bold text-base text-[#f3f4f6] flex items-center space-x-2"><i data-lucide="refresh-cw" class="w-4 h-4 text-[#4c8ed9]"></i><span>Планова ротація / Заявка</span></h3><button type="button" onclick="closeModal('modal-rotation')" class="text-[#b8bec8] hover:text-[#f3f4f6] cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button></div><div class="p-6 overflow-y-auto custom-scrollbar overscroll-contain space-y-4 flex-1"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="space-y-1"><label class="text-xs font-semibold text-[#b8bec8] uppercase">Назва (або старший) *</label><input required type="text" id="rot-name" class="w-full p-2 border border-[#2e3138] rounded-sm bg-[#101113] text-[#f3f4f6] placeholder-[#989fa9] focus:border-[#4c8ed9] outline-none" placeholder="Напр: Заміна на СП-1"/></div><div class="space-y-1"><label class="text-xs font-semibold text-[#b8bec8] uppercase">Плановий час *</label><input required type="datetime-local" id="rot-time" class="w-full p-2 border border-[#2e3138] rounded-sm bg-[#101113] text-[#f3f4f6] tabular-nums focus:border-[#4c8ed9] outline-none"/></div></div><div class="border-t border-[#2e3138] pt-4 mt-4"><label class="text-xs font-semibold text-[#b8bec8] uppercase mb-2 block">Особовий склад (Пошук)</label><div class="flex gap-2 mb-2"><select id="rot-dir" class="p-2 border border-[#2e3138] rounded-sm bg-[#101113] text-[#f3f4f6] font-bold text-sm w-32 shrink-0 focus:border-[#4c8ed9] outline-none"><option value="in">ЗАХОДИТЬ</option><option value="out">ВИХОДИТЬ</option></select><div class="relative flex-1"><input type="text" id="rot-search" oninput="handleRotSearch()" placeholder="Пошук бійця..." class="w-full pl-9 pr-3 py-2 border border-[#2e3138] rounded-sm bg-[#101113] text-[#f3f4f6] placeholder-[#989fa9] text-sm focus:border-[#4c8ed9] outline-none"/><i data-lucide="search" class="absolute left-3 top-2.5 text-[#989fa9] w-4 h-4"></i></div></div><ul id="rot-search-results" class="bg-[#101113] rounded-sm border border-[#2e3138] divide-y divide-[#2e3138] mb-4 max-h-32 overflow-y-auto custom-scrollbar empty:hidden"></ul><label class="text-xs font-semibold text-[#b8bec8] uppercase mb-2 block">Учасники заявки</label><ul id="rot-members-list" class="space-y-2"></ul></div></div><div class="px-6 py-4 border-t border-[#2e3138] bg-[#222429] flex justify-end shrink-0 space-x-2"><button type="button" onclick="closeModal('modal-rotation')" class="px-4 py-2 text-[#f3f4f6] bg-[#17181b] hover:bg-[#2e3138] border border-[#2e3138] rounded-sm transition-colors text-sm font-medium cursor-pointer">Скасувати</button><button type="button" onclick="saveRotation()" class="px-4 py-2 bg-[#2b67ab] hover:bg-[#4c8ed9] border border-[#4c8ed9] text-white rounded-sm transition-colors text-sm font-semibold flex items-center cursor-pointer"><i data-lucide="check" class="w-4 h-4 mr-2"></i>Зберегти</button></div></div></div>
 
-    <!-- МОДАЛКА: НАЛАШТУВАННЯ БЕКАПІВ -->
-    <div id="modal-backup-settings" class="fixed inset-0 bg-black/75 modal-overlay p-4 z-[200] overscroll-contain"><div class="bg-[#17181b] rounded-sm w-full max-w-sm overflow-hidden border border-[#2e3138] text-[#f3f4f6]"><div class="px-6 py-4 border-b border-[#2e3138] flex justify-between items-center bg-[#222429]"><h3 class="font-bold text-base text-[#f3f4f6] flex items-center"><i data-lucide="clock" class="w-4 h-4 mr-2 text-[#4c8ed9]"></i>Графік бекапів</h3><button onclick="closeModal('modal-backup-settings')" class="text-[#b8bec8] hover:text-[#f3f4f6] cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button></div><div class="p-6 space-y-4"><div class="bg-[rgba(76,142,217,0.12)] text-[#93c5fd] p-3 rounded-sm text-xs border border-[rgba(76,142,217,0.35)]">Додайте час (ГГ:ХХ), коли програма має нагадати про необхідність створення резервної копії.</div><div class="flex gap-2"><input type="time" id="new-backup-time" class="flex-1 p-2 border border-[#2e3138] rounded-sm bg-[#101113] text-[#f3f4f6] tabular-nums focus:border-[#4c8ed9] outline-none"/><button onclick="addBackupTime()" class="px-3.5 py-2 bg-[#2b67ab] hover:bg-[#4c8ed9] border border-[#4c8ed9] text-white rounded-sm flex items-center text-xs font-semibold cursor-pointer"><i data-lucide="plus" class="w-4 h-4 mr-1"></i>Додати</button></div><div class="mt-4"><label class="text-xs font-semibold text-[#b8bec8] uppercase mb-2 block">Встановлені нагадування:</label><ul id="backup-times-list" class="space-y-2 tabular-nums"></ul></div></div><div class="px-6 py-4 border-t border-[#2e3138] flex justify-end bg-[#222429]"><button onclick="closeModal('modal-backup-settings')" class="px-4 py-2 bg-[#17181b] hover:bg-[#2e3138] border border-[#2e3138] text-[#f3f4f6] rounded-sm text-sm font-medium cursor-pointer">Закрити</button></div></div></div>
     <!-- CONTEXT MENU HTML -->
     <div id="soldier-context-menu" class="hidden absolute z-[100] bg-[#17181b] rounded-sm border border-[#3c404a] text-[#f3f4f6] w-52 py-1.5 text-sm flex-col">
         <button onclick="cmAction('copy_pib')" class="flex items-center px-4 py-2 hover:bg-[#222429] text-left font-medium text-[#6ee7b7] cursor-pointer"><i data-lucide="copy" class="w-4 h-4 mr-2 text-[#34a873]"></i> Копіювати ПІБ</button>
