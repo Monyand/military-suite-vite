@@ -13,9 +13,9 @@ function ReviewDialog({ title, children, onClose }) {
             else if (!event.shiftKey && document.activeElement === fields.at(-1)) { event.preventDefault(); fields[0]?.focus(); }
         }
     }}><section ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-label={title} className="sd-panel" style={{ maxWidth: 920 }}>
-        <header className="sd-header"><h2>{title}</h2><button type="button" onClick={onClose}>Закрити</button></header>
-        <div className="sd-main" style={{ overflow: 'auto', padding: 20 }}>{children}</div>
-    </section></div>;
+            <header className="sd-header"><h2>{title}</h2><button type="button" onClick={onClose}>Закрити</button></header>
+            <div className="sd-main" style={{ overflow: 'auto', padding: 20 }}>{children}</div>
+        </section></div>;
 }
 
 export function StatusHistoryChainBadge({ episodes = [], onReview }) {
