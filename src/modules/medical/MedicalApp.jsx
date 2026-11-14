@@ -4220,7 +4220,7 @@ const MedicalApp = (function() {
                             {/* Вкладка: Втрати о/с */}
                             <button 
                                 onClick={() => handleTabSwitch("list")} 
-                                aria-label={`Журнал ${stats.lossesCount}`}
+                                aria-label={`Журнал ${showOnlyLatest ? stats.lossesSoldiersCount : stats.lossesCount}`}
                                 title="Журнал втрат особового складу (300, 200, ЗБВ)"
                                 className={`h-8 px-3 rounded-sm border transition-colors inline-flex items-center gap-2 text-xs font-medium cursor-pointer select-none leading-none shrink-0 ${
                                     activeTab === "list" 
@@ -4235,14 +4235,14 @@ const MedicalApp = (function() {
                                         ? "bg-[#0d1c1a] border-[#14b8a6]/45 text-[#5eead4]" 
                                         : "bg-[#14171c] border-[#2b3340] text-[#9aa6b8]"
                                 }`}>
-                                    {stats.lossesCount}
+                                    {showOnlyLatest ? stats.lossesSoldiersCount : stats.lossesCount}
                                 </span>
                             </button>
 
                             {/* Вкладка: Облік СЗЧ */}
                             <button 
                                 onClick={() => handleTabSwitch("awol")} 
-                                aria-label={`Облік СЗЧ ${stats.awolFilteredCount}`}
+                                aria-label={`Облік СЗЧ ${showOnlyLatest ? stats.awolTotal : stats.awolFilteredCount}`}
                                 title="Облік військовослужбовців СЗЧ та дезертирства"
                                 className={`h-8 px-3 rounded-sm border transition-colors inline-flex items-center gap-2 text-xs font-medium cursor-pointer select-none leading-none shrink-0 ${
                                     activeTab === "awol" 
@@ -4257,7 +4257,7 @@ const MedicalApp = (function() {
                                         ? "bg-[#0d1c1a] border-[#14b8a6]/45 text-[#5eead4]"
                                         : "bg-[#14171c] border-[#2b3340] text-[#9aa6b8]"
                                 }`}>
-                                    {stats.awolFilteredCount}
+                                    {showOnlyLatest ? stats.awolTotal : stats.awolFilteredCount}
                                 </span>
                             </button>
 
