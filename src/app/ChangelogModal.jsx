@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { bindDialogFocusTrap } from './dialog-focus.js';
 
-export const SUITE_VERSION = '2.2.0';
+export const SUITE_VERSION = '2.2.1';
 
 const SCOPE_META = {
     suite:    { label: 'Комплекс',        badge: 'bg-[#172133] text-[#93c5fd] border-[#4c8ed9]/45' },
@@ -11,11 +11,22 @@ const SCOPE_META = {
 
 const CHANGELOG_ENTRIES = [
     {
+        id: 'suite-2.2.1',
+        version: 'v2.2.1',
+        date: '14.11.2026',
+        scope: 'suite',
+        isCurrent: true,
+        title: 'Очищення шапок модулів, уніфікація бейджів та єдиний бекап',
+        items: [
+            { label: 'Журнал О/С — навігація та позиції', text: 'Перенесено навігацію в компактну верхню шапку, прибрано дублююче локальне керування базою на користь «Єдиного Бекапу», вирівняно бейджі груп і фіксацію прибуття (< 1д).' },
+            { label: 'Наші втрати о/с (MedTactical) — шапка', text: 'Прибрано зайві елементи («HUB», «COMBAT_MED», «Диск: Офлайн», «База / Бекап»), вирівняно висоту вкладок і кнопок дій до 32px та уніфіковано бейджі-лічильники.' },
+        ],
+    },
+    {
         id: 'suite-2.2.0',
         version: 'v2.2.0',
         date: '12.11.2026',
         scope: 'suite',
-        isCurrent: true,
         title: 'Графітова палітра, єдиний журнал оновлень та вирівнювання реєстрів',
         items: [
             { label: 'Нейтральна палітра та акценти модулів', text: 'Уніфіковано матову темно-графітову палітру (#101113 / #17181b / #222429) із чіткими розділювачами таблиць та окремими акцентами вкладок комплексу.' },
