@@ -3633,7 +3633,8 @@ const MedicalApp = (function() {
                 }
                 
                 const isReturnedTabView = activeTab === 'awol' && filterEvacStatuses.includes('Повернувся') && !filterEvacStatuses.includes('В розшуку');
-                setEpisodeDate("");
+                const todayLocal = new Date().toLocaleDateString('en-CA');
+                setEpisodeDate(activeTab === 'awol' ? localMedicalInput(new Date()) : "");
                 setLossType(activeTab === 'awol' ? (isReturnedTabView ? "Повернення з СЗЧ" : "СЗЧ") : "");
                 setCause("");
                 setSeverity("");
@@ -3644,12 +3645,31 @@ const MedicalApp = (function() {
                 setInjuries({});
                 setEvacStatus("Не евакуйований");
                 setAwolStatus(isReturnedTabView ? "Повернувся" : "В розшуку");
-                setEvacDate(""); 
+                setEvacDate(activeTab === 'awol' && isReturnedTabView ? todayLocal : ""); 
                 setHasReport(false);
                 setReportDate("");
                 setWeaponStatus("");
                 
                 setIsAddWoundedOpen(true);
+            };
+
+            const prefillActiveAwolForSoldier = (soldierId) => {
+                if (!soldierId || !isAwol(lossType)) return;
+                const activeAwol = episodes
+                    .filter(ep => ep.soldierId === soldierId && isAwol(ep.lossType) && !isAwolReturnEp(ep))
+                    .sort((a, b) => parseSafeDate(b.date) - parseSafeDate(a.date))[0];
+                if (!activeAwol) return;
+                setLossType("Повернення з СЗЧ");
+                setAwolStatus("Повернувся");
+                setEpisodeDate(localMedicalInput(activeAwol.date) || localMedicalInput(new Date()));
+                setEvacDate(prev => prev || new Date().toLocaleDateString('en-CA'));
+                if (activeAwol.cause) setCause(activeAwol.cause);
+                if (activeAwol.actualLoc) setActualLoc(activeAwol.actualLoc);
+                if (activeAwol.hasReport) {
+                    setHasReport(true);
+                    setReportDate(activeAwol.reportDate || new Date().toLocaleDateString('en-CA'));
+                }
+                if (activeAwol.weaponStatus) setWeaponStatus(activeAwol.weaponStatus);
             };
 
             const handleSmartInput = (field, value) => {
@@ -3665,6 +3685,7 @@ const MedicalApp = (function() {
                 setSelectedSoldierId(existing?.id || ''); setSearchMatches([]);
                 setNewSoldierName(roster.name); setNewSoldierCallsign(roster.callsign);
                 setNewSoldierRank(roster.rank); setNewSoldierUnit(roster.unit);
+                if (existing?.id) prefillActiveAwolForSoldier(existing.id);
             };
             const selectExistingSoldier = (s) => {
                 if (s.source === 'roster') {
@@ -3680,6 +3701,7 @@ const MedicalApp = (function() {
                 setNewSoldierCallsign(s.callsign);
                 setNewSoldierRank(s.rank);
                 setNewSoldierUnit(s.unit);
+                prefillActiveAwolForSoldier(s.id);
             };
 
             const clearSelectedSoldier = () => {
@@ -6136,8 +6158,12 @@ const MedicalApp = (function() {
                                                     }
                                                     if (newType === "Повернення з СЗЧ") {
                                                         setAwolStatus("Повернувся");
+                                                        if (!evacDate) setEvacDate(new Date().toLocaleDateString('en-CA'));
                                                     } else if (newType === "СЗЧ" || (newType === "Дезертирство" && lossType === "Повернення з СЗЧ")) {
                                                         setAwolStatus("В розшуку");
+                                                    }
+                                                    if (isAwol(newType) && !episodeDate) {
+                                                        setEpisodeDate(localMedicalInput(new Date()));
                                                     }
                                                     setLossType(newType);
                                                 }} className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-3 py-2 text-xs font-bold text-[#e6edf3] outline-none cursor-pointer">
@@ -6326,7 +6352,22 @@ const MedicalApp = (function() {
                                                                         <Icon name="check-circle" className="w-3 h-3 text-[#3da372]" />
                                                                         <span>Дата повернення</span>
                                                                     </label>
-                                                                    <span className="text-[9px] text-[#989fa9] font-mono">за замовч. сьогодні</span>
+                                                                    <div className="flex items-center gap-1">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setEvacDate(new Date(Date.now() - 86400000).toLocaleDateString('en-CA'))}
+                                                                            className="text-[10px] font-mono text-[#989fa9] hover:text-[#e6edf3] bg-[#17181b] border border-[#2e3138] rounded-sm px-1.5 py-0.5 transition-colors cursor-pointer"
+                                                                        >
+                                                                            Вчора
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setEvacDate(new Date().toLocaleDateString('en-CA'))}
+                                                                            className="text-[10px] font-mono font-bold text-[#8ad8ae] hover:text-[#e6edf3] bg-[#3da372]/15 hover:bg-[#3da372]/25 border border-[#3da372]/40 rounded-sm px-1.5 py-0.5 transition-colors cursor-pointer"
+                                                                        >
+                                                                            Сьогодні
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
                                                                 <input
                                                                     type="date"
@@ -6391,7 +6432,10 @@ const MedicalApp = (function() {
                                             <label className="flex items-center gap-2.5 text-xs font-semibold text-[#e6edf3] cursor-pointer select-none">
                                                 <input type="checkbox" checked={hasReport} onChange={(e) => {
                                                     setHasReport(e.target.checked);
-                                                    if(!e.target.checked) setWeaponStatus("");
+                                                    if (e.target.checked && !reportDate) {
+                                                        setReportDate(new Date().toLocaleDateString('en-CA'));
+                                                    }
+                                                    if (!e.target.checked) setWeaponStatus("");
                                                 }} className="rounded-sm bg-[#17181b] border-[#3c404a] text-[#4c8ed9] focus:ring-0 w-4 h-4 cursor-pointer"/> 
                                                 <span>Складено рапорт</span>
                                             </label>
@@ -6400,7 +6444,22 @@ const MedicalApp = (function() {
                                                     <div>
                                                         <div className="flex justify-between items-center mb-1.5">
                                                             <label className="text-[10px] text-[#b8bec8] font-bold uppercase font-mono tracking-wider">Дата рапорту</label>
-                                                            <span className="text-[9px] text-[#989fa9] font-mono">за замовч. сьогодні</span>
+                                                            <div className="flex items-center gap-1">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setReportDate(new Date(Date.now() - 86400000).toLocaleDateString('en-CA'))}
+                                                                    className="text-[10px] font-mono text-[#989fa9] hover:text-[#e6edf3] bg-[#17181b] border border-[#2e3138] rounded-sm px-1.5 py-0.5 transition-colors cursor-pointer"
+                                                                >
+                                                                    Вчора
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setReportDate(new Date().toLocaleDateString('en-CA'))}
+                                                                    className="text-[10px] font-mono font-bold text-[#4c8ed9] hover:text-[#e6edf3] bg-[#4c8ed9]/10 hover:bg-[#4c8ed9]/20 border border-[#4c8ed9]/40 rounded-sm px-1.5 py-0.5 transition-colors cursor-pointer"
+                                                                >
+                                                                    Сьогодні
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                         <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} className="w-full bg-[#17181b] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-3 py-2 text-xs font-mono text-[#e6edf3] outline-none transition-colors" />
                                                     </div>
