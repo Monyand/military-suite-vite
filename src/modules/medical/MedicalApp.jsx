@@ -9,6 +9,18 @@ import { ChronologyDialog, PersonMatchDialog, StatusHistoryChainBadge } from './
 import { createMedicalWorkbook } from './medical-workbook.js';
 
 const MedicalApp = (function() {
+        const LEGACY_MED_STORAGE_KEYS = [
+            'med_soldiers_v2', 'med_soldiers_v3',
+            'med_episodes_v2', 'med_episodes_v3',
+            'med_logs_v2', 'med_logs_v3',
+        ];
+        const clearLegacyMedLocalStorage = ({ includeLogs = true } = {}) => {
+            try {
+                LEGACY_MED_STORAGE_KEYS
+                    .filter(key => includeLogs || !key.startsWith('med_logs_'))
+                    .forEach(key => localStorage.removeItem(key));
+            } catch (_) {}
+        };
             
 
         const DEFAULT_RANKS = ["Солдат", "Старший солдат", "Молодший сержант", "Сержант", "Старший сержант", "Головний сержант", "Молодший лейтенант", "Лейтенант", "Старший лейтенант", "Капітан", "Майор"];
@@ -1285,6 +1297,8 @@ const MedicalApp = (function() {
                             localforage.getItem('med_logs_v3'),
                             localforage.getItem('med_settings_v3')
                         ]);
+                        const hasLfRecords = savedSoldiers !== null && savedEpisodes !== null;
+                        const hasLfLogs = savedLogs !== null;
                         if (!savedSoldiers) {
                             const ls = localStorage.getItem('med_soldiers_v3') || localStorage.getItem('med_soldiers_v2');
                             savedSoldiers = ls ? JSON.parse(ls) : [];
@@ -1330,6 +1344,9 @@ const MedicalApp = (function() {
                         setLogs(savedLogs?.slice(0, 200) || []);
                         setSettings(savedSettings);
                         setFilterCauses(allLoadedCauses);
+                        if (hasLfRecords && !window.SuiteRuntime?.restoring) {
+                            clearLegacyMedLocalStorage({ includeLogs: hasLfLogs });
+                        }
                         setIsLoading(false);
 
                         // Перевірка наявності локального бекапу на диску через службу диспетчера
@@ -1516,7 +1533,6 @@ const MedicalApp = (function() {
                 }
             };
 
-            const [isSettingsOpen, setIsSettingsOpen] = useState(false);
             const [isBatchReplaceOpen, setIsBatchReplaceOpen] = useState(false);
             const [batchCategory, setBatchCategory] = useState("sectors"); // 'sectors' | 'units' | 'causes' | 'ranks'
             const [batchMode, setBatchMode] = useState("single"); // 'single' | 'multi'
@@ -1596,8 +1612,6 @@ const MedicalApp = (function() {
             const [isSavingToDisk, setIsSavingToDisk] = useState(false);
             const [isRestoringFromDisk, setIsRestoringFromDisk] = useState(false);
             const [notification, setNotification] = useState(null);
-            const [newSettingItem, setNewSettingItem] = useState("");
-            const [activeSettingsTab, setActiveSettingsTab] = useState("causes");
 
             const SEVERITY_COLORS = {
                 'Легкий': '#10b981',
@@ -1669,7 +1683,7 @@ const MedicalApp = (function() {
                 return () => clearTimeout(timer);
             }, [soldiers, episodes, logs, settings, sessionPassword, backupPassword, isLoading]);
 
-            const hasOpenModal = isAddWoundedOpen || isEditOpen || isSettingsOpen || isBatchReplaceOpen || 
+            const hasOpenModal = isAddWoundedOpen || isEditOpen || isBatchReplaceOpen || 
                                  isBackupOpen || isClearDbConfirmOpen || showAutoRestoreModal || !!chronologyReview || !!personMatches;
 
             // Нативне блокування фонового скролу та відновлення фокусу (a11y)
@@ -1723,10 +1737,6 @@ const MedicalApp = (function() {
                             setIsBatchReplaceOpen(false);
                             return;
                         }
-                        if (isSettingsOpen) {
-                            setIsSettingsOpen(false);
-                            return;
-                        }
                         if (isAddWoundedOpen || isEditOpen) {
                             setIsAddWoundedOpen(false);
                             setIsEditOpen(false);
@@ -1741,7 +1751,7 @@ const MedicalApp = (function() {
                 };
                 window.addEventListener('keydown', handleKeyDown);
                 return () => window.removeEventListener('keydown', handleKeyDown);
-            }, [undoAction, openDropdown, isClearDbConfirmOpen, isBackupOpen, isBatchReplaceOpen, isSettingsOpen, isAddWoundedOpen, isEditOpen]);
+            }, [undoAction, openDropdown, isClearDbConfirmOpen, isBackupOpen, isBatchReplaceOpen, isAddWoundedOpen, isEditOpen]);
 
             const addLog = (action, details) => {
                 setLogs(prev => [{
@@ -2291,6 +2301,7 @@ const MedicalApp = (function() {
                         await window.SuiteRuntime.setItem('med_episodes_v3', snap.episodes);
                         await window.SuiteRuntime.setItem('med_soldiers_v3', snap.soldiers);
                         if (snap.settings) await window.SuiteRuntime.setItem('med_settings_v3', snap.settings);
+                        clearLegacyMedLocalStorage();
                         addLog('RESTORE_SNAPSHOT', 'Відновлено базу з аварійного знімка: ' + snap.timestamp);
                         triggerNotification('Базу успішно відновлено з аварійного знімка!', 'success');
                     }
@@ -3931,6 +3942,7 @@ const MedicalApp = (function() {
                     addLog("Очищення бази", `Вибіркове очищення: видалено ${removedEpCount} епізодів, залишено ${keptEpisodes.length} епізодів (${keptSoldiers.length} бійців)`);
                     triggerNotification(`Вибіркове очищення виконано! Залишено епізодів: ${keptEpisodes.length}`, "success");
                 }
+                clearLegacyMedLocalStorage();
                 setIsClearDbConfirmOpen(false); setIsBackupOpen(false);
             };
 
@@ -3971,6 +3983,7 @@ const MedicalApp = (function() {
                             setEpisodes(cleanedImportEpisodes);
                             if (parsed.logs) setLogs(parsed.logs.slice(0, 200));
                             if (parsed.settings) setSettings(parsed.settings);
+                            clearLegacyMedLocalStorage();
                             setSessionPassword(importPassword);
                             setBackupPassword(importPassword);
                             addLog("Імпорт", "Базу успішно відновлено з файлу");
@@ -4016,6 +4029,7 @@ const MedicalApp = (function() {
                         await window.SuiteRuntime.setItem('med_episodes_v3', cleanedImportEpisodes);
                         if (parsed.logs) await window.SuiteRuntime.setItem('med_logs_v3', parsed.logs.slice(0, 200));
                         if (parsed.settings) await window.SuiteRuntime.setItem('med_settings_v3', parsed.settings);
+                        clearLegacyMedLocalStorage();
 
                         setSessionPassword(pwd);
                         setBackupPassword(pwd);
@@ -4075,27 +4089,6 @@ const MedicalApp = (function() {
                 } finally {
                     setIsSavingToDisk(false);
                 }
-            };
-
-            const addSettingItem = () => {
-                if (!newSettingItem.trim()) return;
-                const item = newSettingItem.trim();
-                setSettings(prev => ({ ...prev, [activeSettingsTab]: [...(prev[activeSettingsTab] || []), item] }));
-                if (activeSettingsTab === "causes") setFilterCauses(prev => [...prev, item]);
-                setNewSettingItem("");
-            };
-
-            const removeSettingItem = (item) => {
-                setSettings(prev => ({ ...prev, [activeSettingsTab]: prev[activeSettingsTab].filter(i => i !== item) }));
-                if (activeSettingsTab === "causes") setFilterCauses(prev => prev.filter(i => i !== item));
-            };
-
-            const openBatchReplaceFor = (cat, oldVal = "") => {
-                setBatchCategory(cat);
-                setBatchOldVal(oldVal);
-                setBatchNewVal("");
-                setBatchMode("single");
-                setIsBatchReplaceOpen(true);
             };
 
             const batchAvailableOldValues = useMemo(() => {
@@ -4706,12 +4699,12 @@ const MedicalApp = (function() {
                             </button>
                             
                             <button 
-                                onClick={() => setIsSettingsOpen(true)} 
-                                className="h-8 px-3 bg-[#20262f] hover:bg-[#2e3138] text-[#e6edf5] border border-[#2e3138] hover:border-[#4c8ed9] rounded-sm transition-colors text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer shrink-0 leading-none" 
-                                title="Довідники (Причини, Звання, Підрозділи, Позиції)"
+                                onClick={() => setIsBackupOpen(true)} 
+                                className="h-8 px-3 bg-[#20262f] hover:bg-[#2b3340] text-[#e6edf5] border border-[#2b3340] hover:border-[#4c8ed9] rounded-sm transition-colors text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer shrink-0 leading-none" 
+                                title="Управління базою, шифрований бекап AES-256"
                             >
-                                <Icon name="settings" className="w-3.5 h-3.5 text-[#9aa6b8] shrink-0" /> 
-                                <span>Довідники</span>
+                                <Icon name="shield-check" className="w-3.5 h-3.5 text-[#4c8ed9] shrink-0" /> 
+                                <span>База / Бекап</span>
                             </button>
                         </div>
                     </header>
@@ -7120,111 +7113,6 @@ const MedicalApp = (function() {
                         </div>
                     )}
 
-                    {isSettingsOpen && (
-                        <div onClick={(e) => { if (e.target === e.currentTarget) setIsSettingsOpen(false); }} className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-3 sm:p-4 overscroll-contain">
-                            <div className="bg-[#17181b] border border-[#2e3138] w-full max-w-lg rounded-sm overflow-hidden flex flex-col max-h-[90vh]">
-                                {/* Header */}
-                                <div className="px-5 py-3.5 bg-[#101113] border-b border-[#2e3138] flex justify-between items-center">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-9 h-9 rounded-sm bg-[#4c8ed9]/15 border border-[#4c8ed9]/40 flex items-center justify-center text-[#4c8ed9] shrink-0">
-                                            <Icon name="settings" className="w-4 h-4" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-[#e6edf3] text-base tracking-tight">Класифікатори довідників</h3>
-                                            <p className="text-[11px] text-[#989fa9]">Налаштування списків звань, підрозділів, позицій та причин</p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsSettingsOpen(false)}
-                                        className="w-8 h-8 rounded-sm bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] text-[#b8bec8] hover:text-[#e6edf3] flex items-center justify-center transition-colors cursor-pointer"
-                                    >
-                                        <Icon name="x" className="w-4 h-4" />
-                                    </button>
-                                </div>
-
-                                {/* Tabs */}
-                                <div className="flex border-b border-[#2e3138] bg-[#101113] p-1 gap-1 shrink-0 text-xs font-semibold">
-                                    {[
-                                        { k: 'causes', l: 'Причини' },
-                                        { k: 'ranks', l: 'Звання' },
-                                        { k: 'units', l: 'Підрозділи' },
-                                        { k: 'sectors', l: 'Позиції' }
-                                    ].map(t => (
-                                        <button
-                                            key={t.k}
-                                            type="button"
-                                            onClick={() => setActiveSettingsTab(t.k)}
-                                            className={`flex-1 py-2 text-center rounded-sm border transition-colors cursor-pointer select-none ${
-                                                activeSettingsTab === t.k
-                                                    ? 'bg-[#4c8ed9]/15 text-[#e6edf3] font-bold border-[#4c8ed9]/50'
-                                                    : 'border-transparent text-[#b8bec8] hover:text-[#e6edf3] hover:bg-[#17181b]'
-                                            }`}
-                                        >
-                                            {t.l}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                {/* Content */}
-                                <div className="p-5 flex-1 overflow-hidden flex flex-col gap-4">
-                                    <div className="flex gap-2 shrink-0">
-                                        <input
-                                            type="text"
-                                            value={newSettingItem}
-                                            onChange={(e) => setNewSettingItem(e.target.value)}
-                                            placeholder="Нове значення..."
-                                            className="flex-1 bg-[#101113] border border-[#2e3138] focus:border-[#4c8ed9] rounded-sm px-3 py-2 text-xs text-[#e6edf3] placeholder-[#989fa9] outline-none"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={addSettingItem}
-                                            className="px-4 py-2 bg-[#2b67ab] hover:bg-[#3678c4] text-white border border-[#4c8ed9] font-bold text-xs rounded-sm transition-colors cursor-pointer"
-                                        >
-                                            Додати
-                                        </button>
-                                    </div>
-                                    <div className="flex-1 border border-[#2e3138] bg-[#101113] rounded-sm p-1 overflow-y-auto space-y-1">
-                                        {(settings[activeSettingsTab] || []).map((item, idx) => (
-                                            <div key={idx} className="flex justify-between items-center px-3 py-2 rounded-sm bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] text-xs text-[#e6edf3] group">
-                                                <span className="truncate pr-2">{item}</span>
-                                                <div className="flex items-center gap-1 shrink-0">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => { setIsSettingsOpen(false); openBatchReplaceFor(activeSettingsTab, item); }}
-                                                        className="opacity-70 group-hover:opacity-100 text-[#e7c574] hover:text-[#f3d88e] p-1 hover:bg-[#d99b26]/15 rounded-sm transition-colors cursor-pointer"
-                                                        title="Перейменувати або замінити у всій базі"
-                                                    >
-                                                        <Icon name="repeat" className="w-3.5 h-3.5" />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeSettingItem(item)}
-                                                        className="opacity-70 group-hover:opacity-100 text-[#f3a3a0] hover:text-white p-1 hover:bg-[#d9534f]/20 rounded-sm transition-colors cursor-pointer"
-                                                        title="Видалити з довідника"
-                                                    >
-                                                        <Icon name="trash-2" className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="pt-2 border-t border-[#2e3138] flex items-center justify-between">
-                                        <span className="text-[10px] text-[#989fa9]">Потрібно змінити назву в усіх старих записах?</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => { setIsSettingsOpen(false); openBatchReplaceFor(activeSettingsTab, ""); }}
-                                            className="px-3 py-1.5 bg-[#d99b26]/15 hover:bg-[#d99b26]/25 border border-[#d99b26]/45 text-[#e7c574] rounded-sm text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
-                                        >
-                                            <Icon name="repeat" className="w-3.5 h-3.5 text-[#d99b26]" />
-                                            <span>Масова заміна в базі</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
                     {isBatchReplaceOpen && (
                         <div onClick={(e) => { if (e.target === e.currentTarget) setIsBatchReplaceOpen(false); }} className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-3 sm:p-4 overscroll-contain">
                             <div className="bg-[#17181b] border border-[#2e3138] w-full max-w-2xl rounded-sm overflow-hidden flex flex-col max-h-[92vh]">
@@ -7885,7 +7773,6 @@ const MedicalApp = (function() {
                                                                         type="button"
                                                                         onClick={() => {
                                                                             setIsBackupOpen(false);
-                                                                            setIsSettingsOpen(false);
                                                                             handleStartEdit(ep);
                                                                         }}
                                                                         className="px-2.5 py-1 bg-[#d99b26]/15 hover:bg-[#d99b26] text-[#e7c574] hover:text-[#101113] border border-[#d99b26]/45 font-bold rounded-sm text-[11px] transition-colors cursor-pointer flex items-center gap-1 shrink-0"
