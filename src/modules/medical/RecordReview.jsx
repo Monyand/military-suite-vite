@@ -19,12 +19,17 @@ function ReviewDialog({ title, children, onClose }) {
 }
 
 export function StatusHistoryChainBadge({ episodes = [], onReview }) {
-    const ordered = [...episodes].sort((a, b) => parseMedicalDate(a.date) - parseMedicalDate(b.date));
+    const isReturn = (ep) => ep?.lossType === 'Повернення з СЗЧ' || ((ep?.lossType === 'СЗЧ' || ep?.lossType === 'Дезертирство') && ep?.awolStatus === 'Повернувся');
+    const ordered = [...episodes].sort((a, b) => {
+        const diff = parseMedicalDate(a.date) - parseMedicalDate(b.date);
+        if (diff !== 0) return diff;
+        return (isReturn(a) ? 1 : 0) - (isReturn(b) ? 1 : 0);
+    });
     const issues = chronologyIssues(ordered);
     if (ordered.length < 2 && !issues.length) return null;
     const chain = [];
     ordered.forEach(ep => {
-        const label = ep.lossType || 'Невідомо';
+        const label = (ep.lossType === 'СЗЧ' && ep.awolStatus === 'Повернувся') ? 'Повернення з СЗЧ' : (ep.lossType || 'Невідомо');
         if (chain.at(-1)?.label === label) chain.at(-1).count++;
         else chain.push({ label, count: 1 });
     });

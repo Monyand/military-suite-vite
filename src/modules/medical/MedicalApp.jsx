@@ -6103,7 +6103,13 @@ const MedicalApp = (function() {
                                                             </div>
                                                             <div className="text-right font-mono">
                                                                 {isAny300(h.lossType) && <div className="text-[10px] text-[#e7c574] font-bold">{h.severity || 'Невідомо'}</div>}
-                                                                <div className={`text-[10px] font-semibold mt-0.5 ${h.evacStatus === 'Евакуйований' ? 'text-[#8ad8ae]' : 'text-[#f3a3a0]'}`}>{h.evacStatus}</div>
+                                                                {isAwol(h.lossType) ? (
+                                                                    <div className={`text-[10px] font-semibold mt-0.5 ${isAwolReturnEp(h) ? 'text-[#8ad8ae]' : 'text-[#c084fc]'}`}>
+                                                                        {isAwolReturnEp(h) ? 'Повернувся' : (h.awolStatus || 'В розшуку')}
+                                                                    </div>
+                                                                ) : h.lossType !== 'Зниклий безвісти (ЗБВ)' && (
+                                                                    <div className={`text-[10px] font-semibold mt-0.5 ${h.evacStatus === 'Евакуйований' ? 'text-[#8ad8ae]' : 'text-[#f3a3a0]'}`}>{h.evacStatus}</div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     ))}
