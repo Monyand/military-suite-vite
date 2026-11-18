@@ -377,14 +377,16 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                         const lastMs = lastBackupAt ? Date.parse(lastBackupAt) : NaN;
                         const hasTs = Number.isFinite(lastMs);
                         const diffHours = hasTs ? Math.max(0, Math.floor((backupNowMs - lastMs) / 3600000)) : null;
-                        const diffDays = hasTs ? Math.floor(diffHours / 24) : null;
-                        const badgeLabel = !hasTs ? 'не було' : diffHours < 1 ? 'щойно' : diffHours < 24 ? `${diffHours}г` : `${diffDays}д`;
+                        const lastDate = hasTs ? new Date(lastMs) : null;
+                        const badgeLabel = !lastDate
+                            ? 'не було'
+                            : `${String(lastDate.getDate()).padStart(2, '0')}.${String(lastDate.getMonth() + 1).padStart(2, '0')} ${String(lastDate.getHours()).padStart(2, '0')}:${String(lastDate.getMinutes()).padStart(2, '0')}`;
                         const stale = !hasTs || diffHours >= 24;
                         const badgeCls = stale
                             ? 'bg-[#d99b26]/20 border-[#d99b26]/50 text-[#fde68a]'
                             : 'bg-[#3da372]/20 border-[#3da372]/50 text-[#8ad8ae]';
                         const exactLabel = hasTs
-                            ? `Останній Єдиний Бекап: ${new Date(lastMs).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' })}`
+                            ? `Останній Єдиний Бекап: ${lastDate.toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' })}`
                             : 'Єдиний Бекап у цьому браузері ще не створювався';
                         return (
                             <button
