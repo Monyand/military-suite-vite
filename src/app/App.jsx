@@ -51,6 +51,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
     const [restoreStarted, setRestoreStarted] = useState(false);
     const [lastBackupAt, setLastBackupAt] = useState(null);
     const [backupNowMs, setBackupNowMs] = useState(() => Date.now());
+    const [exportSummary, setExportSummary] = useState(null);
     const backupLock = useRef(false);
     const backupDialogRef = useRef(null);
     const legacyBackup = backupSource?.format === 'military-suite-unified';
@@ -62,6 +63,12 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
         setExportPbd(false); setImportPbd(false);
         setBackupSource(null); setBackupPreview(null); setBackupFileName(''); setBackupReport(null); setLocalRecovery(false);
         setBackupMessage(''); setRestoreConfirmed(false); setRestoreComplete(false);
+        setExportSummary(null);
+        if (mode === 'export') {
+            SuiteBackup.collect({ localState: true, unchecked: true })
+                .then(snap => setExportSummary(SuiteBackup.backupSummary(snap, snap)))
+                .catch(() => {});
+        }
     };
     const closeBackup = () => {
         if (backupLock.current || restoreStarted) return;
@@ -438,6 +445,16 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                     <p className="text-sm text-[#b8bec8]">Дані та збережені налаштування всіх модулів, включно з документальним журналом. AES-256-GCM · PBKDF2-SHA-256 · 600 000 ітерацій. Пароль не записується у файл.</p>
                     <p className="text-sm text-[#fcd34d]">За замовчуванням відмітки «Подано в ПБД» залишаються локальними. Включення відміток у файл та їх застосування при відновленні вмикаються окремо.</p>
                     {!restoreStarted && <>
+                        {backupMode === 'export' && exportSummary && (
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                {exportSummary.map(row => (
+                                    <div key={row.title} className="bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-2">
+                                        <div className="text-[11px] text-[#9aa6b8] truncate" title={row.title}>{row.title}</div>
+                                        <div className="text-sm font-mono font-bold text-[#f3f4f6] tabular-nums mt-0.5">{row.current}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                         {backupMode === 'export' && <label className="flex gap-2 items-start text-sm"><input type="checkbox" disabled={backupBusy} checked={exportPbd} onChange={event => setExportPbd(event.target.checked)} />Включити в бекап відмітки «Подано в ПБД»</label>}
                         {backupMode === 'import' && <div className="space-y-3">
                             <label className="block text-sm">Файл бекапу
