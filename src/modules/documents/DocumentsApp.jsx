@@ -112,6 +112,9 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
     const uncategorizedCount = useMemo(() => periodRows.filter(row => !row.category).length, [periodRows]);
     const positionCategoryCounts = useMemo(() => Object.fromEntries(D.positionCategoryCards.map(cat => [cat, periodRows.filter(row => D.matchesPositionCategory(row.category, cat)).length])), [periodRows]);
     const [page, setPage] = useState(1);
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [bulkDocNumber, setBulkDocNumber] = useState('');
+    useEffect(() => { setSelectedIds([]); setBulkDocNumber(''); }, [tab]);
     const dataRef = useRef(null), lock = useRef(false), fileRef = useRef(null), lastAddedTaskIdRef = useRef(null);
     const prefsRef = useRef(D.empty().settings), modalRef = useRef(null), ovtSettingsRef = useRef(null);
     const control = 'dj-input w-full';
@@ -309,6 +312,30 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
     };
     const togglePbd = async row => {
         if (await commit(value => ({ ...value, [tab]: value[tab].map(item => item.id === row.id ? { ...item, reportedInPbd: !item.reportedInPbd, updatedAt: new Date().toISOString() } : item) }))) setNotice('Відмітку «Подано в ПБД» збережено.');
+    };
+    const applyBulkPositionUpdate = async ({ setDoc = false, setPbd = false }) => {
+        const docVal = bulkDocNumber.trim();
+        if (setDoc && !docVal) { setNotice('Вкажіть № Позатермінового донесення для обраних записів.'); return; }
+        const picked = new Set(selectedIds);
+        if (!picked.size) return;
+        const now = new Date().toISOString();
+        if (await commit(value => ({
+            ...value,
+            positions: value.positions.map(item => {
+                if (!picked.has(item.id)) return item;
+                return {
+                    ...item,
+                    ...(setDoc ? { docNumber: docVal } : {}),
+                    ...(setPbd ? { reportedInPbd: true } : {}),
+                    updatedAt: now
+                };
+            })
+        }))) {
+            const count = picked.size;
+            setSelectedIds([]);
+            if (setDoc) setBulkDocNumber('');
+            setNotice(setDoc ? `Оновлено № донесення для записів: ${count}.` : `Відмічено «Подано в ПБД» для записів: ${count}.`);
+        }
     };
     const applyPositionBatch = async (plan, password) => {
         if (password.length < 12) throw new Error('Пароль має містити щонайменше 12 символів.');
@@ -656,12 +683,33 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
             {options.from && options.to && options.from > options.to && <p role="alert" className="text-[#d99b26] text-sm">Дата «від» пізніша за дату «до». Перевірте період.</p>}
         </div>
         <div className="text-[11px] font-mono text-[#b8bec8] flex justify-between tabular-nums"><h2>{schema.title} · показано <b className="text-[#f3f4f6]">{rows.length}</b> із {data[tab].length}</h2><span>{options.from || options.to ? 'За обраний період' : 'За весь період'}</span></div>
+        {tab === 'positions' && selectedIds.length > 0 && (
+            <div className="mt-1.5 px-3 py-2 rounded-sm bg-[#17181b] border border-[#4c8ed9]/55 flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2.5 text-xs">
+                    <span className="font-mono font-bold text-[#93c5fd] tabular-nums">Обрано: {selectedIds.length}</span>
+                    <button type="button" disabled={busy} className="text-[#9aa6b8] hover:text-[#f3f4f6] underline cursor-pointer" onClick={() => setSelectedIds([])}>Зняти вибір</button>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                    <input
+                        aria-label="№ донесення для вибраних"
+                        className="dj-input w-56 font-mono"
+                        maxLength={1000}
+                        disabled={busy}
+                        value={bulkDocNumber}
+                        onChange={e => setBulkDocNumber(e.target.value)}
+                        placeholder="№ Позатермінового донесення…"
+                    />
+                    <button type="button" disabled={busy || !bulkDocNumber.trim()} className="dj-button dj-primary" onClick={() => applyBulkPositionUpdate({ setDoc: true })}>Присвоїти №</button>
+                    <button type="button" disabled={busy} className="dj-button dj-green" onClick={() => applyBulkPositionUpdate({ setPbd: true })}>Подано в ПБД</button>
+                </div>
+            </div>
+        )}
         <div className="dj-table-wrap">
-            <table className="dj-table" data-testid="document-journal-table"><thead><tr><th className="text-center w-10">#</th>{allFields.map(([key, title]) => <th key={key} style={tab === 'tasks' ? (key === 'date' ? { width: '125px' } : key === 'task' ? { width: 'auto' } : key === 'reportedInPbd' ? { width: '105px' } : key === 'status' ? { width: '140px' } : key === 'comment' ? { width: '28%' } : {}) : {}}>{columnTitle(key) || title}</th>)}<th className="text-right w-14">Дії</th></tr></thead><tbody>{visible.map((row, index) => <tr key={row.id} data-document-id={row.id} className={tab === 'positions' && !D.hasDoc(row) ? 'dj-missing-doc' : row.isEvent ? 'dj-marked' : ''}><td className="text-center text-[#989fa9] font-mono text-[11px] tabular-nums">{(shownPage - 1) * (options.pageSize || 50) + index + 1}</td>{allFields.map(([key, , type]) => <td key={key} data-field={key} className={type === 'textarea' && tab !== 'tasks' ? 'min-w-[200px] max-w-md whitespace-pre-wrap break-words' : ''}>
+            <table className="dj-table" data-testid="document-journal-table"><thead><tr>{tab === 'positions' && <th className="text-center w-9"><input type="checkbox" aria-label="Вибрати всі показані позиції" disabled={busy || !visible.length} checked={visible.length > 0 && visible.every(r => selectedIds.includes(r.id))} onChange={e => { const visIds = visible.map(r => r.id); setSelectedIds(prev => e.target.checked ? Array.from(new Set([...prev, ...visIds])) : prev.filter(id => !visIds.includes(id))); }} /></th>}<th className="text-center w-10">#</th>{allFields.map(([key, title]) => <th key={key} style={tab === 'tasks' ? (key === 'date' ? { width: '125px' } : key === 'task' ? { width: 'auto' } : key === 'reportedInPbd' ? { width: '105px' } : key === 'status' ? { width: '140px' } : key === 'comment' ? { width: '28%' } : {}) : {}}>{columnTitle(key) || title}</th>)}<th className="text-right w-14">Дії</th></tr></thead><tbody>{visible.map((row, index) => <tr key={row.id} data-document-id={row.id} className={tab === 'positions' && !D.hasDoc(row) ? 'dj-missing-doc' : row.isEvent ? 'dj-marked' : ''}>{tab === 'positions' && <td className="text-center"><input type="checkbox" aria-label={`Вибрати запис ${row.name || row.id}`} disabled={busy} checked={selectedIds.includes(row.id)} onChange={e => setSelectedIds(prev => e.target.checked ? [...prev, row.id] : prev.filter(id => id !== row.id))} /></td>}<td className="text-center text-[#989fa9] font-mono text-[11px] tabular-nums">{(shownPage - 1) * (options.pageSize || 50) + index + 1}</td>{allFields.map(([key, , type]) => <td key={key} data-field={key} className={type === 'textarea' && tab !== 'tasks' ? 'min-w-[200px] max-w-md whitespace-pre-wrap break-words' : ''}>
                 {tab === 'tasks' ? <TaskInlineEditor row={row} fieldKey={key} type={type} options={Array.isArray(type) ? [...new Set([...type, row[key]])].filter(Boolean) : null} onSave={changeField} disabled={busy} getStyle={key === 'status' ? val => tagStyle(statusTone(val)) : null} autoFocus={key === 'task' && lastAddedTaskIdRef.current === row.id} onAutoFocusDone={() => { lastAddedTaskIdRef.current = null; }} /> :
                     key === 'name' && tab === 'positions' ? <span className="inline-flex flex-col items-start gap-0.5"><span className="text-[#38bdf8] font-semibold">{row.name}</span>{row.newName && <span className="text-xs text-[#fbbf24]">→ {row.newName || 'нова назва не вказана'}</span>}{row.destinationPositionId && <span className="text-xs text-[#b8bec8]">на місце: {row.destinationName || 'зв’язок із записом'}</span>}</span> : key === 'serialNumber' && tab === 'ovt' ? (() => { const s = ovtCellText(row, 'serialNumber'), p = (row.category === 'Транспорт' || row.plateNumber || row.boardNumber) ? ovtCellText(row, 'plateNumber') : ''; if (!s && !p) return '—'; if (row.category !== 'Транспорт' && !p) return s; return <span className="inline-flex flex-col gap-0.5 leading-tight">{s && <span>{row.category === 'Транспорт' && !s.includes(':') ? `VIN: ${s}` : s}</span>}{p && <span className="text-[11px] text-[#d4d8e0]">{!p.includes(':') ? `Номер: ${p}` : p}</span>}</span>; })() : key === 'reportedInPbd' ? <label className="inline-flex items-center gap-2 cursor-pointer whitespace-nowrap"><input type="checkbox" aria-label={`Подано в ПБД: ${row.name || row.task}`} disabled={busy} checked={row.reportedInPbd} onChange={() => togglePbd(row)} /><span className={`font-mono text-[11.5px] font-semibold ${row.reportedInPbd ? 'text-[#34d399]' : 'text-[#989fa9]'}`}>{row.reportedInPbd ? 'Подано' : 'Не подано'}</span></label> : type === 'checkbox' ? <span className="dj-tag" style={tagStyle(row[key] ? 'blue' : 'emerald')}>{row[key] ? 'Подія (*)' : 'Реальна'}</span> : type === 'date' ? <span className="font-mono font-normal text-[#d4d8e0] whitespace-nowrap tabular-nums">{D.dateLabel(row[key])}</span> : key === 'status' && tab === 'positions' ? <div className="space-y-1"><span className="dj-tag" style={tagStyle(statusTone(row.status))}>{row.status}</span>{positionRegister.issues.has(row.id) && <p className="text-[#fbbf24] text-[10px] max-w-[250px]" title={positionRegister.issues.get(row.id)}>Потребує звірки</p>}</div> : key === 'status' && Array.isArray(type) ? <div className="inline-flex items-center gap-1.5"><select aria-label={`Статус: ${row.name || row.task || ''}`} value={row[key]} onChange={e => changeField(row, key, e.target.value)} disabled={busy} className="dj-tag bg-transparent outline-none cursor-pointer font-semibold appearance-none px-2 pr-4" style={{ ...tagStyle(statusTone(row[key])), backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center', backgroundSize: '12px' }}>{(tab === 'ovt' && row.category === 'Транспорт' ? [...new Set([...OVT_STATUSES, row.status])] : type).map(opt => <option key={opt} value={opt} className="bg-[#17181b] text-[#f3f4f6]">{opt}</option>)}</select>{tab === 'ovt' && row.isEvent && <span className="dj-tag" style={tagStyle('blue')} title="Подія з поміткою *">Подія (*)</span>}</div> : key === 'category' ? <span className="text-xs font-medium text-[#a5b4fc] whitespace-nowrap">{row[key] || 'Не визначено'}</span> : key === documentKey && !D.hasDoc(row) ? <span className={tab === 'positions' ? 'text-[#f87171] font-semibold' : 'text-[#fbbf24]'}>{tab === 'positions' ? 'Очікується номер' : (row[key] || 'Не вказано')}</span> : ((tab === 'ovt' ? ovtCellText(row, key) : row[key]) || '—')}
             </td>)}<td><div className="flex gap-1 justify-end items-center">{tab === 'positions' && <button className="dj-button" title="Історія позиції за всіма документами" aria-label={`Історія позиції ${row.id}`} onClick={() => { setNotice(''); setHistoryRow(row); }}><DocumentJournalIcon name="History" size={14} />Історія</button>}{tab === 'ovt' && <button title="Сформувати позатермінове донесення" aria-label={`Позатермінове донесення ${row.id}`} onClick={() => openOvtReport(row)} className="dj-button" style={tagStyle('amber')}><DocumentJournalIcon name="Zap" size={12} />Позатерм.</button>}{tab !== 'tasks' && <button disabled={busy} title="Редагувати" aria-label={`Редагувати запис ${row.id}`} className="dj-icon-button" onClick={() => openRecord(row)}><DocumentJournalIcon name="SquarePen" size={15} /></button>}<button disabled={busy} title="Видалити" aria-label={`Видалити запис ${row.id}`} className="dj-icon-button" onClick={() => setPendingDelete(row)}><DocumentJournalIcon name="Trash2" size={15} /></button></div></td></tr>)}
-                {!rows.length && <tr><td colSpan={allFields.length + 2} className="p-10 text-center text-[#989fa9] italic">{data[tab].length ? 'За цими фільтрами записів немає.' : 'Записів ще немає. Додайте запис або імпортуйте Excel із попередньої програми.'}</td></tr>}
+                {!rows.length && <tr><td colSpan={allFields.length + (tab === 'positions' ? 3 : 2)} className="p-10 text-center text-[#989fa9] italic">{data[tab].length ? 'За цими фільтрами записів немає.' : 'Записів ще немає. Додайте запис або імпортуйте Excel із попередньої програми.'}</td></tr>}
             </tbody></table>
         </div>
         <footer className="dj-footer"><p className="flex items-center gap-2"><DocumentJournalIcon name="Database" size={12} />Локальна база · записи та налаштування входять до єдиного AES-256 бекапу</p><div className="flex items-center gap-3"><button className={button} disabled={shownPage <= 1} onClick={() => setPage(shownPage - 1)}>Назад</button><span>{shownPage} / {totalPages}</span><button className={button} disabled={shownPage >= totalPages} onClick={() => setPage(shownPage + 1)}>Далі</button></div></footer>
