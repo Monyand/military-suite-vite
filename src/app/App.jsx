@@ -50,6 +50,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
     const [restoreComplete, setRestoreComplete] = useState(false);
     const [restoreStarted, setRestoreStarted] = useState(false);
     const [lastBackupAt, setLastBackupAt] = useState(null);
+    const [lastBackupCounts, setLastBackupCounts] = useState(null);
     const [backupNowMs, setBackupNowMs] = useState(() => Date.now());
     const [exportSummary, setExportSummary] = useState(null);
     const backupLock = useRef(false);
@@ -88,11 +89,17 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
     };
     const handleBackup = () => runBackupAction(async () => {
         requireNewPassword();
-        const envelope = await SuiteBackup.encrypt(await SuiteBackup.collect({ includePbd: exportPbd }), backupPassword);
+        const collected = await SuiteBackup.collect({ includePbd: exportPbd });
+        const envelope = await SuiteBackup.encrypt(collected, backupPassword);
         SuiteBackup.download(envelope);
         const ts = new Date().toISOString();
-        try { await localforage.setItem('suite_last_backup_at_v1', ts); } catch { /* ignore storage quota/private mode */ }
+        const counts = Object.fromEntries(SuiteBackup.backupSummary(collected, collected).map(r => [r.title, r.current]));
+        try {
+            await localforage.setItem('suite_last_backup_at_v1', ts);
+            await localforage.setItem('suite_last_backup_counts_v1', counts);
+        } catch { /* ignore storage quota/private mode */ }
         setLastBackupAt(ts);
+        setLastBackupCounts(counts);
         setBackupNowMs(Date.now());
         setBackupPassword(''); setBackupConfirm('');
         setBackupMessage('Зашифровану копію підготовлено для завантаження. Збережіть файл і пароль окремо: без пароля відновлення неможливе.');
@@ -136,8 +143,13 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
 
     useEffect(() => {
         let active = true;
-        localforage.getItem('suite_last_backup_at_v1').then(val => {
-            if (active && typeof val === 'string') setLastBackupAt(val);
+        Promise.all([
+            localforage.getItem('suite_last_backup_at_v1'),
+            localforage.getItem('suite_last_backup_counts_v1')
+        ]).then(([val, counts]) => {
+            if (!active) return;
+            if (typeof val === 'string') setLastBackupAt(val);
+            if (counts && typeof counts === 'object' && !Array.isArray(counts)) setLastBackupCounts(counts);
         }).catch(() => {});
         const timer = setInterval(() => setBackupNowMs(Date.now()), 60000);
         return () => { active = false; clearInterval(timer); };
@@ -447,12 +459,23 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                     {!restoreStarted && <>
                         {backupMode === 'export' && exportSummary && (
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                {exportSummary.map(row => (
-                                    <div key={row.title} className="bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-2">
-                                        <div className="text-[11px] text-[#9aa6b8] truncate" title={row.title}>{row.title}</div>
-                                        <div className="text-sm font-mono font-bold text-[#f3f4f6] tabular-nums mt-0.5">{row.current}</div>
-                                    </div>
-                                ))}
+                                {exportSummary.map(row => {
+                                    const hasPrev = lastBackupCounts && typeof lastBackupCounts[row.title] === 'number';
+                                    const diff = hasPrev ? row.current - lastBackupCounts[row.title] : null;
+                                    return (
+                                        <div key={row.title} className="bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-2">
+                                            <div className="text-[11px] text-[#9aa6b8] truncate" title={row.title}>{row.title}</div>
+                                            <div className="flex items-baseline justify-between gap-2 mt-0.5 tabular-nums font-mono">
+                                                <span className="text-sm font-bold text-[#f3f4f6]">{row.current}</span>
+                                                {diff !== null && (
+                                                    <span className={`text-[11px] font-semibold ${diff > 0 ? 'text-[#8ad8ae]' : diff < 0 ? 'text-[#f3a3a0]' : 'text-[#989fa9]'}`}>
+                                                        {diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : '0'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
                         {backupMode === 'export' && <label className="flex gap-2 items-start text-sm"><input type="checkbox" disabled={backupBusy} checked={exportPbd} onChange={event => setExportPbd(event.target.checked)} />Включити в бекап відмітки «Подано в ПБД»</label>}
