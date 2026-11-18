@@ -5,31 +5,36 @@
       "source": "pbakaus/impeccable",
       "sourceType": "github",
       "skillPath": ".agents/skills/impeccable/SKILL.md",
-      "computedHash": "86e265bf3df79c65215f7244d71892ca278370d56dec47a8cc15e8373db3f714"
+      "computedHash": "077889e9782761360c17acbc2522af320d0dd0f928b09cd90884fa304f443a34",
+      "commit": "d41d9860b0094dcb68030657da63461212835aaa"
     },
     "vercel-react-best-practices": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/react-best-practices/SKILL.md",
-      "computedHash": "7991ed4fbecdac23f47c1a40c243e00a212a9e7f3604db93959b3ae11dffe299"
+      "computedHash": "7991ed4fbecdac23f47c1a40c243e00a212a9e7f3604db93959b3ae11dffe299",
+      "commit": "1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62"
     },
     "web-design-guidelines": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/web-design-guidelines/SKILL.md",
-      "computedHash": "4f68ae07187fb0d1fb78c88b503d089da4cf5a9d9625d1f2e425b1590bf96d92"
+      "computedHash": "4f68ae07187fb0d1fb78c88b503d089da4cf5a9d9625d1f2e425b1590bf96d92",
+      "commit": "1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62"
     },
     "webapp-testing": {
       "source": "anthropics/skills",
       "sourceType": "github",
       "skillPath": "skills/webapp-testing/SKILL.md",
-      "computedHash": "48cd9a742a59250edec6db89cf081ef5465f365e2133f6d6c5e29c380b754b7d"
+      "computedHash": "48cd9a742a59250edec6db89cf081ef5465f365e2133f6d6c5e29c380b754b7d",
+      "commit": "e4bb5d960d87126ff3b3a8af1a104b7db67560ba"
     },
     "xlsx": {
       "source": "anthropics/skills",
       "sourceType": "github",
       "skillPath": "skills/xlsx/SKILL.md",
-      "computedHash": "3572b018005308f765480622987ef576fcdf9ea332d1024d3fe6c58cd65566a1"
+      "computedHash": "5100b54957a73ce2cb55933b224a483793f5f71555a181f287f43f94a9c1e149",
+      "commit": "e4bb5d960d87126ff3b3a8af1a104b7db67560ba"
     }
   }
 }

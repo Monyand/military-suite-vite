@@ -6871,7 +6871,7 @@ const MedicalApp = (function() {
 
                     {isBackupOpen && (
                         <div onClick={(e) => { if (e.target === e.currentTarget) setIsBackupOpen(false); }} className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-3 sm:p-4 overscroll-contain">
-                            <div className="bg-[#17181b] border border-[#2e3138] w-full max-w-xl rounded-sm overflow-hidden flex flex-col">
+                            <div role="dialog" aria-modal="true" aria-label="Резервні копії та база" className="bg-[#17181b] border border-[#2e3138] w-full max-w-xl rounded-sm overflow-hidden flex flex-col">
                                 {/* Header */}
                                 <div className="px-5 py-3.5 bg-[#101113] border-b border-[#2e3138] flex justify-between items-center">
                                     <div className="flex items-center gap-3">
@@ -7138,7 +7138,7 @@ const MedicalApp = (function() {
 
                         return (
                             <div onClick={(e) => { if (e.target === e.currentTarget) setIsClearDbConfirmOpen(false); }} className="fixed inset-0 z-[210] bg-black/80 flex items-center justify-center p-4 overscroll-contain">
-                                <div className="bg-[#17181b] border border-[#d9534f]/60 w-full max-w-lg rounded-sm overflow-hidden flex flex-col max-h-[90vh]">
+                                <div role="dialog" aria-modal="true" aria-label="Очищення бази даних" className="bg-[#17181b] border border-[#d9534f]/60 w-full max-w-lg rounded-sm overflow-hidden flex flex-col max-h-[90vh]">
                                     <div className="px-5 py-3.5 bg-[#101113] border-b border-[#d9534f]/40 flex items-center justify-between gap-3">
                                         <div className="flex items-center gap-2.5">
                                             <Icon name="alert-octagon" className="w-5 h-5 text-[#f3a3a0] shrink-0" />

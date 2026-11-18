@@ -244,7 +244,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
 
     return (
         <div className="flex flex-col h-full w-full relative bg-[#101113] text-[#f3f4f6]">
-            <header className="shrink-0 min-h-[3.5rem] bg-[#17181b] border-b border-[#2e3138] flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 z-[9999] print:hidden select-none">
+            <header className="shrink-0 min-h-[3.5rem] bg-[#17181b] border-b border-[#2e3138] flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 z-10 print:hidden select-none">
                 <div className="flex items-center gap-2 md:gap-2.5 min-w-0 flex-1">
                     <div className="flex items-center gap-2 shrink-0 pr-1">
                         <div className="w-7 h-7 rounded-sm bg-[#222429] border border-[#2e3138] flex items-center justify-center text-[#4c8ed9]">
@@ -254,7 +254,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                         </div>
                         <div className="hidden xl:flex items-baseline gap-1.5">
                             <span className="font-bold text-[#f3f4f6] tracking-wide text-sm">MILITARY SUITE</span>
-                            <span className="text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded-sm bg-[#222429] text-[#b8bec8] font-semibold border border-[#2e3138]" title="ОЧ / S-3 — Оперативна частина">S3 · ОЧ</span>
+                            <span className="text-[11px] font-mono tabular-nums px-1.5 py-0.5 rounded-sm bg-[#222429] text-[#b8bec8] font-semibold border border-[#2e3138]" title="ОЧ / S-3 — Оперативна частина">S3 · ОЧ</span>
                         </div>
                         <button
                             type="button"
@@ -262,7 +262,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                             title={`Історія оновлень MILITARY SUITE (v${SUITE_VERSION})`}
                             disabled={restoreStarted}
                             onClick={() => setChangelogOpen(true)}
-                            className="text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded-sm bg-[#101113] hover:bg-[#222429] text-[#989fa9] hover:text-[#e6edf3] border border-[#2e3138] hover:border-[#4c8ed9] font-medium transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+                            className="text-[11px] font-mono tabular-nums px-1.5 py-0.5 rounded-sm bg-[#101113] hover:bg-[#222429] text-[#989fa9] hover:text-[#e6edf3] border border-[#2e3138] hover:border-[#4c8ed9] font-medium transition-colors cursor-pointer disabled:opacity-50 shrink-0"
                         >
                             v{SUITE_VERSION}
                         </button>
@@ -388,7 +388,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                         </svg>
                         <span className="hidden xl:inline">Пошук</span>
-                        <kbd className="hidden 2xl:inline text-[10px] font-mono tabular-nums bg-[#101113] border border-[#2e3138] rounded-sm px-1 text-[#b8bec8]">Ctrl K</kbd>
+                        <kbd className="hidden 2xl:inline text-[11px] font-mono tabular-nums bg-[#101113] border border-[#2e3138] rounded-sm px-1 text-[#b8bec8]">Ctrl K</kbd>
                     </button>
 
                     <div className="h-4 w-[1px] bg-[#2e3138] hidden sm:block mx-0.5" aria-hidden="true" />
@@ -420,7 +420,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                                 </svg>
                                 <span className="hidden lg:inline">Створити Єдиний Бекап</span>
                                 <span className="hidden sm:inline lg:hidden">Бекап</span>
-                                <span className={`hidden xl:inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-mono font-bold tabular-nums leading-none border ${badgeCls}`}>
+                                <span className={`hidden xl:inline-flex items-center px-1.5 py-0.5 rounded-sm text-[11px] font-mono font-bold tabular-nums leading-none border ${badgeCls}`}>
                                     {badgeLabel}
                                 </span>
                             </button>
@@ -443,9 +443,9 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
             </header>
             <div id="suite-content" className="flex-1 min-h-0 min-w-0 relative bg-[#101113] overflow-hidden">
                 {!restoreStarted && <>
-                    <div data-suite-module="enemy" data-suite-active={!backupMode && activeApp === 'enemy'} className={`absolute inset-0 ${!backupMode && activeApp === 'enemy' ? 'z-10' : 'z-0 invisible pointer-events-none'}`}><EnemyApp /></div>
-                    <div data-suite-module="med" data-suite-active={!backupMode && activeApp === 'med'} className={`absolute inset-0 overflow-y-auto ${!backupMode && activeApp === 'med' ? 'z-10' : 'z-0 invisible pointer-events-none'}`}><MedApp /></div>
-                    <div data-suite-module="documents" data-suite-active={!backupMode && ['tasks', 'ovt', 'positions'].includes(activeApp)} className={`absolute inset-0 bg-[#101113] overflow-y-auto ${!backupMode && ['tasks', 'ovt', 'positions'].includes(activeApp) ? 'z-10' : 'z-0 invisible pointer-events-none'}`}><DocumentJournalApp onBackup={openBackup} activeTab={['tasks', 'ovt', 'positions'].includes(activeApp) ? activeApp : undefined} /></div>
+                    <div data-suite-module="enemy" data-suite-active={!backupMode && activeApp === 'enemy'} className={`absolute inset-0 ${!backupMode && activeApp === 'enemy' ? 'z-20' : 'z-0 invisible pointer-events-none'}`}><EnemyApp /></div>
+                    <div data-suite-module="med" data-suite-active={!backupMode && activeApp === 'med'} className={`absolute inset-0 overflow-y-auto ${!backupMode && activeApp === 'med' ? 'z-20' : 'z-0 invisible pointer-events-none'}`}><MedApp /></div>
+                    <div data-suite-module="documents" data-suite-active={!backupMode && ['tasks', 'ovt', 'positions'].includes(activeApp)} className={`absolute inset-0 bg-[#101113] overflow-y-auto ${!backupMode && ['tasks', 'ovt', 'positions'].includes(activeApp) ? 'z-20' : 'z-0 invisible pointer-events-none'}`}><DocumentJournalApp onBackup={openBackup} activeTab={['tasks', 'ovt', 'positions'].includes(activeApp) ? activeApp : undefined} /></div>
                 </>}
             </div>
             {dictionariesOpen && <SharedDictionariesPanel onClose={() => setDictionariesOpen(false)} onSuspend={() => ReactDOM.flushSync(() => setRestoreStarted(true))} />}
