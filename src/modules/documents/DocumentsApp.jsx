@@ -5,6 +5,7 @@ import { POSITION_CATEGORIES, buildPositionRegister, positionBatchError, positio
 import { PositionFields } from './PositionFields.jsx';
 import { PositionHistory } from './PositionHistory.jsx';
 import { useSharedDictionaries } from '../../core/use-shared-dictionaries.js';
+import { SharedDictionaries } from '../../core/dictionary-service.js';
 import { PositionBatch } from './PositionBatch.jsx';
 import { appendPositionBatch } from './position-batch.js';
 import { SuiteBackup } from '../../core/backup.js';
@@ -115,7 +116,7 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
     const [selectedIds, setSelectedIds] = useState([]);
     const [bulkDocNumber, setBulkDocNumber] = useState('');
     useEffect(() => { setSelectedIds([]); setBulkDocNumber(''); }, [tab]);
-    const dataRef = useRef(null), lock = useRef(false), fileRef = useRef(null), lastAddedTaskIdRef = useRef(null);
+    const dataRef = useRef(null), lock = useRef(false), fileRef = useRef(null), lastAddedTaskIdRef = useRef(null), inlineQueueRef = useRef(Promise.resolve());
     const prefsRef = useRef(D.empty().settings), modalRef = useRef(null), ovtSettingsRef = useRef(null);
     const control = 'dj-input w-full';
     const button = 'dj-button';
@@ -370,13 +371,12 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
             setDraft(prepareOvtDraft({ ...row, status: newValue, consequence: '' }));
             return;
         }
-        const applyInline = () => commit(value => ({ ...value, [tab]: value[tab].map(item => item.id === row.id ? { ...item, [key]: newValue, updatedAt: new Date().toISOString() } : item) }));
-        let ok = await applyInline();
-        if (!ok && lock.current) {
-            await new Promise(resolve => setTimeout(resolve, 60));
-            ok = await applyInline();
-        }
-        if (ok) setNotice('Поле оновлено.');
+        inlineQueueRef.current = inlineQueueRef.current.then(async () => {
+            while (lock.current) await new Promise(resolve => setTimeout(resolve, 25));
+            const ok = await commit(value => ({ ...value, [tab]: value[tab].map(item => item.id === row.id ? { ...item, [key]: newValue, updatedAt: new Date().toISOString() } : item) }));
+            if (ok) setNotice('Поле оновлено.');
+        });
+        await inlineQueueRef.current;
     };
 
     const addTaskRow = async () => {

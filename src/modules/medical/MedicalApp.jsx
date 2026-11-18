@@ -7,6 +7,7 @@ import { parseMedicalDate, medicalWaitTime, pickMedicalEpisode, chronologyIssues
 import { personCandidates } from '../../core/person-names.js';
 import { ChronologyDialog, PersonMatchDialog, StatusHistoryChainBadge } from './RecordReview.jsx';
 import { createMedicalWorkbook } from './medical-workbook.js';
+import { escapeHtml } from '../../core/html.js';
 
 const MedicalApp = (function() {
         const LEGACY_MED_STORAGE_KEYS = [
@@ -2547,7 +2548,7 @@ const MedicalApp = (function() {
                         const isEv = ep.evacStatus === 'Евакуйований' || ep.awolStatus === 'Повернувся';
                         const statusText = isAw ? (ep.awolStatus || 'В розшуку') : (ep.evacStatus || 'Не евакуйований');
 
-                        let severityBadge = ep.severity ? `<b>${ep.severity}</b>` : '—';
+                        let severityBadge = ep.severity ? `<b>${escapeHtml(ep.severity)}</b>` : '—';
                         if (ep.severity === 'Критичний') {
                             severityBadge = '<span style="color:#7e22ce; font-weight:800; background:#f3e8ff; padding:1px 5px; border-radius:4px; border:1px solid #d8b4fe;">Критичний</span>';
                         } else if (ep.severity === 'Важкий') {
@@ -2558,33 +2559,34 @@ const MedicalApp = (function() {
                             severityBadge = '<span style="color:#15803d; font-weight:600; background:#dcfce7; padding:1px 5px; border-radius:4px; border:1px solid #bbf7d0;">Легкий</span>';
                         }
 
-                        let statusBadge = statusText;
+                        let statusBadge = escapeHtml(statusText);
                         if (isNotEvac) {
                             statusBadge = '<span style="background:#fee2e2; color:#991b1b; padding:2px 6px; border-radius:4px; font-weight:800; border:1px solid #f87171; display:inline-block; font-size:7.5pt;">🚨 Не евакуйований</span>';
                         } else if (isEv) {
                             statusBadge = '<span style="background:#dcfce7; color:#166534; padding:2px 6px; border-radius:4px; font-weight:700; border:1px solid #86efac; display:inline-block; font-size:7.5pt;">✓ Евакуйований</span>';
                         } else if (isAw) {
-                            statusBadge = `<span style="background:#fae8ff; color:#86198f; padding:2px 6px; border-radius:4px; font-weight:700; border:1px solid #e879f9; display:inline-block; font-size:7.5pt;">${ep.awolStatus || 'СЗЧ'}</span>`;
+                            statusBadge = `<span style="background:#fae8ff; color:#86198f; padding:2px 6px; border-radius:4px; font-weight:700; border:1px solid #e879f9; display:inline-block; font-size:7.5pt;">${escapeHtml(ep.awolStatus || 'СЗЧ')}</span>`;
                         }
 
                         const rowBg = isNotEvac ? 'style="background-color: #fff1f2;"' : '';
                         const evacVal = isNotEvac ? 'not_evac' : (isEv ? 'evac' : 'other');
-                        const causeClean = (ep.cause || '—').replace(/"/g, '&quot;');
-                        const unitClean = (s.unit || ep.unit || '—').replace(/"/g, '&quot;');
+                        const causeClean = escapeHtml(ep.cause || '—');
+                        const unitClean = escapeHtml(s.unit || ep.unit || '—');
+                        const sevClean = escapeHtml(ep.severity || '');
 
                         return `
-                            <tr ${rowBg} class="reg-row" data-evac="${evacVal}" data-dead="${isDead ? '1':'0'}" data-wound="${isWounded ? '1':'0'}" data-sev="${ep.severity || ''}" data-mia="${isMia ? '1':'0'}" data-awol="${isAw ? '1':'0'}" data-cause="${causeClean}" data-unit="${unitClean}">
+                            <tr ${rowBg} class="reg-row" data-evac="${evacVal}" data-dead="${isDead ? '1':'0'}" data-wound="${isWounded ? '1':'0'}" data-sev="${sevClean}" data-mia="${isMia ? '1':'0'}" data-awol="${isAw ? '1':'0'}" data-cause="${causeClean}" data-unit="${unitClean}">
                                 <td class="row-num" style="text-align:center; font-family:'JetBrains Mono',monospace; font-size:8pt;">${idx + 1}</td>
-                                <td style="font-family:'JetBrains Mono',monospace; font-size:8pt; white-space:nowrap;">${localMedicalInput(ep.date).replace('T', ' ') || 'Некоректна дата'}</td>
-                                <td style="font-size:8pt;">${s.rank || '—'}</td>
-                                <td style="font-weight:bold; font-size:8.5pt;">${s.name || '—'}</td>
-                                <td style="font-family:'JetBrains Mono',monospace; font-size:8pt; color:#b45309;">${s.callsign ? `«${formatCallsignUI(s.callsign)}»` : '—'}</td>
-                                <td style="font-size:8pt;">${s.unit || ep.unit || '—'}</td>
-                                <td style="font-weight:600; font-size:8pt;">${ep.lossType}</td>
+                                <td style="font-family:'JetBrains Mono',monospace; font-size:8pt; white-space:nowrap;">${escapeHtml(localMedicalInput(ep.date).replace('T', ' ') || 'Некоректна дата')}</td>
+                                <td style="font-size:8pt;">${escapeHtml(s.rank || '—')}</td>
+                                <td style="font-weight:bold; font-size:8.5pt;">${escapeHtml(s.name || '—')}</td>
+                                <td style="font-family:'JetBrains Mono',monospace; font-size:8pt; color:#b45309;">${s.callsign ? `«${escapeHtml(formatCallsignUI(s.callsign))}»` : '—'}</td>
+                                <td style="font-size:8pt;">${unitClean}</td>
+                                <td style="font-weight:600; font-size:8pt;">${escapeHtml(ep.lossType)}</td>
                                 <td style="font-size:8pt;">${severityBadge}</td>
-                                <td style="font-size:7.5pt; color:#475569;">${injuriesText}</td>
-                                <td style="font-size:8pt;">${ep.cause || '—'}</td>
-                                <td style="font-size:8pt;">${ep.actualLoc || '—'}</td>
+                                <td style="font-size:7.5pt; color:#475569;">${escapeHtml(injuriesText)}</td>
+                                <td style="font-size:8pt;">${causeClean}</td>
+                                <td style="font-size:8pt;">${escapeHtml(ep.actualLoc || '—')}</td>
                                 <td style="font-size:8pt;">${statusBadge}</td>
                             </tr>
                         `;
@@ -3151,15 +3153,16 @@ const MedicalApp = (function() {
                         var q200 = doc.getElementById('q-period-200'); if (q200) q200.innerText = notEvac200;
                         var regTitle = doc.getElementById('register-title'); if (regTitle) regTitle.innerText = 'Поіменний реєстр (' + visibleCount + ' записів)';
 
+                        var esc = function(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); };
                         var causeEntries = Object.entries(causeCounts).sort(function(a, b) { return b[1] - a[1]; });
                         var causeHtml = causeEntries.length > 0
-                            ? causeEntries.map(function(pair) { return '<tr><td>' + pair[0] + '</td><td style="text-align:right; font-weight:bold; font-family:JetBrains Mono, monospace;">' + pair[1] + '</td></tr>'; }).join('')
+                            ? causeEntries.map(function(pair) { return '<tr><td>' + esc(pair[0]) + '</td><td style="text-align:right; font-weight:bold; font-family:JetBrains Mono, monospace;">' + pair[1] + '</td></tr>'; }).join('')
                             : '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">Дані відсутні</td></tr>';
                         var tbCauses = doc.getElementById('tbody-causes'); if (tbCauses) tbCauses.innerHTML = causeHtml;
 
                         var unitEntries = Object.entries(unitCounts).sort(function(a, b) { return b[1] - a[1]; });
                         var unitHtml = unitEntries.length > 0
-                            ? unitEntries.map(function(pair) { return '<tr><td>' + pair[0] + '</td><td style="text-align:right; font-weight:bold; font-family:JetBrains Mono, monospace;">' + pair[1] + '</td></tr>'; }).join('')
+                            ? unitEntries.map(function(pair) { return '<tr><td>' + esc(pair[0]) + '</td><td style="text-align:right; font-weight:bold; font-family:JetBrains Mono, monospace;">' + pair[1] + '</td></tr>'; }).join('')
                             : '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">Дані відсутні</td></tr>';
                         var tbUnits = doc.getElementById('tbody-units'); if (tbUnits) tbUnits.innerHTML = unitHtml;
                     };
@@ -3961,8 +3964,10 @@ const MedicalApp = (function() {
                     const encrypted = CryptoJS.AES.encrypt(rawJson, backupPassword).toString();
                     const link = document.createElement('a');
                     link.download = `med_backup_${window.SuiteDates.localISO()}.enc`;
-                    link.href = URL.createObjectURL(new Blob([encrypted], { type: 'text/plain' }));
+                    const url = URL.createObjectURL(new Blob([encrypted], { type: 'text/plain' }));
+                    link.href = url;
                     link.click();
+                    setTimeout(() => URL.revokeObjectURL(url), 10000);
                     addLog("Експорт", "Створено шифрований бекап бази");
                     triggerNotification("Бекап скачано!");
                 } catch (e) { triggerNotification("Помилка: " + e.message, "error"); }
@@ -3972,6 +3977,7 @@ const MedicalApp = (function() {
 
             const handleImport = () => {
                 if (!importFile || !importPassword) return triggerNotification("Оберіть файл та введіть пароль", "error");
+                if (importFile.size > 100 * 1024 * 1024) return triggerNotification("Файл завеликий (макс. 100 МБ)", "error");
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     try {
@@ -3979,18 +3985,18 @@ const MedicalApp = (function() {
                         const decrypted = CryptoJS.AES.decrypt(encryptedContent.trim(), importPassword).toString(CryptoJS.enc.Utf8);
                         if (!decrypted) throw new Error("Невірний пароль");
                         const parsed = JSON.parse(decrypted);
-                        if (parsed.soldiers && parsed.episodes) {
+                        if (parsed && typeof parsed === 'object' && Array.isArray(parsed.soldiers) && Array.isArray(parsed.episodes)) {
                             saveHistory();
-                            const cleanedImportEpisodes = (parsed.episodes || []).map(ep => {
-                                if (ep.lossType === "Бойове травмування (300)") {
+                            const cleanedImportEpisodes = parsed.episodes.map(ep => {
+                                if (ep && ep.lossType === "Бойове травмування (300)") {
                                     return { ...ep, lossType: "Поранення (300)" };
                                 }
                                 return ep;
                             });
                             setSoldiers(parsed.soldiers);
                             setEpisodes(cleanedImportEpisodes);
-                            if (parsed.logs) setLogs(parsed.logs.slice(0, 200));
-                            if (parsed.settings) setSettings(parsed.settings);
+                            if (Array.isArray(parsed.logs)) setLogs(parsed.logs.slice(0, 200));
+                            if (parsed.settings && typeof parsed.settings === 'object' && !Array.isArray(parsed.settings)) setSettings(parsed.settings);
                             clearLegacyMedLocalStorage();
                             setSessionPassword(importPassword);
                             setBackupPassword(importPassword);

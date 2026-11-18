@@ -3372,6 +3372,10 @@ const EventsApp = (function() {
 
                 
                 const importEncryptedBackup = async (file) => {
+                    if (!file || file.size > 100 * 1024 * 1024) {
+                        showToast('Файл бекапу завеликий (макс. 100 МБ).', 'error');
+                        return;
+                    }
                     const password = await requestPassword('Введіть пароль від бекапу', 'Ваш пароль', null, 'Розшифрувати');
                     if (!password) return;
                     try {
@@ -3715,8 +3719,10 @@ const EventsApp = (function() {
                                 await localforage.setItem('enemy_events_v2', migratedEvents);
                             }
                             
-                            savedSettings.hasMigratedLegacyCallsigns = true;
-                            await localforage.setItem('enemy_settings_v1', savedSettings);
+                            if (!savedSettings.hasMigratedLegacyCallsigns) {
+                                savedSettings.hasMigratedLegacyCallsigns = true;
+                                await localforage.setItem('enemy_settings_v1', savedSettings);
+                            }
 
                         setEvents(migratedEvents);
                         setSettings(savedSettings);
@@ -4011,7 +4017,11 @@ const EventsApp = (function() {
                                         });
                                         
                                         if (personnelChanged) {
-                                            await savePersonnel(updatedPersonnel);
+                                            try {
+                                                await savePersonnel(updatedPersonnel);
+                                            } catch {
+                                                showToast('Подію збережено, але не вдалося синхронізувати реєстр осіб.');
+                                            }
                                         }
                                     }
                                 }
