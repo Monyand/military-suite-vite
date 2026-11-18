@@ -11,27 +11,53 @@ export function PositionFields({ draft, setDraft, rows, busy }) {
     const destinations = buildPositionRegister(rows.filter(row => row.id !== draft.id), draft.date).entries.filter(entry => entry.id !== draft.positionId);
     const newPreparation = preparing && (draft.opensRegister || !draft.positionId);
     const nameEditable = (creating && !preparations.some(entry => entry.id === draft.positionId)) || newPreparation;
+    const canMultiCreate = !draft.id && nameEditable && !draft.positionId;
+    const multiCount = canMultiCreate && draft.multiMode
+        ? String(draft.name || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean).length
+        : 0;
     const change = (key, value) => setDraft({ ...draft, [key]: value });
     const field = 'dj-input w-full';
     return <div className="space-y-4">
         <p className="text-xs text-slate-400">Фіксуйте вже здійснену дію за датою документа. Облаштування може відкривати історію раніше виставлення. Нова подія доповнює історію, а не переписує попередні назви й дати.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label className="text-sm space-y-1"><span>Дата зміни *</span><input aria-label="Дата зміни" type="date" max={!draft.id ? window.SuiteDates.localISO() : undefined} required disabled={busy} className={field} value={draft.date} onChange={event => change('date', event.target.value)} /></label>
-            <label className="text-sm space-y-1"><span>Документальна дія *</span><select aria-label="Документальна дія" disabled={busy || !!draft.renameBatchId} className={field} value={draft.status} onChange={event => setDraft({ ...draft, status: event.target.value, positionId: '', name: '', newName: '', opensRegister: event.target.value === 'облаштовується', destinationPositionId: '', destinationName: '' })}>{POSITION_ACTIONS.map(action => <option key={action}>{action}</option>)}</select></label>
+            <label className="text-sm space-y-1"><span>Документальна дія *</span><select aria-label="Документальна дія" disabled={busy || !!draft.renameBatchId} className={field} value={draft.status} onChange={event => setDraft({ ...draft, status: event.target.value, positionId: '', name: '', newName: '', multiMode: false, opensRegister: event.target.value === 'облаштовується', destinationPositionId: '', destinationName: '' })}>{POSITION_ACTIONS.map(action => <option key={action}>{action}</option>)}</select></label>
             {creating && !!preparations.length && <label className="text-sm space-y-1 sm:col-span-2"><span>Продовжити історію облаштування</span><select aria-label="Продовжити історію облаштування" disabled={busy} className={field} value={preparations.some(entry => entry.id === draft.positionId) ? draft.positionId : ''} onChange={event => {
                 const entry = preparations.find(item => item.id === event.target.value);
-                setDraft({ ...draft, positionId: entry?.id || '', name: entry?.name || '', category: entry?.category || draft.category, opensRegister: false });
+                setDraft({ ...draft, positionId: entry?.id || '', name: entry?.name || '', category: entry?.category || draft.category, multiMode: entry ? false : draft.multiMode, opensRegister: false });
             }}><option value="">Окрема нова історія — без попереднього облаштування</option>{preparations.map(entry => <option key={entry.id} value={entry.id}>{entry.name} · облаштування від {D.dateLabel(entry.records[0].date)}</option>)}</select></label>}
             {!creating && <div className="text-sm space-y-1 sm:col-span-2"><PositionPicker key={draft.status} label="Позиція з реєстру" required={!draft.id && !preparing} disabled={busy || !!draft.renameBatchId} entries={choices} value={newPreparation ? '' : draft.positionId || ''} fallbackName={draft.name} allowUnavailable={!!draft.id} placeholder={preparing ? 'Пошук історії або залиште порожнім для нового облаштування' : 'Почніть вводити назву позиції…'} onSelect={entry => {
-                setDraft({ ...draft, positionId: entry?.id || '', name: entry?.name || '', category: entry?.category || draft.category, opensRegister: preparing && !entry, destinationPositionId: '', destinationName: '' });
+                setDraft({ ...draft, positionId: entry?.id || '', name: entry?.name || '', category: entry?.category || draft.category, multiMode: entry ? false : draft.multiMode, opensRegister: preparing && !entry, destinationPositionId: '', destinationName: '' });
             }} />
                 {preparing && <p className="text-xs text-[#4c8ed9]">Можна почати окрему історію або пов’язати документ із виставленням, яке відбулося пізніше. Дати документів збережуться.</p>}
                 {!choices.length && !preparing && <p className="text-xs text-[#d99b26]">На цю дату немає незакритих записів виставлення. Спершу додайте відсутній документ про виставлення або виправте дату.</p>}
             </div>}
-            <label className="text-sm space-y-1"><span>{nameEditable ? 'Назва позиції *' : 'Назва у записі'}</span><input aria-label="Назва позиції" required disabled={busy} readOnly={!nameEditable} maxLength={1000} className={field} value={draft.name} onChange={event => change('name', event.target.value)} /></label>
+            <div className={`text-sm space-y-1 ${canMultiCreate && draft.multiMode ? 'sm:col-span-2' : ''}`}>
+                <div className="flex items-center justify-between gap-2">
+                    <label htmlFor="pos-name-field">{nameEditable ? (canMultiCreate && draft.multiMode ? 'Назви позицій (кожна з нового рядка) *' : 'Назва позиції *') : 'Назва у записі'}</label>
+                    {canMultiCreate && (
+                        <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => change('multiMode', !draft.multiMode)}
+                            className={`text-[11px] font-mono px-2 py-0.5 rounded-sm border transition-colors cursor-pointer ${draft.multiMode ? 'bg-[#2b67ab]/25 border-[#4c8ed9] text-[#93c5fd] font-semibold' : 'bg-[#101113] border-[#2e3138] text-[#9aa6b8] hover:text-[#e6edf5] hover:border-[#4c8ed9]'}`}
+                        >
+                            {draft.multiMode ? `Списком (${multiCount})` : '+ Кілька позицій'}
+                        </button>
+                    )}
+                </div>
+                {canMultiCreate && draft.multiMode ? (
+                    <>
+                        <textarea id="pos-name-field" aria-label="Назва позиції" required disabled={busy} rows={4} maxLength={20000} className={`${field} font-mono`} value={draft.name} placeholder={'Позиція 1\nПозиція 2\nПозиція 3'} onChange={event => change('name', event.target.value)} />
+                        <p className="text-xs text-[#9aa6b8]">Кожен рядок збережеться як окремий запис із цими самими датою, дією, категорією та № донесення.</p>
+                    </>
+                ) : (
+                    <input id="pos-name-field" aria-label="Назва позиції" required disabled={busy} readOnly={!nameEditable} maxLength={1000} className={field} value={draft.name} onChange={event => change('name', event.target.value)} />
+                )}
+            </div>
             <label className="text-sm space-y-1"><span>Категорія позиції {!draft.id && '*'}</span><select aria-label="Категорія позиції" required={!draft.id} disabled={busy} className={field} value={draft.category || ''} onChange={event => change('category', event.target.value)}><option value="">Не визначено</option>{[...new Set([...POSITION_CATEGORIES, draft.category])].filter(Boolean).map(category => <option key={category}>{category}</option>)}</select></label>
             {draft.status === 'переміщена' && <div className="text-sm space-y-1 sm:col-span-2"><PositionPicker key={draft.positionId || 'no-source'} label="На місце іншої позиції" disabled={busy} entries={destinations} value={draft.destinationPositionId || ''} fallbackName={draft.destinationName} allowUnavailable={!!draft.id} placeholder="Пошук за назвою; можна залишити порожнім" onSelect={destination => setDraft({ ...draft, destinationPositionId: destination?.id || '', destinationName: destination?.name || '' })} /><p className="text-xs text-[#b8bec8]">Зберігається лише посилання у цьому документі. Інша позиція не знімається, не перейменовується й не закривається автоматично.</p></div>}
-            <label className="text-sm space-y-1 sm:col-span-2"><span>Нова назва позиції {draft.status === 'перейменована' ? '*' : '(необов’язково)'}</span><input aria-label="Нова назва позиції" required={draft.status === 'перейменована' && !draft.id} disabled={busy} maxLength={1000} className={field} value={draft.newName || ''} onChange={event => change('newName', event.target.value)} /><p className="text-xs text-[#b8bec8]">Можна змінити назву разом із будь-якою документальною дією. Залиште порожнім, щоб не перейменовувати. Попередня назва та зв’язок між записами залишаться в історії.</p></label>
+            {!(canMultiCreate && draft.multiMode) && <label className="text-sm space-y-1 sm:col-span-2"><span>Нова назва позиції {draft.status === 'перейменована' ? '*' : '(необов’язково)'}</span><input aria-label="Нова назва позиції" required={draft.status === 'перейменована' && !draft.id} disabled={busy} maxLength={1000} className={field} value={draft.newName || ''} onChange={event => change('newName', event.target.value)} /><p className="text-xs text-[#b8bec8]">Можна змінити назву разом із будь-якою документальною дією. Залиште порожнім, щоб не перейменовувати. Попередня назва та зв’язок між записами залишаться в історії.</p></label>}
         </div>
         {preparing && draft.id && !draft.positionId && <label className="flex gap-2 items-center text-sm text-[#d99b26]"><input type="checkbox" disabled={busy} checked={!!draft.opensRegister} onChange={event => change('opensRegister', event.target.checked)} />Підтверджую: цей старий запис відкриває окрему історію облаштування</label>}
         <div className={`rounded-sm border p-4 space-y-3 ${D.hasDoc(draft) ? 'border-[#3da372]/50 bg-[#3da372]/10' : 'border-[#d9534f]/60 bg-[#d9534f]/10'}`}>

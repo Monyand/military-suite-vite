@@ -1,7 +1,7 @@
 import { default as React, useState, useRef, useEffect, useMemo } from 'react';
 import { DocumentJournal } from '../../core/documents.js';
 import { ExcelJS, localforage, XLSX } from '../../core/vendor.js';
-import { POSITION_CATEGORIES, buildPositionRegister, positionChangeError, withPositionAudit } from './position-register.js';
+import { POSITION_CATEGORIES, buildPositionRegister, positionBatchError, positionChangeError, withPositionAudit } from './position-register.js';
 import { PositionFields } from './PositionFields.jsx';
 import { PositionHistory } from './PositionHistory.jsx';
 import { useSharedDictionaries } from '../../core/use-shared-dictionaries.js';
@@ -218,8 +218,47 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
         window.addEventListener('suite-review-record', openReviewed);
         return () => window.removeEventListener('suite-review-record', openReviewed);
     }, [tab, data, positionRegister]);
-    const saveRecord = async event => {
-        event.preventDefault();
+    const saveRecord = async (event, keepOpen = false) => {
+        if (event) event.preventDefault();
+        if (tab === 'positions' && !draft.id && draft.multiMode) {
+            const names = String(draft.name || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+            if (!names.length) { setFormError('Введіть хоча б одну назву позиції.'); return; }
+            const seen = new Set();
+            for (const itemName of names) {
+                const key = itemName.toLowerCase();
+                if (seen.has(key)) { setFormError(`Повтор у списку: «${itemName}».`); return; }
+                seen.add(key);
+            }
+            const now = new Date().toISOString();
+            const addedRows = [];
+            for (const itemName of names) {
+                const clean = D.cleanRow('positions', { ...draft, name: itemName, newName: '' });
+                const err = D.rowError('positions', clean);
+                if (err) { setFormError(err); return; }
+                if (clean.date > window.SuiteDates.localISO()) { setFormError('Журнал призначений для вже здійснених дій. Оберіть сьогоднішню або минулу дату.'); return; }
+                if (!D.hasDoc(clean) && !draft.awaitingDoc) { setFormError('Вкажіть № Позатермінового донесення або підтвердьте, що очікуєте номер.'); return; }
+                if (!POSITION_CATEGORIES.includes(clean.category)) { setFormError('Оберіть категорію позиції.'); return; }
+                const id = 'doc_' + crypto.randomUUID();
+                addedRows.push({
+                    ...clean,
+                    id,
+                    positionId: id,
+                    opensRegister: clean.status === 'облаштовується',
+                    createdAt: now,
+                    updatedAt: now
+                });
+            }
+            if (await commit(value => {
+                const records = [...value.positions, ...addedRows];
+                const problem = positionBatchError(value.positions, records, addedRows.map(r => r.id));
+                if (problem) { setFormError(problem); throw new Error(problem); }
+                return { ...value, positions: records };
+            })) {
+                setDraft(null);
+                setNotice(`Додано позицій: ${addedRows.length}.`);
+            }
+            return;
+        }
         const clean = D.cleanRow(tab, draft), error = D.rowError(tab, clean);
         if (error) { setFormError(error); return; }
         const now = new Date().toISOString();
@@ -241,7 +280,25 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
             if (problem) { setFormError(problem); throw new Error(problem); }
             return { ...value, [tab]: records };
         })) {
-            setDraft(null); setNotice(tab === 'positions' && !D.hasDoc(row) ? 'Запис збережено з червоним нагадуванням: очікується номер донесення.' : 'Запис збережено.');
+            if (keepOpen && tab === 'positions' && !draft.id) {
+                setFormError('');
+                setDraft({
+                    ...D.emptyRow('positions'),
+                    date: row.date,
+                    status: row.status,
+                    category: row.category,
+                    docNumber: row.docNumber,
+                    awaitingDoc: !!draft.awaitingDoc,
+                    details: row.details,
+                    reportedInPbd: row.reportedInPbd,
+                    opensRegister: row.status === 'облаштовується',
+                    multiMode: false
+                });
+                setNotice('Запис збережено — можна вводити наступну позицію.');
+                requestAnimationFrame(() => modalRef.current?.querySelector('#pos-name-field')?.focus());
+            } else {
+                setDraft(null); setNotice(tab === 'positions' && !D.hasDoc(row) ? 'Запис збережено з червоним нагадуванням: очікується номер донесення.' : 'Запис збережено.');
+            }
             if (tab === 'ovt') {
                 lock.current = true; setBusy(true);
                 try { await SharedDictionaries.learnOvt(row); }
@@ -615,7 +672,7 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
             {batchOpen && <>{notice && <p role="alert" className="text-[#d99b26] text-sm">{notice}</p>}<PositionBatch rows={data.positions} busy={busy} onApply={applyPositionBatch} /></>}
             {draft && <form onSubmit={saveRecord} className={tab === 'ovt' ? 'ovt-form' : 'space-y-4'}>{tab === 'positions' ? <PositionFields draft={draft} setDraft={setDraft} rows={data.positions} busy={busy} /> : tab === 'ovt' ? <OvtFields draft={draft} setDraft={setDraft} rows={data.ovt} busy={busy} /> : <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{schema.fields.map(([key, title, type, required]) => <label key={key} className={`text-sm ${type === 'textarea' ? 'sm:col-span-2' : ''}`}>
                 {type === 'checkbox' ? <span className="flex gap-2 items-center py-2"><input aria-label={title} type="checkbox" disabled={busy} checked={!!draft[key]} onChange={event => setDraft({ ...draft, [key]: event.target.checked })} />{title}</span> : <><span className="block text-[#cbd5e1] mb-1">{title}{required || key === 'date' ? ' *' : ''}</span>{Array.isArray(type) ? <select aria-label={title} className={control} disabled={busy} value={draft[key]} onChange={event => setDraft({ ...draft, [key]: event.target.value })}>{[...new Set([...type, draft[key]])].filter(Boolean).map(option => <option key={option}>{option}</option>)}</select> : type === 'textarea' ? <textarea aria-label={title} className={control} disabled={busy} rows="3" required={required} maxLength={10000} value={draft[key]} onChange={event => setDraft({ ...draft, [key]: event.target.value })} /> : <><input aria-label={title} type={type} className={control} disabled={busy} required={required || key === 'date'} maxLength={1000} value={draft[key]} onChange={event => setDraft({ ...draft, [key]: event.target.value })} list={key === 'position' ? 'ovt-document-names' : key === 'nomenclature' && tab === 'ovt' ? 'nomenclature-list' : undefined} />{key === 'position' && <datalist id="ovt-document-names">{dictionaryOptions('docPlaces', data.ovt.map(row => row.position), draft.position).map(name => <option key={name} value={name} />)}</datalist>}{key === 'nomenclature' && tab === 'ovt' && <datalist id="nomenclature-list">{((prefsRef.current.ovtDict || D.defaultOvtDict)[draft.category] || []).map(opt => <option key={opt} value={opt} />)}</datalist>}</>}</>}
-            </label>)}</div>}{formError && <p role="alert" className="text-[#f3a3a0]">{formError}</p>}<div className="flex gap-2 justify-end"><button type="button" disabled={busy} className={button} onClick={() => setDraft(null)}>Скасувати</button><button type="submit" disabled={busy} className="px-4 py-2 rounded-sm bg-[#2b67ab] hover:bg-[#3477c2] border border-[#4c8ed9] text-white font-semibold disabled:opacity-50">Зберегти запис</button></div></form>}
+            </label>)}</div>}{formError && <p role="alert" className="text-[#f3a3a0]">{formError}</p>}<div className="flex gap-2 justify-end flex-wrap"><button type="button" disabled={busy} className={button} onClick={() => setDraft(null)}>Скасувати</button>{tab === 'positions' && !draft.id && !draft.multiMode && <button type="button" disabled={busy} className={button} onClick={() => saveRecord(null, true)}>Зберегти і додати ще</button>}<button type="submit" disabled={busy} className="px-4 py-2 rounded-sm bg-[#2b67ab] hover:bg-[#3477c2] border border-[#4c8ed9] text-white font-semibold disabled:opacity-50 tabular-nums">{tab === 'positions' && !draft.id && draft.multiMode ? `Зберегти позицій: ${String(draft.name || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean).length}` : 'Зберегти запис'}</button></div></form>}
             {pendingDelete && <><p>Видалити запис від {D.dateLabel(pendingDelete.date)}: {pendingDelete.name || pendingDelete.task || pendingDelete.nomenclature}?</p><p className="text-sm text-[#b8bec8]">Для відновлення потрібна раніше збережена резервна копія.</p><div className="flex gap-2 justify-end"><button disabled={busy} className={button} onClick={() => setPendingDelete(null)}>Скасувати</button><button disabled={busy} className="px-4 py-2 rounded-sm bg-[#d9534f]/20 hover:bg-[#d9534f]/30 border border-[#d9534f]/60 text-[#f3a3a0] font-semibold" onClick={async () => { if (await commit(value => { const records = value[tab].filter(row => row.id !== pendingDelete.id); const problem = tab === 'positions' ? positionChangeError(value.positions, records, pendingDelete.id) : ''; if (problem) throw new Error(problem); return { ...value, [tab]: records }; })) { setPendingDelete(null); setNotice('Запис видалено. Відновити його можна з раніше збереженого бекапу.'); } }}>Підтвердити видалення</button></div></>}
             {importPreview && <><p className="text-sm break-all">Файл: {importPreview.name}</p><p className="tabular-nums">Буде додано: <strong>{importPreview.added}</strong>. Повторів: {importPreview.duplicates}. Некоректних рядків: {importPreview.issues.length}.</p><ul className="space-y-1 text-sm tabular-nums">{D.tabs.map(key => <li key={key}>{D.schemas[key].title}: {importPreview.incoming[key].length}</li>)}</ul>{!!importPreview.positionIssues?.length && <p className="text-sm text-[#d99b26]">Після імпорту {importPreview.positionIssues.length} записів позицій потребуватимуть звірки зв’язків. Історичні записи збережуться; перевірте їх через фільтр «Лише потребують звірки».</p>}<p className="text-sm text-[#cbd5e1]">Імпорт лише доповнює три вкладки. Наявні записи та відмітки ПБД не перезаписуються.</p>{!!importPreview.ignored.length && <p className="text-sm text-[#d99b26]">Не імпортуються аркуші: {importPreview.ignored.join(', ')}.</p>}{!!importPreview.issues.length && <details className="text-sm text-[#d99b26]"><summary>Пропущені рядки — перевірте перед підтвердженням</summary><ul className="mt-2 max-h-40 overflow-auto">{importPreview.issues.map((issue, i) => <li key={i}>{issue}</li>)}</ul></details>}<div className="flex gap-2 justify-end"><button disabled={busy} className={button} onClick={() => setImportPreview(null)}>Скасувати</button><button disabled={busy || !importPreview.added} className="px-4 py-2 rounded-sm bg-[#2b67ab] hover:bg-[#3477c2] border border-[#4c8ed9] text-white font-semibold disabled:opacity-50" onClick={applyImport}>Імпортувати {importPreview.added} записів</button></div></>}
             {busy && <p role="status" className="text-[#4c8ed9] text-sm">Збереження / обробка…</p>}
