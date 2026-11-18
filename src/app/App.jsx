@@ -66,7 +66,8 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
         setBackupMessage(''); setRestoreConfirmed(false); setRestoreComplete(false);
         setExportSummary(null);
         if (mode === 'export') {
-            SuiteBackup.collect({ localState: true, unchecked: true })
+            window.SuiteRuntime.drain()
+                .then(() => SuiteBackup.collect({ localState: true, unchecked: true }))
                 .then(snap => setExportSummary(SuiteBackup.backupSummary(snap, snap)))
                 .catch(() => {});
         }
@@ -458,24 +459,29 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                     <p className="text-sm text-[#fcd34d]">За замовчуванням відмітки «Подано в ПБД» залишаються локальними. Включення відміток у файл та їх застосування при відновленні вмикаються окремо.</p>
                     {!restoreStarted && <>
                         {backupMode === 'export' && exportSummary && (
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                {exportSummary.map(row => {
-                                    const hasPrev = lastBackupCounts && typeof lastBackupCounts[row.title] === 'number';
-                                    const diff = hasPrev ? row.current - lastBackupCounts[row.title] : null;
-                                    return (
-                                        <div key={row.title} className="bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-2">
-                                            <div className="text-[11px] text-[#9aa6b8] truncate" title={row.title}>{row.title}</div>
-                                            <div className="flex items-baseline justify-between gap-2 mt-0.5 tabular-nums font-mono">
-                                                <span className="text-sm font-bold text-[#f3f4f6]">{row.current}</span>
-                                                {diff !== null && (
-                                                    <span className={`text-[11px] font-semibold ${diff > 0 ? 'text-[#8ad8ae]' : diff < 0 ? 'text-[#f3a3a0]' : 'text-[#989fa9]'}`}>
-                                                        {diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : '0'}
-                                                    </span>
-                                                )}
+                            <div className="space-y-1.5">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    {exportSummary.map(row => {
+                                        const hasPrev = lastBackupCounts && typeof lastBackupCounts[row.title] === 'number';
+                                        const diff = hasPrev ? row.current - lastBackupCounts[row.title] : null;
+                                        return (
+                                            <div key={row.title} className="bg-[#101113] border border-[#2e3138] rounded-sm px-2.5 py-2">
+                                                <div className="text-[11px] text-[#9aa6b8] truncate" title={row.title}>{row.title}</div>
+                                                <div className="flex items-baseline justify-between gap-2 mt-0.5 tabular-nums font-mono">
+                                                    <span className="text-sm font-bold text-[#f3f4f6]">{row.current}</span>
+                                                    {diff !== null && (
+                                                        <span className={`text-[11px] font-semibold ${diff > 0 ? 'text-[#8ad8ae]' : diff < 0 ? 'text-[#f3a3a0]' : 'text-[#989fa9]'}`}>
+                                                            {diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : '0'}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </div>
+                                {!lastBackupCounts && (
+                                    <p className="text-[11px] text-[#989fa9]">Різниця (+ / −) відносно попереднього стану почне показуватися після першого збереження Єдиного Бекапу.</p>
+                                )}
                             </div>
                         )}
                         {backupMode === 'export' && <label className="flex gap-2 items-start text-sm"><input type="checkbox" disabled={backupBusy} checked={exportPbd} onChange={event => setExportPbd(event.target.checked)} />Включити в бекап відмітки «Подано в ПБД»</label>}
