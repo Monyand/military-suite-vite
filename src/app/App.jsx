@@ -452,11 +452,29 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
             {integrityOpen && <IntegrityPanel onClose={() => setIntegrityOpen(false)} onOpen={openIntegrityRecord} />}
             {searchOpen && <GlobalSearchModal onClose={() => setSearchOpen(false)} onNavigate={handleSearchNavigate} />}
             {changelogOpen && <ChangelogModal onClose={() => setChangelogOpen(false)} />}
-            {backupMode && <div className="fixed inset-0 z-[20000] bg-black/80 flex items-center justify-center p-4">
-                <section ref={backupDialogRef} role="dialog" aria-modal="true" aria-labelledby="suite-backup-title" className="bg-[#17181b] text-[#f3f4f6] border border-[#2e3138] rounded-sm p-5 w-full max-w-3xl max-h-[90vh] overflow-y-auto space-y-4">
-                    <div className="flex items-center justify-between gap-3 border-b border-[#2e3138] pb-3"><h2 id="suite-backup-title" className="text-lg font-semibold">{backupMode === 'export' ? 'Єдиний зашифрований бекап' : 'Відновлення єдиного бекапу'}</h2>{!restoreStarted && <button type="button" disabled={backupBusy} onClick={closeBackup} aria-label="Закрити вікно бекапу" className="p-1.5 rounded-sm bg-[#222429] border border-[#2e3138] text-[#b8bec8] hover:text-white hover:border-[#3c404a] disabled:opacity-50"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button>}</div>
-                    <p className="text-sm text-[#b8bec8]">Дані та збережені налаштування всіх модулів, включно з документальним журналом. AES-256-GCM · PBKDF2-SHA-256 · 600 000 ітерацій. Пароль не записується у файл.</p>
-                    <p className="text-sm text-[#fcd34d]">За замовчуванням відмітки «Подано в ПБД» залишаються локальними. Включення відміток у файл та їх застосування при відновленні вмикаються окремо.</p>
+            {backupMode && <div className="fixed inset-0 z-[20000] bg-black/80 flex items-center justify-center p-3 sm:p-4 overscroll-contain">
+                <section ref={backupDialogRef} role="dialog" aria-modal="true" aria-labelledby="suite-backup-title" className="bg-[#17181b] text-[#f3f4f6] border border-[#2e3138] rounded-sm w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+                    <div className="px-5 py-3.5 bg-[#101113] border-b border-[#2e3138] flex items-center justify-between gap-3 shrink-0">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <div className={`w-9 h-9 rounded-sm border flex items-center justify-center shrink-0 ${backupMode === 'export' ? 'bg-[#2b67ab]/15 border-[#4c8ed9]/40 text-[#4c8ed9]' : 'bg-[#d99b26]/15 border-[#d99b26]/40 text-[#e7c574]'}`}>
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    {backupMode === 'export'
+                                        ? <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></>
+                                        : <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></>}
+                                </svg>
+                            </div>
+                            <div className="min-w-0">
+                                <h2 id="suite-backup-title" className="text-base font-bold text-[#e6edf3] tracking-tight truncate">{backupMode === 'export' ? 'Єдиний зашифрований бекап' : 'Відновлення єдиного бекапу'}</h2>
+                                <p className="text-[11px] text-[#989fa9] font-mono truncate">AES-256-GCM · PBKDF2-SHA-256 · 600 000 ітерацій</p>
+                            </div>
+                        </div>
+                        {!restoreStarted && <button type="button" disabled={backupBusy} onClick={closeBackup} aria-label="Закрити вікно бекапу" className="w-8 h-8 rounded-sm bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] text-[#b8bec8] hover:text-white flex items-center justify-center transition-colors disabled:opacity-50 cursor-pointer shrink-0"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button>}
+                    </div>
+                    <div className="p-5 overflow-y-auto space-y-4">
+                        <div className="rounded-sm border border-[#2e3138] bg-[#101113] px-3.5 py-2.5 text-xs space-y-1">
+                            <p className="text-[#b8bec8]">Дані та збережені налаштування всіх модулів, включно з документальним журналом. Пароль не записується у файл.</p>
+                            <p className="text-[#e7c574]">За замовчуванням відмітки «Подано в ПБД» залишаються локальними. Включення відміток у файл та їх застосування при відновленні вмикаються окремо.</p>
+                        </div>
                     {!restoreStarted && <>
                         {backupMode === 'export' && exportSummary && (
                             <div className="space-y-1.5">
@@ -484,23 +502,27 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                                 )}
                             </div>
                         )}
-                        {backupMode === 'export' && <label className="flex gap-2 items-start text-sm"><input type="checkbox" disabled={backupBusy} checked={exportPbd} onChange={event => setExportPbd(event.target.checked)} />Включити в бекап відмітки «Подано в ПБД»</label>}
-                        {backupMode === 'import' && <div className="space-y-3">
-                            <label className="block text-sm">Файл бекапу
-                                <input aria-label="Файл єдиного бекапу" type="file" accept=".mils,.enc,.json" disabled={backupBusy} onChange={event => { const file = event.target.files[0]; event.target.value = ''; if (file) chooseBackup(file); }} className="block w-full mt-2 text-sm" />
-                            </label>
-                            <button disabled={backupBusy} onClick={chooseRecovery} className="underline text-[#4c8ed9] hover:text-[#f3f4f6] text-sm">Попередній стан</button>
-                            {backupFileName && <p className="text-sm break-all font-mono tabular-nums">Обрано: {backupFileName}</p>}
-                            {legacyBackup && <p className="text-[#fcd34d] text-sm">Це стара незашифрована копія. Для неї пароль не потрібен. Задайте новий пароль нижче: ним буде захищено поточні дані перед заміною. Надалі створюйте зашифровані копії.</p>}
+                        {backupMode === 'export' && <label className="flex gap-2 items-center text-xs text-[#e6edf3] cursor-pointer select-none"><input type="checkbox" disabled={backupBusy} checked={exportPbd} onChange={event => setExportPbd(event.target.checked)} className="w-3.5 h-3.5 accent-[#4c8ed9]" />Включити в бекап відмітки «Подано в ПБД»</label>}
+                        {backupMode === 'import' && <div className="space-y-2.5 bg-[#101113] border border-[#2e3138] rounded-sm p-3.5">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <label className="inline-flex items-center gap-2 h-8 px-3 rounded-sm bg-[#222429] hover:bg-[#2b3340] border border-[#3c404a] hover:border-[#4c8ed9] text-xs font-semibold text-[#e6edf3] cursor-pointer transition-colors">
+                                    <svg className="w-3.5 h-3.5 text-[#4c8ed9]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                                    <span>Обрати файл бекапу (.mils / .enc)</span>
+                                    <input aria-label="Файл єдиного бекапу" type="file" accept=".mils,.enc,.json" disabled={backupBusy} onChange={event => { const file = event.target.files[0]; event.target.value = ''; if (file) chooseBackup(file); }} className="sr-only" />
+                                </label>
+                                <button type="button" disabled={backupBusy} onClick={chooseRecovery} className="h-8 px-3 rounded-sm bg-[#17181b] hover:bg-[#222429] border border-[#2e3138] hover:border-[#4c8ed9] text-[#93c5fd] text-xs font-medium transition-colors cursor-pointer">Попередній стан</button>
+                            </div>
+                            {backupFileName && <p className="text-xs break-all font-mono tabular-nums text-[#8ad8ae]">Обрано: {backupFileName}</p>}
+                            {legacyBackup && <p className="text-[#fcd34d] text-xs">Це стара незашифрована копія. Для неї пароль не потрібен. Задайте новий пароль нижче: ним буде захищено поточні дані перед заміною. Надалі створюйте зашифровані копії.</p>}
                         </div>}
-                        {!backupPreview && <>
-                            <label className="block text-sm">{legacyBackup ? 'Новий пароль захисної копії' : 'Пароль бекапу'}
-                                <input aria-label="Пароль єдиного бекапу" type="password" autoComplete={backupMode === 'export' || legacyBackup ? 'new-password' : 'current-password'} disabled={backupBusy} value={backupPassword} onChange={event => setBackupPassword(event.target.value)} className="block w-full mt-1 rounded-sm border border-[#2e3138] bg-[#101113] p-2 text-[#f3f4f6] focus:border-[#4c8ed9]" />
+                        {!backupPreview && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <label className={`block text-xs text-[#b8bec8] font-medium ${backupMode === 'import' && !legacyBackup ? 'sm:col-span-2' : ''}`}>{legacyBackup ? 'Новий пароль захисної копії' : 'Пароль бекапу'}
+                                <input aria-label="Пароль єдиного бекапу" type="password" autoComplete={backupMode === 'export' || legacyBackup ? 'new-password' : 'current-password'} disabled={backupBusy} value={backupPassword} onChange={event => setBackupPassword(event.target.value)} className="block w-full mt-1.5 rounded-sm border border-[#2e3138] bg-[#101113] px-3 py-2 text-xs text-[#f3f4f6] focus:border-[#4c8ed9] outline-none" placeholder="Мінімум 12 символів..." />
                             </label>
-                            {(backupMode === 'export' || legacyBackup) && <label className="block text-sm">Повторіть пароль (щонайменше 12 символів)
-                                <input aria-label="Повтор пароля єдиного бекапу" type="password" autoComplete="new-password" disabled={backupBusy} value={backupConfirm} onChange={event => setBackupConfirm(event.target.value)} className="block w-full mt-1 rounded-sm border border-[#2e3138] bg-[#101113] p-2 text-[#f3f4f6] focus:border-[#4c8ed9]" />
+                            {(backupMode === 'export' || legacyBackup) && <label className="block text-xs text-[#b8bec8] font-medium">Повторіть пароль (щонайменше 12 символів)
+                                <input aria-label="Повтор пароля єдиного бекапу" type="password" autoComplete="new-password" disabled={backupBusy} value={backupConfirm} onChange={event => setBackupConfirm(event.target.value)} className="block w-full mt-1.5 rounded-sm border border-[#2e3138] bg-[#101113] px-3 py-2 text-xs text-[#f3f4f6] focus:border-[#4c8ed9] outline-none" placeholder="Повторіть пароль..." />
                             </label>}
-                        </>}
+                        </div>}
                         {backupPreview && <div className="rounded-sm border border-[#d99b26]/50 bg-[#d99b26]/10 p-3 space-y-3 text-sm">
                             <p className="tabular-nums">Файл перевірено. Створений: {window.SuiteDates.localDateTime(backupPreview.timestamp)}. Наборів даних: {Object.keys(backupPreview.localforage).length}; параметрів локального сховища: {Object.keys(backupPreview.localstorage).length}.</p>
                             <p className="tabular-nums">Формат даних: {backupPreview.version}; ревізія журналу: {backupPreview.localforage.document_journal_v1?.schemaRevision ?? 0} → 1. Старим записам додаються лише відсутні локальні відмітки, без зміни ID, дат і змісту.</p>
@@ -516,15 +538,16 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                             <label className="flex gap-2 items-start"><input type="checkbox" disabled={backupBusy} checked={restoreConfirmed} onChange={event => setRestoreConfirmed(event.target.checked)} />Я закрив інші вкладки та підтверджую заміну поточних даних</label>
                         </div>}
                     </>}
-                    {backupBusy && <p role="status" className="text-[#4c8ed9] text-sm">Обробка… не закривайте програму.</p>}
-                    {backupMessage && <p role="alert" className="text-sm whitespace-pre-wrap break-words">{backupMessage}</p>}
-                    {restoreStarted && !backupBusy && !restoreComplete && <p className="text-sm text-[#fcd34d]">Модулі залишено зупиненими для захисту даних. Перезавантажте програму перед подальшою роботою.</p>}
-                    <div className="flex gap-2 justify-end flex-wrap pt-2 border-t border-[#2e3138]">
-                        {restoreStarted ? (!backupBusy && <button onClick={() => location.reload()} className="px-3 py-1.5 rounded-sm bg-[#2b67ab] hover:bg-[#4c8ed9] border border-[#4c8ed9] text-white font-semibold text-xs">Перезавантажити програму</button>) : <>
-                            <button disabled={backupBusy} onClick={closeBackup} className="px-3 py-1.5 rounded-sm bg-[#222429] hover:bg-[#282b31] border border-[#2e3138] text-xs font-semibold disabled:opacity-50">Закрити</button>
-                            {backupMode === 'export' && <button disabled={backupBusy} onClick={handleBackup} className="px-3 py-1.5 rounded-sm bg-[#2b67ab] hover:bg-[#4c8ed9] border border-[#4c8ed9] text-white text-xs font-semibold disabled:opacity-50">Зашифрувати й завантажити</button>}
-                            {backupMode === 'import' && !backupPreview && <button disabled={backupBusy || !backupSource} onClick={checkBackup} className="px-3 py-1.5 rounded-sm bg-[#2b67ab] hover:bg-[#4c8ed9] border border-[#4c8ed9] text-white text-xs font-semibold disabled:opacity-50">Перевірити файл</button>}
-                            {backupPreview && <button disabled={backupBusy || !restoreConfirmed} onClick={handleRestore} className="px-3 py-1.5 rounded-sm bg-[#b91c1c] hover:bg-[#dc2626] border border-[#e05252]/60 text-white text-xs font-semibold disabled:opacity-50">Відновити всі дані</button>}
+                    {backupBusy && <p role="status" className="text-[#4c8ed9] text-xs font-mono">Обробка… не закривайте програму.</p>}
+                    {backupMessage && <p role="alert" className="text-xs whitespace-pre-wrap break-words rounded-sm border border-[#4c8ed9]/40 bg-[#4c8ed9]/10 px-3 py-2 text-[#e6edf3]">{backupMessage}</p>}
+                    {restoreStarted && !backupBusy && !restoreComplete && <p className="text-xs text-[#fcd34d]">Модулі залишено зупиненими для захисту даних. Перезавантажте програму перед подальшою роботою.</p>}
+                    </div>
+                    <div className="px-5 py-3 bg-[#101113] border-t border-[#2e3138] flex gap-2 justify-end flex-wrap shrink-0">
+                        {restoreStarted ? (!backupBusy && <button onClick={() => location.reload()} className="h-8 px-3.5 rounded-sm bg-[#2b67ab] hover:bg-[#3577c2] border border-[#4c8ed9] text-white font-semibold text-xs cursor-pointer">Перезавантажити програму</button>) : <>
+                            <button disabled={backupBusy} onClick={closeBackup} className="h-8 px-3.5 rounded-sm bg-[#222429] hover:bg-[#282b31] border border-[#2e3138] text-xs font-semibold disabled:opacity-50 cursor-pointer">Закрити</button>
+                            {backupMode === 'export' && <button disabled={backupBusy} onClick={handleBackup} className="h-8 px-3.5 rounded-sm bg-[#2b67ab] hover:bg-[#3577c2] border border-[#4c8ed9] text-white text-xs font-semibold disabled:opacity-50 cursor-pointer">Зашифрувати й завантажити</button>}
+                            {backupMode === 'import' && !backupPreview && <button disabled={backupBusy || !backupSource} onClick={checkBackup} className="h-8 px-3.5 rounded-sm bg-[#2b67ab] hover:bg-[#3577c2] border border-[#4c8ed9] text-white text-xs font-semibold disabled:opacity-50 cursor-pointer">Перевірити файл</button>}
+                            {backupPreview && <button disabled={backupBusy || !restoreConfirmed} onClick={handleRestore} className="h-8 px-3.5 rounded-sm bg-[#b91c1c] hover:bg-[#dc2626] border border-[#e05252]/60 text-white text-xs font-semibold disabled:opacity-50 cursor-pointer">Відновити всі дані</button>}
                         </>}
                     </div>
                 </section>

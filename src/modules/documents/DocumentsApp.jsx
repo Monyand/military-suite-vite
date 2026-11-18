@@ -566,7 +566,7 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
                     #document-journal .dj-logo{display:flex;align-items:center;justify-content:center;width:30px;height:30px;background:color-mix(in srgb,var(--dj-accent) 14%,#17181b);border:1px solid color-mix(in srgb,var(--dj-accent) 45%,#2e3138);border-radius:2px;color:var(--dj-accent)}
                     #document-journal h1{font-size:15px;font-weight:700;letter-spacing:-.01em;line-height:1.2;color:#f3f4f6}
                     #document-journal .dj-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
-                    #document-journal .dj-button{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:5px 10px;border:1px solid #2e3138;border-radius:2px;background:#222429;color:#cbd5e1;font-size:11px;font-weight:600;white-space:nowrap;transition:background-color .15s,border-color .15s}
+                    #document-journal .dj-button{display:inline-flex;align-items:center;justify-content:center;gap:5px;height:32px;padding:0 10px;border:1px solid #2e3138;border-radius:2px;background:#222429;color:#cbd5e1;font-size:11.5px;font-weight:600;line-height:1;white-space:nowrap;transition:background-color .15s,border-color .15s;cursor:pointer}
                     #document-journal .dj-button:hover:not(:disabled){background:#282b31;border-color:#3c404a;color:#ffffff}#document-journal button:disabled{opacity:.45;cursor:not-allowed}
                     #document-journal .dj-blue{background:#2b67ab;border-color:#4c8ed9;color:#ffffff}#document-journal .dj-blue:hover:not(:disabled){background:#3477c2}
                     #document-journal .dj-green{background:rgba(61,163,114,.16);border-color:rgba(61,163,114,.45);color:#8ad8b1}#document-journal .dj-green:hover:not(:disabled){background:rgba(61,163,114,.25)}
@@ -577,24 +577,24 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
                     #document-journal .dj-tab:hover{border-color:#3c404a;background:#222429}
                     #document-journal .dj-tab[aria-pressed=true]{background:#222429;border-color:#4c8ed9;color:#f3f4f6}
                     #document-journal .dj-tab-count{font-family:'Cascadia Mono','JetBrains Mono',monospace;font-variant-numeric:tabular-nums;border-radius:2px;padding:1px 6px;background:#101113;border:1px solid #2e3138;color:#b8bec8;font-size:11px}
-                    #document-journal .dj-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:8px}
-                    #document-journal .dj-stat{text-align:left;background:#1a1c20;border:1px solid #3a3e47;border-radius:2px;padding:8px 12px;min-height:auto;font-variant-numeric:tabular-nums}
+                    #document-journal .dj-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin-bottom:6px}
+                    #document-journal .dj-stat{text-align:left;background:#1a1c20;border:1px solid #3a3e47;border-radius:2px;padding:6px 10px;min-height:auto;font-variant-numeric:tabular-nums}
                     #document-journal .dj-stat-label{font-size:11px;text-transform:uppercase;color:#cbd5e1;font-weight:700;letter-spacing:.04em;line-height:1.25}
                     #document-journal .dj-stat-number{font:700 19px 'Cascadia Mono','JetBrains Mono',monospace;font-variant-numeric:tabular-nums;line-height:1.15;margin-top:3px}
                     #document-journal .dj-stat-hint{font:11px 'Cascadia Mono','JetBrains Mono',monospace;color:#b8bec8;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
                     #document-journal .dj-stat-icon{padding:4px;border-radius:2px;border:1px solid;display:flex;align-items:center;justify-content:center}
                     #document-journal .dj-stat-icon svg{width:13px;height:13px}
-                    #document-journal .dj-position-categories{gap:6px;margin-bottom:8px}
-                    #document-journal .dj-position-categories .dj-stat{padding:6px 10px;min-height:auto}
+                    #document-journal .dj-position-categories{gap:6px;margin-bottom:6px}
+                    #document-journal .dj-position-categories .dj-stat{padding:5px 10px;min-height:auto}
                     #document-journal .dj-position-categories .dj-stat .dj-stat-number{font-size:16px;margin-top:2px}
                     #document-journal .dj-position-categories .dj-stat .dj-stat-hint{font-size:10.5px;margin-top:2px;color:#b8bec8}
-                    #document-journal .dj-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 10px;border:1px solid #3a3e47;border-radius:2px;background:#1a1c20;margin:0 0 8px}
+                    #document-journal .dj-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 10px;border:1px solid #3a3e47;border-radius:2px;background:#1a1c20;margin:0 0 6px}
                     #document-journal .dj-filter-main,#document-journal .dj-filter-extra{display:contents}
                     #document-journal .dj-filter-main>label{flex:0 0 auto}#document-journal .dj-filter-main>label:first-child{flex:1 1 130px;max-width:210px;min-width:110px}
                     #document-journal .dj-toolbar-actions{display:flex;gap:5px;margin-left:auto;align-items:center;flex-wrap:wrap}
                     #document-journal .dj-filter-main label>span,#document-journal .dj-filter-main>div>span{display:none}
                     #document-journal .dj-filter-main>div input[type=date]{width:116px;font-variant-numeric:tabular-nums}
-                    #document-journal .dj-input{padding:4px 7px;border:1px solid #2e3138;background:#101113;color:#f3f4f6;border-radius:2px;font-size:11.5px;outline:none}
+                    #document-journal .dj-input{min-height:32px;padding:4px 8px;border:1px solid #2e3138;background:#101113;color:#f3f4f6;border-radius:2px;font-size:11.5px;outline:none}
                     #document-journal .dj-input:focus{border-color:#4c8ed9}#document-journal input[type=checkbox]{accent-color:#4c8ed9;width:14px;height:14px;flex-shrink:0}
                     #document-journal .dj-table-wrap{overflow:auto;max-height:calc(100vh - 210px);background:#17181b;border:1px solid #3c404a;border-radius:2px;margin-top:6px}
                     #document-journal .dj-table{width:100%;font-size:13px;text-align:left;border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums;color:#f3f4f6}
@@ -623,7 +623,7 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
                 `}</style>
         <header className="dj-header">
             <div className="dj-headline"><div className="flex items-center gap-2.5"><div className="dj-logo"><DocumentJournalIcon name={tabTheme[tab][1]} size={16} /></div><div className="flex items-center gap-2 flex-wrap"><h1>{schema.title}</h1><span className="dj-tag" style={tagStyle(tabTheme[tab][0])}>ЖБД · ОБЛІК</span><span className="text-[11px] text-[#b8bec8]">· Документальний журнал</span></div></div>
-                <div className="dj-actions"><input ref={fileRef} aria-label="Імпорт Excel документального журналу" type="file" accept=".xlsx,.xls" className="hidden" onChange={event => { const file = event.target.files[0]; event.target.value = ''; chooseImport(file); }} /><button aria-label="Імпорт Excel" disabled={busy} className="dj-button dj-blue" onClick={() => fileRef.current.click()}><DocumentJournalIcon name="FileUp" size={14} />Імпорт (.xlsx)</button><button aria-label="Експорт трьох вкладок" disabled={busy} className="dj-button dj-green" onClick={() => exportExcel(false)}><DocumentJournalIcon name="FileDown" size={14} />Експорт (.xlsx)</button><button disabled={busy} className="dj-button" onClick={openDailyReport}><DocumentJournalIcon name="FileText" size={14} />Добовий витяг</button>{tab === 'ovt' && <button aria-label="Налаштування номенклатури ОВТ" disabled={busy} className="dj-button" style={{ borderColor: '#4c8ed9', color: '#f3f4f6' }} onClick={() => { setOvtDictEdit(prefsRef.current.ovtDict || D.defaultOvtDict); setOvtSettingsOpen(true); }}><DocumentJournalIcon name="Settings" size={14} />Налаштування ОВТ</button>}</div>
+                <div className="dj-actions"><input ref={fileRef} aria-label="Імпорт Excel документального журналу" type="file" accept=".xlsx,.xls" className="hidden" onChange={event => { const file = event.target.files[0]; event.target.value = ''; chooseImport(file); }} /><button aria-label="Імпорт Excel" disabled={busy} className="dj-button dj-blue" onClick={() => fileRef.current.click()}><DocumentJournalIcon name="FileUp" size={14} />Імпорт (.xlsx)</button><button aria-label="Експорт трьох вкладок" disabled={busy} className="dj-button dj-green" onClick={() => exportExcel(false)}><DocumentJournalIcon name="FileDown" size={14} />Експорт (.xlsx)</button><button disabled={busy} className="dj-button" onClick={openDailyReport}><DocumentJournalIcon name="FileText" size={14} />Добовий витяг</button>{tab === 'ovt' && <button aria-label="Налаштування номенклатури ОВТ" disabled={busy} className="dj-button" style={{ borderColor: '#4c8ed9', color: '#f3f4f6' }} onClick={() => { setOvtDictEdit(prefsRef.current.ovtDict || D.defaultOvtDict); setOvtSettingsOpen(true); }}><DocumentJournalIcon name="Settings" size={14} />Налаштування ОВТ</button>}{tab === 'tasks' ? <button type="button" aria-label="Додати завдання" disabled={busy} onClick={addTaskRow} className="dj-button dj-primary"><DocumentJournalIcon name="Plus" size={14} />Додати завдання</button> : <button aria-label="Додати запис" disabled={busy} onClick={() => openRecord(null)} className="dj-button dj-primary"><DocumentJournalIcon name="Plus" size={14} />{tab === 'ovt' ? 'Додати запис ОВТ' : 'Додати подію позиції'}</button>}</div>
             </div>
         </header>
         {notice && <div role="status" className="flex items-center justify-between gap-3 px-3 py-1.5 mb-1.5 rounded-sm bg-[#17181b] border border-[#2e3138] text-xs text-[#f3f4f6]"><span>{notice}</span><button aria-label="Закрити повідомлення журналу" className="dj-icon-button" onClick={() => setNotice('')}><DocumentJournalIcon name="X" size={14} /></button></div>}
@@ -675,10 +675,8 @@ const DocumentJournalApp = ({ onBackup, activeTab }) => {
             </div>
             <div className="dj-toolbar-actions">
                 {tab === 'positions' && <button type="button" disabled={busy} onClick={() => { setNotice(''); setBatchOpen(true); }} className="dj-button"><DocumentJournalIcon name="ListPlus" size={14} />Масове внесення / перейменування</button>}
-                {tab === 'tasks' && <button type="button" aria-label="Додати завдання" disabled={busy} onClick={addTaskRow} className="dj-button dj-primary"><DocumentJournalIcon name="Plus" size={14} />Додати завдання</button>}
                 {tab === 'tasks' && <button type="button" disabled={busy || !rows.length} onClick={copyFilteredTasks} className="dj-button" title="Копіювати текст усіх показаних завдань"><DocumentJournalIcon name="Copy" size={14} />Копіювати текст завдань</button>}
                 <button type="button" disabled={busy || !rows.length} onClick={() => exportExcel(true)} className="dj-button dj-green" title="Згенерувати Excel звіт по вибірці"><DocumentJournalIcon name="FileDown" size={14} />Експорт вибірки</button>
-                {tab !== 'tasks' && <button aria-label="Додати запис" disabled={busy} onClick={() => openRecord(null)} className="dj-button dj-primary"><DocumentJournalIcon name="Plus" size={14} />{tab === 'ovt' ? 'Додати запис ОВТ' : 'Додати подію позиції'}</button>}
             </div>
             {options.from && options.to && options.from > options.to && <p role="alert" className="text-[#d99b26] text-sm">Дата «від» пізніша за дату «до». Перевірте період.</p>}
         </div>
