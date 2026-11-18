@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { SuiteBackup } from '../core/backup.js';
-import { ReactDOM } from '../core/vendor.js';
+import { ReactDOM, localforage } from '../core/vendor.js';
 import { SharedDictionariesPanel } from './SharedDictionariesPanel.jsx';
 import { IntegrityPanel } from './IntegrityPanel.jsx';
 import { GlobalSearchModal } from './GlobalSearchModal.jsx';
@@ -49,6 +49,8 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
     const [restoreConfirmed, setRestoreConfirmed] = useState(false);
     const [restoreComplete, setRestoreComplete] = useState(false);
     const [restoreStarted, setRestoreStarted] = useState(false);
+    const [lastBackupAt, setLastBackupAt] = useState(null);
+    const [backupNowMs, setBackupNowMs] = useState(() => Date.now());
     const backupLock = useRef(false);
     const backupDialogRef = useRef(null);
     const legacyBackup = backupSource?.format === 'military-suite-unified';
@@ -81,6 +83,10 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
         requireNewPassword();
         const envelope = await SuiteBackup.encrypt(await SuiteBackup.collect({ includePbd: exportPbd }), backupPassword);
         SuiteBackup.download(envelope);
+        const ts = new Date().toISOString();
+        try { await localforage.setItem('suite_last_backup_at_v1', ts); } catch { /* ignore storage quota/private mode */ }
+        setLastBackupAt(ts);
+        setBackupNowMs(Date.now());
         setBackupPassword(''); setBackupConfirm('');
         setBackupMessage('Зашифровану копію підготовлено для завантаження. Збережіть файл і пароль окремо: без пароля відновлення неможливе.');
     });
@@ -120,6 +126,15 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
         setBackupPassword(''); setBackupConfirm(''); setBackupPreview(null); setBackupSource(null);
         setBackupMessage('Відновлення завершено. Попередній стан збережено зашифрованим у цьому браузері (кнопка «Попередній стан», той самий пароль). Перезавантажте програму.');
     });
+
+    useEffect(() => {
+        let active = true;
+        localforage.getItem('suite_last_backup_at_v1').then(val => {
+            if (active && typeof val === 'string') setLastBackupAt(val);
+        }).catch(() => {});
+        const timer = setInterval(() => setBackupNowMs(Date.now()), 60000);
+        return () => { active = false; clearInterval(timer); };
+    }, []);
 
     useEffect(() => {
         const tacContainer = document.getElementById('app-tactical-container');
@@ -358,18 +373,37 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
 
                     <div className="h-4 w-[1px] bg-[#2e3138] hidden sm:block mx-0.5" aria-hidden="true" />
 
-                    <button
-                        aria-label="Створити Єдиний Бекап"
-                        title="Створити єдиний зашифрований бекап бази даних (AES-256-GCM)"
-                        onClick={() => openBackup('export')}
-                        className={utilBtnClass(true)}
-                    >
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
-                        </svg>
-                        <span className="hidden lg:inline">Створити Єдиний Бекап</span>
-                        <span className="hidden sm:inline lg:hidden">Бекап</span>
-                    </button>
+                    {(() => {
+                        const lastMs = lastBackupAt ? Date.parse(lastBackupAt) : NaN;
+                        const hasTs = Number.isFinite(lastMs);
+                        const diffHours = hasTs ? Math.max(0, Math.floor((backupNowMs - lastMs) / 3600000)) : null;
+                        const diffDays = hasTs ? Math.floor(diffHours / 24) : null;
+                        const badgeLabel = !hasTs ? 'не було' : diffHours < 1 ? 'щойно' : diffHours < 24 ? `${diffHours}г` : `${diffDays}д`;
+                        const stale = !hasTs || diffHours >= 24;
+                        const badgeCls = stale
+                            ? 'bg-[#d99b26]/20 border-[#d99b26]/50 text-[#fde68a]'
+                            : 'bg-[#3da372]/20 border-[#3da372]/50 text-[#8ad8ae]';
+                        const exactLabel = hasTs
+                            ? `Останній Єдиний Бекап: ${new Date(lastMs).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' })}`
+                            : 'Єдиний Бекап у цьому браузері ще не створювався';
+                        return (
+                            <button
+                                aria-label="Створити Єдиний Бекап"
+                                title={`${exactLabel} — створити зашифрований бекап (AES-256-GCM)`}
+                                onClick={() => openBackup('export')}
+                                className={utilBtnClass(true)}
+                            >
+                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
+                                <span className="hidden lg:inline">Створити Єдиний Бекап</span>
+                                <span className="hidden sm:inline lg:hidden">Бекап</span>
+                                <span className={`hidden xl:inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-mono font-bold tabular-nums leading-none border ${badgeCls}`}>
+                                    {badgeLabel}
+                                </span>
+                            </button>
+                        );
+                    })()}
 
                     <button
                         aria-label="Відновити бекап"
