@@ -5,6 +5,8 @@ import { SharedDictionariesPanel } from './SharedDictionariesPanel.jsx';
 import { IntegrityPanel } from './IntegrityPanel.jsx';
 import { GlobalSearchModal } from './GlobalSearchModal.jsx';
 import { ChangelogModal, SUITE_VERSION } from './ChangelogModal.jsx';
+import { TrashModal } from './TrashModal.jsx';
+import { SuiteTrash } from '../core/trash.js';
 import { inspectIntegrity } from '../core/integrity.js';
 import { bindDialogFocusTrap } from './dialog-focus.js';
 
@@ -34,6 +36,8 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
     const [dictionariesOpen, setDictionariesOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [changelogOpen, setChangelogOpen] = useState(false);
+    const [trashOpen, setTrashOpen] = useState(false);
+    const [trashCount, setTrashCount] = useState(0);
     const [backupPassword, setBackupPassword] = useState('');
     const [backupConfirm, setBackupConfirm] = useState('');
     const [backupSource, setBackupSource] = useState(null);
@@ -159,13 +163,24 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
     }, []);
 
     useEffect(() => {
+        let active = true;
+        SuiteTrash.count().then(n => { if (active) setTrashCount(n); }).catch(() => {});
+        const onTrashChanged = (e) => {
+            if (typeof e?.detail?.count === 'number') setTrashCount(e.detail.count);
+            else SuiteTrash.count().then(n => { if (active) setTrashCount(n); }).catch(() => {});
+        };
+        window.addEventListener('suite-trash-changed', onTrashChanged);
+        return () => { active = false; window.removeEventListener('suite-trash-changed', onTrashChanged); };
+    }, []);
+
+    useEffect(() => {
         return window.SuiteRuntime?.onConflict?.(reason => setTabConflict(reason));
     }, []);
 
     useEffect(() => {
         const tacContainer = document.getElementById('app-tactical-container');
         if (!tacContainer) return;
-        if (activeApp === 'tactical' && !backupMode && !dictionariesOpen && !integrityOpen && !searchOpen && !changelogOpen && !restoreStarted && !tabConflict) {
+        if (activeApp === 'tactical' && !backupMode && !dictionariesOpen && !integrityOpen && !searchOpen && !changelogOpen && !trashOpen && !restoreStarted && !tabConflict) {
             tacContainer.style.display = 'block';
             if (window.TacticalModule && window.TacticalModule.init) {
                 window.TacticalModule.init();
@@ -173,7 +188,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
         } else {
             tacContainer.style.display = 'none';
         }
-    }, [activeApp, backupMode, dictionariesOpen, integrityOpen, searchOpen, changelogOpen, restoreStarted, tabConflict]);
+    }, [activeApp, backupMode, dictionariesOpen, integrityOpen, searchOpen, changelogOpen, trashOpen, restoreStarted, tabConflict]);
 
     useEffect(() => {
         if (!backupMode) return;
@@ -397,6 +412,25 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                         <kbd className="hidden 2xl:inline text-[11px] font-mono tabular-nums bg-[#101113] border border-[#2e3138] rounded-sm px-1 text-[#b8bec8]">Ctrl K</kbd>
                     </button>
 
+                    <button
+                        type="button"
+                        aria-label="Кошик та журнал видалень"
+                        title="Кошик та журнал видалень (відновлення видалених записів)"
+                        disabled={restoreStarted}
+                        onClick={() => setTrashOpen(true)}
+                        className={utilBtnClass(false)}
+                    >
+                        <svg className="w-3.5 h-3.5 text-[#f87171]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                        </svg>
+                        <span className="hidden xl:inline">Кошик</span>
+                        {trashCount > 0 && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[11px] font-mono font-bold tabular-nums leading-none border bg-[#d9534f]/20 border-[#d9534f]/50 text-[#fca5a5]">
+                                {trashCount}
+                            </span>
+                        )}
+                    </button>
+
                     <div className="h-4 w-[1px] bg-[#2e3138] hidden sm:block mx-0.5" aria-hidden="true" />
 
                     {(() => {
@@ -458,6 +492,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
             {integrityOpen && <IntegrityPanel onClose={() => setIntegrityOpen(false)} onOpen={openIntegrityRecord} />}
             {searchOpen && <GlobalSearchModal onClose={() => setSearchOpen(false)} onNavigate={handleSearchNavigate} />}
             {changelogOpen && <ChangelogModal onClose={() => setChangelogOpen(false)} />}
+            {trashOpen && <TrashModal onClose={() => setTrashOpen(false)} />}
             {tabConflict && !restoreStarted && (
                 <div className="fixed inset-0 z-[25000] bg-black/85 flex items-center justify-center p-4 overscroll-contain">
                     <section role="alertdialog" aria-modal="true" aria-labelledby="suite-tab-conflict-title" className="bg-[#17181b] text-[#f3f4f6] border border-[#d9534f]/65 rounded-sm w-full max-w-lg overflow-hidden">

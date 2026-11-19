@@ -7,6 +7,7 @@ import { isCompletedAssault } from './assault-report.js';
 import { PersonnelView } from './PersonnelView.jsx';
 import { escapeHtml } from '../../core/html.js';
 import { bindDialogFocusTrap } from '../../app/dialog-focus.js';
+import { SuiteTrash } from '../../core/trash.js';
 
 const EventsApp = (function() {
             
@@ -3780,8 +3781,18 @@ const EventsApp = (function() {
                     try {
                         const removed = events.find(e => e.id === id);
                         await saveEvents(events.filter(e => e.id !== id));
+                        if (removed) {
+                            const typesTxt = Array.isArray(removed.types) && removed.types.length ? removed.types.join(', ') : 'Подія';
+                            const placeTxt = removed.position || removed.sector || removed.location || '';
+                            const dateTxt = getEventDateStr(removed) || '';
+                            SuiteTrash.add({
+                                module: 'enemy',
+                                summary: [dateTxt, typesTxt, placeTxt].filter(Boolean).join(' · '),
+                                record: removed
+                            }).catch(() => {});
+                        }
                         setDeletedRecord(removed);
-                        showToast('Запис видалено. Його можна повернути кнопкою «Скасувати видалення».');
+                        showToast('Запис переміщено в кошик. Його можна повернути кнопкою «Скасувати» або через «Кошик».');
                     } catch {
                         showToast('Не вдалося зберегти зміни. Запис не видалено.');
                     }
@@ -3869,6 +3880,20 @@ const EventsApp = (function() {
                 };
                 window.addEventListener('suite-review-record', openReviewed);
                 return () => window.removeEventListener('suite-review-record', openReviewed);
+            }, [events]);
+            useEffect(() => {
+                const onTrashRestore = ({ detail }) => {
+                    const entry = detail?.entry;
+                    if (!entry || entry.module !== 'enemy' || !entry.record) return;
+                    detail.ack?.();
+                    if (!events.some(e => String(e.id) === String(entry.record.id))) {
+                        saveEvents([entry.record, ...events]).then(() => {
+                            showToast('Подію відновлено з кошика.');
+                        }).catch(() => {});
+                    }
+                };
+                window.addEventListener('suite-trash-restore', onTrashRestore);
+                return () => window.removeEventListener('suite-trash-restore', onTrashRestore);
             }, [events]);
             if (isLoading) return <div className="flex-1 flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full"></div></div>;
 

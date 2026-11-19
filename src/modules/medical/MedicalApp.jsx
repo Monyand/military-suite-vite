@@ -8,6 +8,7 @@ import { personCandidates } from '../../core/person-names.js';
 import { ChronologyDialog, PersonMatchDialog, StatusHistoryChainBadge } from './RecordReview.jsx';
 import { createMedicalWorkbook } from './medical-workbook.js';
 import { escapeHtml } from '../../core/html.js';
+import { SuiteTrash } from '../../core/trash.js';
 
 const MedicalApp = (function() {
         const LEGACY_MED_STORAGE_KEYS = [
@@ -3841,6 +3842,20 @@ const MedicalApp = (function() {
             }, [episodes, soldiers]);
 
             useEffect(() => {
+                const onTrashRestore = ({ detail }) => {
+                    const entry = detail?.entry;
+                    if (!entry || entry.module !== 'med' || !entry.record) return;
+                    detail.ack?.();
+                    saveHistory();
+                    setEpisodes(prev => prev.some(ep => String(ep.id) === String(entry.record.id)) ? prev : [entry.record, ...prev]);
+                    addLog("Відновлення з кошика", `Відновлено запис: ${entry.summary || entry.record.id}`);
+                    triggerNotification("Запис відновлено з кошика");
+                };
+                window.addEventListener('suite-trash-restore', onTrashRestore);
+                return () => window.removeEventListener('suite-trash-restore', onTrashRestore);
+            }, [episodes, soldiers]);
+
+            useEffect(() => {
                 const handleScroll = () => {
                     const btn = document.getElementById('btn-scroll-top');
                     if (!btn) return;
@@ -3924,11 +3939,19 @@ const MedicalApp = (function() {
 
             const handleDeleteEpisode = () => {
                 saveHistory();
-                setEpisodes(prev => prev.filter(ep => ep.id !== currentEpisode.id));
+                const target = currentEpisode;
+                setEpisodes(prev => prev.filter(ep => ep.id !== target.id));
                 const delCallsignDisplay = newSoldierCallsign.trim() ? ` («${newSoldierCallsign.trim()}»)` : "";
+                if (target) {
+                    SuiteTrash.add({
+                        module: 'med',
+                        summary: [target.date || '', `${newSoldierName}${delCallsignDisplay}`.trim(), target.lossType || ''].filter(Boolean).join(' · '),
+                        record: target
+                    }).catch(() => {});
+                }
                 addLog("Видалення", `Видалено запис для в/сл: ${newSoldierName}${delCallsignDisplay}`);
                 setIsEditOpen(false); setCurrentEpisode(null);
-                triggerNotification("Запис видалено");
+                triggerNotification("Запис переміщено в «Кошик»");
             };
 
             const handleClearDatabase = async () => {
