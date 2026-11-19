@@ -49,6 +49,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
     const [restoreConfirmed, setRestoreConfirmed] = useState(false);
     const [restoreComplete, setRestoreComplete] = useState(false);
     const [restoreStarted, setRestoreStarted] = useState(false);
+    const [tabConflict, setTabConflict] = useState(() => window.SuiteRuntime?.staleReason || '');
     const [lastBackupAt, setLastBackupAt] = useState(null);
     const [lastBackupCounts, setLastBackupCounts] = useState(null);
     const [backupNowMs, setBackupNowMs] = useState(() => Date.now());
@@ -137,6 +138,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
         // draining writes. Stay suspended on both success and failure.
         ReactDOM.flushSync(() => setRestoreStarted(true));
         await SuiteBackup.restore(backupPreview, backupPassword, { localRecovery: localRecovery && importPbd, importPbd });
+        window.SuiteRuntime?.notifyRestored?.();
         setRestoreComplete(true);
         setBackupPassword(''); setBackupConfirm(''); setBackupPreview(null); setBackupSource(null);
         setBackupMessage('Відновлення завершено. Попередній стан збережено зашифрованим у цьому браузері (кнопка «Попередній стан», той самий пароль). Перезавантажте програму.');
@@ -157,9 +159,13 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
     }, []);
 
     useEffect(() => {
+        return window.SuiteRuntime?.onConflict?.(reason => setTabConflict(reason));
+    }, []);
+
+    useEffect(() => {
         const tacContainer = document.getElementById('app-tactical-container');
         if (!tacContainer) return;
-        if (activeApp === 'tactical' && !backupMode && !dictionariesOpen && !integrityOpen && !searchOpen && !changelogOpen && !restoreStarted) {
+        if (activeApp === 'tactical' && !backupMode && !dictionariesOpen && !integrityOpen && !searchOpen && !changelogOpen && !restoreStarted && !tabConflict) {
             tacContainer.style.display = 'block';
             if (window.TacticalModule && window.TacticalModule.init) {
                 window.TacticalModule.init();
@@ -167,7 +173,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
         } else {
             tacContainer.style.display = 'none';
         }
-    }, [activeApp, backupMode, dictionariesOpen, integrityOpen, searchOpen, changelogOpen, restoreStarted]);
+    }, [activeApp, backupMode, dictionariesOpen, integrityOpen, searchOpen, changelogOpen, restoreStarted, tabConflict]);
 
     useEffect(() => {
         if (!backupMode) return;
@@ -452,6 +458,41 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
             {integrityOpen && <IntegrityPanel onClose={() => setIntegrityOpen(false)} onOpen={openIntegrityRecord} />}
             {searchOpen && <GlobalSearchModal onClose={() => setSearchOpen(false)} onNavigate={handleSearchNavigate} />}
             {changelogOpen && <ChangelogModal onClose={() => setChangelogOpen(false)} />}
+            {tabConflict && !restoreStarted && (
+                <div className="fixed inset-0 z-[25000] bg-black/85 flex items-center justify-center p-4 overscroll-contain">
+                    <section role="alertdialog" aria-modal="true" aria-labelledby="suite-tab-conflict-title" className="bg-[#17181b] text-[#f3f4f6] border border-[#d9534f]/65 rounded-sm w-full max-w-lg overflow-hidden">
+                        <div className="px-5 py-3.5 bg-[#101113] border-b border-[#2e3138] flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-sm border border-[#d9534f]/50 bg-[#d9534f]/15 text-[#f87171] flex items-center justify-center shrink-0">
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                                </svg>
+                            </div>
+                            <h2 id="suite-tab-conflict-title" className="text-sm font-bold text-[#f3f4f6]">
+                                {tabConflict === 'restored' ? 'Базу оновлено в іншій вкладці' : 'Виявлено іншу відкриту вкладку'}
+                            </h2>
+                        </div>
+                        <div className="p-5 space-y-3 text-xs text-[#cbd5e1] leading-relaxed">
+                            <p>
+                                {tabConflict === 'restored'
+                                    ? 'В іншій вкладці браузера щойно відновлено резервну копію. Запис у цій вкладці автоматично заблоковано, щоб старий стан не перезаписав відновлені дані.'
+                                    : 'Програма відкрита в іншій вкладці браузера. Запис у цій вкладці автоматично заблоковано, щоб уникнути конфлікту та втрати нових записів.'}
+                            </p>
+                            <p className="text-[#989fa9]">
+                                Закрийте зайву вкладку або натисніть «Перезавантажити й працювати тут», щоб підвантажити актуальну базу.
+                            </p>
+                        </div>
+                        <div className="px-5 py-3 bg-[#101113] border-t border-[#2e3138] flex justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={() => location.reload()}
+                                className="h-8 px-3.5 rounded-sm bg-[#2b67ab] hover:bg-[#3577c2] border border-[#4c8ed9] text-white font-semibold text-xs cursor-pointer transition-colors"
+                            >
+                                Перезавантажити й працювати тут
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            )}
             {backupMode && <div className="fixed inset-0 z-[20000] bg-black/80 flex items-center justify-center p-3 sm:p-4 overscroll-contain">
                 <section ref={backupDialogRef} role="dialog" aria-modal="true" aria-labelledby="suite-backup-title" className="bg-[#17181b] text-[#f3f4f6] border border-[#2e3138] rounded-sm w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
                     <div className="px-5 py-3.5 bg-[#101113] border-b border-[#2e3138] flex items-center justify-between gap-3 shrink-0">

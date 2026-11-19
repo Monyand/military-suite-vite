@@ -3,10 +3,100 @@ import { localforage } from './vendor.js';
 // Normal application writes pass through this barrier. Unified restore
         // alone uses the underlying storage while all modules are suspended.
         window.SuiteRuntime = (() => {
+            const TAB_LOCK_KEY = 'suite_active_tab_v1';
+            const RESTORE_SIGNAL_KEY = 'suite_backup_restored_v1';
+            const CHANNEL_NAME = 'military_suite_tab_sync_v1';
+            const tabId = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+                ? crypto.randomUUID()
+                : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
             let restoring = false;
+            let staleReason = '';
             const pending = new Set();
+            const listeners = new Set();
+            let channel = null;
+
+            const readLockOwner = () => {
+                try {
+                    const raw = localStorage.getItem(TAB_LOCK_KEY);
+                    if (!raw) return null;
+                    const parsed = JSON.parse(raw);
+                    return parsed && typeof parsed.tabId === 'string' ? parsed.tabId : null;
+                } catch {
+                    return null;
+                }
+            };
+            const claimLock = () => {
+                try {
+                    localStorage.setItem(TAB_LOCK_KEY, JSON.stringify({ tabId, ts: Date.now() }));
+                } catch { /* ignore private mode / quota */ }
+                try { channel?.postMessage({ type: 'tab-opened', tabId, ts: Date.now() }); } catch { }
+            };
+            const markStale = (reason = 'other-tab') => {
+                if (restoring) return;
+                if (staleReason === 'restored') return;
+                const next = reason === 'restored' ? 'restored' : 'other-tab';
+                if (staleReason === next) return;
+                staleReason = next;
+                for (const fn of listeners) {
+                    try { fn(staleReason); } catch { }
+                }
+                try {
+                    window.dispatchEvent(new CustomEvent('suite-tab-conflict', { detail: { reason: staleReason } }));
+                } catch { }
+            };
+            const checkLock = () => {
+                if (restoring || staleReason) return Boolean(staleReason);
+                const owner = readLockOwner();
+                if (owner && owner !== tabId) {
+                    markStale('other-tab');
+                    return true;
+                }
+                return false;
+            };
+
+            try {
+                if (typeof BroadcastChannel === 'function') {
+                    channel = new BroadcastChannel(CHANNEL_NAME);
+                    channel.onmessage = event => {
+                        const msg = event?.data;
+                        if (!msg || msg.tabId === tabId) return;
+                        if (msg.type === 'backup-restored') markStale('restored');
+                        else if (msg.type === 'tab-opened') markStale('other-tab');
+                    };
+                }
+            } catch { channel = null; }
+
+            if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+                window.addEventListener('storage', event => {
+                    if (event.key === RESTORE_SIGNAL_KEY && event.newValue) {
+                        try {
+                            const data = JSON.parse(event.newValue);
+                            if (data?.tabId && data.tabId !== tabId) markStale('restored');
+                        } catch { markStale('restored'); }
+                    } else if (event.key === TAB_LOCK_KEY && event.newValue) {
+                        try {
+                            const data = JSON.parse(event.newValue);
+                            if (data?.tabId && data.tabId !== tabId) markStale('other-tab');
+                        } catch { }
+                    }
+                });
+                window.addEventListener('focus', checkLock);
+                if (typeof document !== 'undefined') {
+                    document.addEventListener('visibilitychange', () => {
+                        if (document.visibilityState === 'visible') checkLock();
+                    });
+                }
+            }
+
+            claimLock();
+
             const assertWritable = () => {
                 if (restoring) throw new Error('Записи заблоковано на час відновлення. Перезавантажте програму.');
+                if (checkLock()) {
+                    throw new Error(staleReason === 'restored'
+                        ? 'В іншій вкладці відновлено бекап. Запис заблоковано — перезавантажте сторінку.'
+                        : 'Відкрито іншу вкладку програми. Запис заблоковано — перезавантажте сторінку.');
+                }
             };
             const runAsync = operation => {
                 try { assertWritable(); } catch (error) { return Promise.reject(error); }
@@ -17,8 +107,24 @@ import { localforage } from './vendor.js';
                 return result;
             };
             return {
+                get tabId() { return tabId; },
                 get restoring() { return restoring; },
+                get stale() { return Boolean(staleReason); },
+                get staleReason() { return staleReason; },
                 freeze() { restoring = true; },
+                notifyRestored() {
+                    try {
+                        localStorage.setItem(RESTORE_SIGNAL_KEY, JSON.stringify({ tabId, ts: Date.now() }));
+                    } catch { }
+                    try { channel?.postMessage({ type: 'backup-restored', tabId, ts: Date.now() }); } catch { }
+                },
+                onConflict(fn) {
+                    if (typeof fn !== 'function') return () => {};
+                    listeners.add(fn);
+                    if (staleReason) { try { fn(staleReason); } catch { } }
+                    return () => listeners.delete(fn);
+                },
+                checkLock,
                 async drain() { while (pending.size) await Promise.allSettled([...pending]); },
                 runAsync,
                 setItem: (key, value) => runAsync(() => localforage.setItem(key, value)),
