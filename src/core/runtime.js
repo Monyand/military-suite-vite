@@ -11,9 +11,15 @@ import { localforage } from './vendor.js';
                 : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
             let restoring = false;
             let staleReason = '';
+            let dirtySinceBackup = false;
+            let hasUserActivity = false;
             const pending = new Set();
             const listeners = new Set();
             let channel = null;
+            const isDataKey = key => /^(enemy_events|enemy_personnel|enemy_daily_losses|med_soldiers|med_episodes|document_journal|tactical_(personnel|positions|journal|rotations))/.test(String(key || ''));
+            const markDirtyIfUser = key => {
+                if (hasUserActivity && isDataKey(key)) dirtySinceBackup = true;
+            };
 
             const readLockOwner = () => {
                 try {
@@ -81,6 +87,11 @@ import { localforage } from './vendor.js';
                     }
                 });
                 window.addEventListener('focus', checkLock);
+                const markUserActivity = () => { hasUserActivity = true; };
+                window.addEventListener('pointerdown', markUserActivity, { once: true, capture: true });
+                window.addEventListener('keydown', markUserActivity, { once: true, capture: true });
+                window.addEventListener('input', markUserActivity, { once: true, capture: true });
+                window.addEventListener('change', markUserActivity, { once: true, capture: true });
                 if (typeof document !== 'undefined') {
                     document.addEventListener('visibilitychange', () => {
                         if (document.visibilityState === 'visible') checkLock();
@@ -111,6 +122,9 @@ import { localforage } from './vendor.js';
                 get restoring() { return restoring; },
                 get stale() { return Boolean(staleReason); },
                 get staleReason() { return staleReason; },
+                get hasPending() { return pending.size > 0; },
+                get dirtySinceBackup() { return dirtySinceBackup; },
+                clearDirty() { dirtySinceBackup = false; },
                 freeze() { restoring = true; },
                 notifyRestored() {
                     try {
@@ -127,10 +141,10 @@ import { localforage } from './vendor.js';
                 checkLock,
                 async drain() { while (pending.size) await Promise.allSettled([...pending]); },
                 runAsync,
-                setItem: (key, value) => runAsync(() => localforage.setItem(key, value)),
-                removeItem: key => runAsync(() => localforage.removeItem(key)),
-                setLocalItem(key, value) { assertWritable(); return localStorage.setItem(key, value); },
-                removeLocalItem(key) { assertWritable(); return localStorage.removeItem(key); }
+                setItem: (key, value) => runAsync(() => { markDirtyIfUser(key); return localforage.setItem(key, value); }),
+                removeItem: key => runAsync(() => { markDirtyIfUser(key); return localforage.removeItem(key); }),
+                setLocalItem(key, value) { assertWritable(); markDirtyIfUser(key); return localStorage.setItem(key, value); },
+                removeLocalItem(key) { assertWritable(); markDirtyIfUser(key); return localStorage.removeItem(key); }
             };
         })();
         window.SuiteDates = {

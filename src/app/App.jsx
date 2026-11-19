@@ -107,6 +107,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
         setLastBackupAt(ts);
         setLastBackupCounts(counts);
         setBackupNowMs(Date.now());
+        window.SuiteRuntime?.clearDirty?.();
         setBackupPassword(''); setBackupConfirm('');
         setBackupMessage('Зашифровану копію підготовлено для завантаження. Збережіть файл і пароль окремо: без пароля відновлення неможливе.');
     });
@@ -176,6 +177,18 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
     useEffect(() => {
         return window.SuiteRuntime?.onConflict?.(reason => setTabConflict(reason));
     }, []);
+
+    useEffect(() => {
+        const handleBeforeUnload = (event) => {
+            if (restoreStarted || window.SuiteRuntime?.stale) return;
+            if (backupBusy || window.SuiteRuntime?.hasPending || window.SuiteRuntime?.dirtySinceBackup) {
+                event.preventDefault();
+                event.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [backupBusy, restoreStarted]);
 
     useEffect(() => {
         const tacContainer = document.getElementById('app-tactical-container');
