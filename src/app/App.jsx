@@ -7,6 +7,7 @@ import { GlobalSearchModal } from './GlobalSearchModal.jsx';
 import { ChangelogModal, SUITE_VERSION } from './ChangelogModal.jsx';
 import { TrashModal } from './TrashModal.jsx';
 import { SuiteTrash } from '../core/trash.js';
+import { AutoSnapshots } from '../core/auto-snapshots.js';
 import { inspectIntegrity } from '../core/integrity.js';
 import { bindDialogFocusTrap } from './dialog-focus.js';
 
@@ -58,16 +59,18 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
     const [lastBackupCounts, setLastBackupCounts] = useState(null);
     const [backupNowMs, setBackupNowMs] = useState(() => Date.now());
     const [exportSummary, setExportSummary] = useState(null);
+    const [autoSnapshots, setAutoSnapshots] = useState([]);
+    const [isAutoSnapshot, setIsAutoSnapshot] = useState(false);
     const backupLock = useRef(false);
     const backupDialogRef = useRef(null);
-    const legacyBackup = backupSource?.format === 'military-suite-unified';
+    const legacyBackup = !isAutoSnapshot && backupSource?.format === 'military-suite-unified';
     const incomingPbdCount = ['tasks', 'positions'].reduce((count, tab) => count + (backupPreview?.localforage?.document_journal_v1?.[tab] || []).filter(row => typeof row.reportedInPbd === 'boolean').length, 0);
 
     const openBackup = mode => {
         if (backupLock.current || restoreStarted) return;
         setBackupMode(mode); setBackupPassword(''); setBackupConfirm('');
         setExportPbd(false); setImportPbd(false);
-        setBackupSource(null); setBackupPreview(null); setBackupFileName(''); setBackupReport(null); setLocalRecovery(false);
+        setBackupSource(null); setBackupPreview(null); setBackupFileName(''); setBackupReport(null); setLocalRecovery(false); setIsAutoSnapshot(false);
         setBackupMessage(''); setRestoreConfirmed(false); setRestoreComplete(false);
         setExportSummary(null);
         if (mode === 'export') {
@@ -75,6 +78,8 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                 .then(() => SuiteBackup.collect({ localState: true, unchecked: true }))
                 .then(snap => setExportSummary(SuiteBackup.backupSummary(snap, snap)))
                 .catch(() => {});
+        } else if (mode === 'import') {
+            AutoSnapshots.list().then(setAutoSnapshots).catch(() => {});
         }
     };
     const closeBackup = () => {
@@ -112,7 +117,7 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
         setBackupMessage('Зашифровану копію підготовлено для завантаження. Збережіть файл і пароль окремо: без пароля відновлення неможливе.');
     });
     const chooseBackup = file => runBackupAction(async () => {
-        setLocalRecovery(false); setBackupReport(null);
+        setLocalRecovery(false); setIsAutoSnapshot(false); setBackupReport(null);
         setImportPbd(false);
         setBackupSource(null); setBackupPreview(null); setRestoreConfirmed(false);
         setBackupPassword(''); setBackupConfirm('');
@@ -120,13 +125,25 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
         setBackupSource(await SuiteBackup.readFile(file));
     });
     const chooseRecovery = () => runBackupAction(async () => {
-        setLocalRecovery(true); setBackupReport(null);
+        setLocalRecovery(true); setIsAutoSnapshot(false); setBackupReport(null);
         setImportPbd(false);
         setBackupSource(null); setBackupPreview(null); setRestoreConfirmed(false);
         setBackupPassword(''); setBackupConfirm(''); setBackupFileName('Попередній стан');
         const recovery = await SuiteBackup.getRecovery();
         if (!recovery) throw new Error('Захисної копії попереднього стану ще немає.');
         setBackupSource(recovery);
+    });
+    const chooseAutoSnapshot = snap => runBackupAction(async () => {
+        setLocalRecovery(true); setIsAutoSnapshot(true); setBackupReport(null);
+        setImportPbd(false);
+        setBackupSource(snap.data); setBackupPreview(null); setRestoreConfirmed(false);
+        setBackupPassword(''); setBackupConfirm('');
+        setBackupFileName(`Автознімок від ${window.SuiteDates.localDateTime(snap.createdAt)}`);
+        const data = SuiteBackup.validate(snap.data);
+        await window.SuiteRuntime.drain();
+        const current = await SuiteBackup.collect({ localState: true, unchecked: true });
+        setBackupReport({ rows: SuiteBackup.backupSummary(data, current), audit: inspectIntegrity(data) });
+        setBackupPreview(data);
     });
     const checkBackup = () => runBackupAction(async () => {
         if (legacyBackup) requireNewPassword();
@@ -138,15 +155,24 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
     });
     const handleRestore = () => runBackupAction(async () => {
         if (!backupPreview || !restoreConfirmed) throw new Error('Спочатку перевірте файл і підтвердьте заміну даних.');
+        if (isAutoSnapshot) {
+            await AutoSnapshots.capture({ force: true, reason: 'before-rollback' });
+        }
         window.SuiteRuntime.freeze();
         // Unmount synchronously: cancel module timers/listeners before
         // draining writes. Stay suspended on both success and failure.
         ReactDOM.flushSync(() => setRestoreStarted(true));
-        await SuiteBackup.restore(backupPreview, backupPassword, { localRecovery: localRecovery && importPbd, importPbd });
+        await SuiteBackup.restore(backupPreview, backupPassword, {
+            localRecovery: (localRecovery && importPbd) || (isAutoSnapshot && importPbd),
+            importPbd,
+            skipEncryptedRecovery: isAutoSnapshot,
+        });
         window.SuiteRuntime?.notifyRestored?.();
         setRestoreComplete(true);
         setBackupPassword(''); setBackupConfirm(''); setBackupPreview(null); setBackupSource(null);
-        setBackupMessage('Відновлення завершено. Попередній стан збережено зашифрованим у цьому браузері (кнопка «Попередній стан», той самий пароль). Перезавантажте програму.');
+        setBackupMessage(isAutoSnapshot
+            ? 'Відкат на локальний автознімок завершено. Попередній стан збережено в списку автознімків. Перезавантажте програму.'
+            : 'Відновлення завершено. Попередній стан збережено зашифрованим у цьому браузері (кнопка «Попередній стан», той самий пароль). Перезавантажте програму.');
     });
 
     useEffect(() => {
@@ -160,7 +186,9 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
             if (counts && typeof counts === 'object' && !Array.isArray(counts)) setLastBackupCounts(counts);
         }).catch(() => {});
         const timer = setInterval(() => setBackupNowMs(Date.now()), 60000);
-        return () => { active = false; clearInterval(timer); };
+        const snapInit = setTimeout(() => { AutoSnapshots.capture(); }, 5000);
+        const snapTimer = setInterval(() => { AutoSnapshots.capture(); }, 15 * 60 * 1000);
+        return () => { active = false; clearInterval(timer); clearTimeout(snapInit); clearInterval(snapTimer); };
     }, []);
 
     useEffect(() => {
@@ -603,6 +631,45 @@ const RootApp = ({ EventsApp, MedicalApp, DocumentJournalApp }) => {
                             </div>
                             {backupFileName && <p className="text-xs break-all font-mono tabular-nums text-[#8ad8ae]">Обрано: {backupFileName}</p>}
                             {legacyBackup && <p className="text-[#fcd34d] text-xs">Це стара незашифрована копія. Для неї пароль не потрібен. Задайте новий пароль нижче: ним буде захищено поточні дані перед заміною. Надалі створюйте зашифровані копії.</p>}
+                            <div className="pt-2 border-t border-[#2e3138] space-y-1.5">
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-[11px] font-semibold uppercase tracking-wide text-[#9aa6b8]">Локальні автознімки (останні {AutoSnapshots.MAX})</span>
+                                    <button
+                                        type="button"
+                                        disabled={backupBusy}
+                                        onClick={async () => {
+                                            await AutoSnapshots.capture({ force: true, reason: 'manual' });
+                                            setAutoSnapshots(await AutoSnapshots.list());
+                                        }}
+                                        className="text-[11px] text-[#4c8ed9] hover:text-[#7db3ed] underline cursor-pointer disabled:opacity-50"
+                                    >
+                                        Зберегти точку зараз
+                                    </button>
+                                </div>
+                                {autoSnapshots.length === 0 ? (
+                                    <p className="text-[11px] text-[#989fa9]">Автознімки створюються автоматично раз на 30 хв при змінах у базі (у цьому браузері).</p>
+                                ) : (
+                                    <div className="space-y-1">
+                                        {autoSnapshots.map(snap => (
+                                            <div key={snap.id} className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-sm bg-[#17181b] border border-[#2e3138] text-xs">
+                                                <div className="flex items-center gap-2 min-w-0 font-mono tabular-nums text-[11px]">
+                                                    <span className="text-[#e6edf3]">{window.SuiteDates.localDateTime(snap.createdAt)}</span>
+                                                    <span className="text-[#9aa6b8]">· {snap.totalRecords} записів</span>
+                                                    {snap.reason === 'before-rollback' && <span className="text-[#fcd34d]">· перед відкатом</span>}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    disabled={backupBusy}
+                                                    onClick={() => chooseAutoSnapshot(snap)}
+                                                    className="h-6 px-2.5 rounded-sm bg-[#222429] hover:bg-[#2b3340] border border-[#3c404a] hover:border-[#4c8ed9] text-[#93c5fd] text-[11px] font-semibold cursor-pointer shrink-0 disabled:opacity-50"
+                                                >
+                                                    Перевірити
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>}
                         {!backupPreview && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <label className={`block text-xs text-[#b8bec8] font-medium ${backupMode === 'import' && !legacyBackup ? 'sm:col-span-2' : ''}`}>{legacyBackup ? 'Новий пароль захисної копії' : 'Пароль бекапу'}

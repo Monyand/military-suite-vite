@@ -135,7 +135,7 @@ const SuiteBackup = (() => {
                 }
                 for (const [key, value] of Object.entries(data.localstorage)) localStorage.setItem(key, value);
             };
-            const restore = async (data, password, { localRecovery = false, importPbd = false } = {}) => {
+            const restore = async (data, password, { localRecovery = false, importPbd = false, skipEncryptedRecovery = false } = {}) => {
                 validate(data); // Validate fully before touching persistent data.
                 if (window.SuiteRuntime) {
                     window.SuiteRuntime.freeze();
@@ -149,8 +149,8 @@ const SuiteBackup = (() => {
                         localRecovery && data.localOnly === true, importPbd);
                 }
                 validate(prepared);
-                const recovery = await encrypt(before, password);
-                await localforage.setItem(RECOVERY_KEY, recovery);
+                const recovery = skipEncryptedRecovery ? null : await encrypt(before, password);
+                if (recovery) await localforage.setItem(RECOVERY_KEY, recovery);
                 try { await applySnapshot(prepared); }
                 catch {
                     try { await applySnapshot(before); }
