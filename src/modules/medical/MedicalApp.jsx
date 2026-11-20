@@ -59,6 +59,13 @@ const MedicalApp = (function() {
         const isAny300 = (type) => type && type.includes("(300)");
         const isAwol = (type) => type === "СЗЧ" || type === "Повернення з СЗЧ" || type === "Дезертирство";
         const isAwolReturnEp = (ep) => Boolean(ep && (ep.lossType === "Повернення з СЗЧ" || (isAwol(ep.lossType) && ep.awolStatus === "Повернувся")));
+        const getEpisodeSortTime = (ep) => {
+            if (isAwolReturnEp(ep)) {
+                const ret = parseMedicalDate(ep.evacTime || ep.evacDate || '');
+                if (ret > 0) return ret;
+            }
+            return parseMedicalDate(ep?.date);
+        };
         const isAny200 = (type) => type && (type.includes("(200)") || type.includes("200 (від ран)"));
         const isLossTypeActive = (lossType, dynFilters, groupAnalytics) => {
             if (!dynFilters) return true;
@@ -1751,7 +1758,7 @@ const MedicalApp = (function() {
             const timeFilteredEpisodes = useMemo(() => {
                 return episodes.filter(ep => {
                     if (!listDateFrom && !listDateTo) return true;
-                    const epTime = parseSafeDate(ep.date);
+                    const epTime = getEpisodeSortTime(ep);
                     if (listDateFrom) {
                         const fromMs = parseSafeDate(listDateFrom.includes(':') ? listDateFrom : `${listDateFrom} 00:00:00`);
                         if (epTime < fromMs) return false;
@@ -1771,7 +1778,7 @@ const MedicalApp = (function() {
                     const existing = map.get(ep.soldierId);
                     map.set(ep.soldierId, pickMedicalEpisode(existing, ep));
                 }
-                return Array.from(map.values()).sort((a, b) => parseSafeDate(b.date) - parseSafeDate(a.date));
+                return Array.from(map.values()).sort((a, b) => getEpisodeSortTime(b) - getEpisodeSortTime(a) || parseSafeDate(b.date) - parseSafeDate(a.date));
             }, [timeFilteredEpisodes]);
 
             const activeDataSource = showOnlyLatest ? latestEpisodesData : timeFilteredEpisodes;
@@ -1790,7 +1797,7 @@ const MedicalApp = (function() {
                     const existing = map.get(ep.soldierId);
                     map.set(ep.soldierId, pickMedicalEpisode(existing, ep));
                 }
-                return Array.from(map.values()).sort((a, b) => parseSafeDate(b.date) - parseSafeDate(a.date));
+                return Array.from(map.values()).sort((a, b) => getEpisodeSortTime(b) - getEpisodeSortTime(a) || parseSafeDate(b.date) - parseSafeDate(a.date));
             }, [episodes]);
 
             const episodesBySoldier = useMemo(() => {
@@ -3539,20 +3546,20 @@ const MedicalApp = (function() {
                     return matchSearch && matchLoss && matchSeverity && matchEvac && matchCause && matchUdp && matchWeapon && matchReport && matchInjury;
                 });
 
-                // Багаторежимне сортування (за датою евакуації, датою події, ПІБ, важкістю)
+                // Багаторежимне сортування (за датою евакуації, датою події/повернення з СЗЧ, ПІБ, важкістю)
                 const sevOrder = { 'Критичний': 4, 'Важкий': 3, 'Середній': 2, 'Легкий': 1 };
                 return list.sort((a, b) => {
                     if (sortBy === 'evac_desc' || sortBy === 'evac_asc') {
                         const timeA = parseSafeDate(a.evacTime || a.evacDate || '');
                         const timeB = parseSafeDate(b.evacTime || b.evacDate || '');
                         // Якщо в одного немає дати евакуації - переміщуємо його в кінець
-                        if (timeA === 0 && timeB === 0) return parseSafeDate(b.date) - parseSafeDate(a.date);
+                        if (timeA === 0 && timeB === 0) return getEpisodeSortTime(b) - getEpisodeSortTime(a) || parseSafeDate(b.date) - parseSafeDate(a.date);
                         if (timeA === 0) return 1;
                         if (timeB === 0) return -1;
                         return sortBy === 'evac_desc' ? timeB - timeA : timeA - timeB;
                     }
                     if (sortBy === 'date_asc') {
-                        return parseSafeDate(a.date) - parseSafeDate(b.date);
+                        return getEpisodeSortTime(a) - getEpisodeSortTime(b) || parseSafeDate(a.date) - parseSafeDate(b.date);
                     }
                     if (sortBy === 'name_asc' || sortBy === 'name_desc') {
                         const solA = MedicalPersonnelDirectory.forEpisode(a, soldiersMap.get(a.soldierId))?.name || '';
@@ -3564,10 +3571,10 @@ const MedicalApp = (function() {
                         const sA = sevOrder[a.severity] || 0;
                         const sB = sevOrder[b.severity] || 0;
                         if (sA !== sB) return sB - sA;
-                        return parseSafeDate(b.date) - parseSafeDate(a.date);
+                        return getEpisodeSortTime(b) - getEpisodeSortTime(a) || parseSafeDate(b.date) - parseSafeDate(a.date);
                     }
                     // default: date_desc
-                    return parseSafeDate(b.date) - parseSafeDate(a.date);
+                    return getEpisodeSortTime(b) - getEpisodeSortTime(a) || parseSafeDate(b.date) - parseSafeDate(a.date);
                 });
             }, [activeDataSource, soldiersMap, searchTerm, filterLossTypes, filterSeverities, filterEvacStatuses, filterCauses, filterUdp, filterWeapon, filterReport, filterInjuries, sortBy, activeTab]);
 
